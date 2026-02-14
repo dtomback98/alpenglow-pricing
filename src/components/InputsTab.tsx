@@ -10,7 +10,7 @@ interface InputsTabProps {
 
 type NestedConfigKey = 'extension' | 'hotelsMeals' | 'logistics' | 'staffConfig' | 'transportConfig' | 'tripSpecific' | 'singleSupplement';
 
-const TRIP_SPECIFIC_FIELDS: { key: keyof TripConfiguration['tripSpecific']; label: string }[] = [
+const TRIP_SPECIFIC_FIELDS: { key: keyof Omit<TripConfiguration['tripSpecific'], 'enabled'>; label: string }[] = [
   { key: 'permits', label: 'Permits' },
   { key: 'equipment', label: 'Equipment' },
   { key: 'jacketsApparel', label: 'Jackets & Apparel' },
@@ -31,10 +31,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   };
 
   const updateTripSpecificCost = (
-    field: keyof TripConfiguration['tripSpecific'],
+    field: keyof Omit<TripConfiguration['tripSpecific'], 'enabled'>,
     updates: Partial<TripSpecificCost>
   ) => {
-    const currentCost = config.tripSpecific[field];
+    const currentCost = config.tripSpecific[field] as TripSpecificCost;
     updateNestedConfig('tripSpecific', {
       [field]: { ...currentCost, ...updates },
     });

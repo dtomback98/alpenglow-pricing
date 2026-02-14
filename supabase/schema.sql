@@ -13,18 +13,30 @@ CREATE TABLE trip_configurations (
   trip_price NUMERIC NOT NULL DEFAULT 5495,
   trip_days INTEGER NOT NULL DEFAULT 9,
   trip_nights INTEGER NOT NULL DEFAULT 8,
-  is_private BOOLEAN DEFAULT FALSE,
-  private_multiplier NUMERIC DEFAULT 2.0,
+  pax_min INTEGER DEFAULT 1,
+  pax_max INTEGER DEFAULT 16,
+  pax_step INTEGER DEFAULT 1,
 
   -- Discounts
+  discounts_enabled BOOLEAN DEFAULT TRUE,
   early_bird_discount NUMERIC DEFAULT 0,
   early_bird_takeup NUMERIC DEFAULT 0,
+  early_bird_count_by_pax JSONB,
   loyalty_discount_rate NUMERIC DEFAULT 0,
+  loyalty_count_by_pax JSONB,
+
+  -- Single supplement
   single_room_extra NUMERIC DEFAULT 300,
   single_supplement NUMERIC DEFAULT 950,
+  single_supplement_config JSONB,
+
+  -- Extension
+  extension_config JSONB,
+
+  -- Legacy pre/post (kept for migration)
+  pre_post JSONB NOT NULL DEFAULT '{}',
 
   -- JSON columns for complex nested data
-  pre_post JSONB NOT NULL DEFAULT '{}',
   hotels_meals JSONB NOT NULL DEFAULT '{}',
   logistics JSONB NOT NULL DEFAULT '{}',
   staff_config JSONB NOT NULL DEFAULT '{}',
