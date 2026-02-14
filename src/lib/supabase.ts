@@ -296,13 +296,6 @@ export async function saveToHistory(
 
   const calc = calculateForPax(pax, config);
 
-  // Check if this trip already has a history entry
-  const { data: existing } = await supabase
-    .from('historical_trips')
-    .select('id')
-    .eq('trip_config_id', config.id)
-    .single();
-
   const row = {
     name: config.name,
     category,
@@ -316,25 +309,13 @@ export async function saveToHistory(
     notes: '',
   };
 
-  if (existing) {
-    const { error } = await supabase
-      .from('historical_trips')
-      .update(row)
-      .eq('id', existing.id);
+  const { error } = await supabase
+    .from('historical_trips')
+    .insert(row);
 
-    if (error) {
-      console.error('Error updating history entry:', error);
-      return false;
-    }
-  } else {
-    const { error } = await supabase
-      .from('historical_trips')
-      .insert(row);
-
-    if (error) {
-      console.error('Error inserting history entry:', error);
-      return false;
-    }
+  if (error) {
+    console.error('Error inserting history entry:', error);
+    return false;
   }
 
   return true;
