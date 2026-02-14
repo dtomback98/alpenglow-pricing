@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { HistoricalTrip } from '@/lib/types';
-import { fetchHistoricalTrips, isSupabaseConfigured } from '@/lib/supabase';
+import { fetchHistoricalTrips, deleteHistoricalTrip, isSupabaseConfigured } from '@/lib/supabase';
 import historicalData from '@/lib/historical-data.json';
 
 // Type the imported JSON data
@@ -16,6 +16,7 @@ interface UseHistoricalDataReturn {
   setSelectedCategory: (category: string | null) => void;
   categories: string[];
   refresh: () => Promise<void>;
+  deleteTrip: (id: string) => Promise<boolean>;
 }
 
 export function useHistoricalData(): UseHistoricalDataReturn {
@@ -63,6 +64,14 @@ export function useHistoricalData(): UseHistoricalDataReturn {
     loadData();
   }, [loadData]);
 
+  const deleteTrip = useCallback(async (id: string): Promise<boolean> => {
+    const success = await deleteHistoricalTrip(id);
+    if (success) {
+      await loadData();
+    }
+    return success;
+  }, [loadData]);
+
   return {
     trips,
     loading,
@@ -71,5 +80,6 @@ export function useHistoricalData(): UseHistoricalDataReturn {
     setSelectedCategory,
     categories,
     refresh: loadData,
+    deleteTrip,
   };
 }

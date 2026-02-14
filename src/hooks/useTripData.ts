@@ -153,23 +153,23 @@ export function useTripData(): UseTripDataReturn {
     setError(null);
 
     try {
-      // Save the trip config first if not already saved
-      let configToUse = config;
-      if (!selectedTripId) {
-        const saved = await saveTripConfiguration(config);
-        if (!saved) {
-          setError('Failed to save trip before adding to history');
-          return false;
-        }
-        setSelectedTripId(saved.id || null);
-        setConfigState(saved);
-        configToUse = saved;
+      // Always save the trip config first to ensure latest changes are persisted
+      const configToSave = selectedTripId
+        ? { ...config, id: selectedTripId }
+        : config;
 
-        const updatedTrips = await fetchTripConfigurations();
-        setTrips(updatedTrips);
+      const saved = await saveTripConfiguration(configToSave);
+      if (!saved) {
+        setError('Failed to save trip before adding to history');
+        return false;
       }
+      setSelectedTripId(saved.id || null);
+      setConfigState(saved);
 
-      const success = await saveToHistory(configToUse, pax, category);
+      const updatedTrips = await fetchTripConfigurations();
+      setTrips(updatedTrips);
+
+      const success = await saveToHistory(saved, pax, category);
       if (!success) {
         setError('Failed to save to history');
         return false;

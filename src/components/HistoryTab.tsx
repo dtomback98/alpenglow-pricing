@@ -12,7 +12,7 @@ interface HistoryTabProps {
   onLoadTrip?: (tripConfigId: string) => void;
 }
 
-function TripTable({ trips, title, onLoadTrip }: { trips: HistoricalTrip[]; title: string; onLoadTrip?: (id: string) => void }) {
+function TripTable({ trips, title, onLoadTrip, onDeleteTrip }: { trips: HistoricalTrip[]; title: string; onLoadTrip?: (id: string) => void; onDeleteTrip?: (id: string) => void }) {
   if (trips.length === 0) {
     return (
       <div className="card">
@@ -21,6 +21,8 @@ function TripTable({ trips, title, onLoadTrip }: { trips: HistoricalTrip[]; titl
       </div>
     );
   }
+
+  const hasActions = onLoadTrip || onDeleteTrip;
 
   return (
     <div className="card overflow-x-auto">
@@ -36,7 +38,7 @@ function TripTable({ trips, title, onLoadTrip }: { trips: HistoricalTrip[]; titl
             <th>Profit</th>
             <th>Margin</th>
             <th>Notes</th>
-            {onLoadTrip && <th></th>}
+            {hasActions && <th>Actions</th>}
           </tr>
         </thead>
         <tbody>
@@ -61,16 +63,30 @@ function TripTable({ trips, title, onLoadTrip }: { trips: HistoricalTrip[]; titl
               </td>
               <td className={getMarginColor(trip.margin)}>{formatPercent(trip.margin)}</td>
               <td className="text-sm text-ag-text-muted max-w-xs truncate">{trip.notes}</td>
-              {onLoadTrip && (
+              {hasActions && (
                 <td>
-                  {trip.tripConfigId && (
-                    <button
-                      onClick={() => onLoadTrip(trip.tripConfigId!)}
-                      className="btn btn-secondary text-xs"
-                    >
-                      Load
-                    </button>
-                  )}
+                  <div className="flex gap-1">
+                    {onLoadTrip && trip.tripConfigId && (
+                      <button
+                        onClick={() => onLoadTrip(trip.tripConfigId!)}
+                        className="btn btn-secondary text-xs"
+                      >
+                        Load
+                      </button>
+                    )}
+                    {onDeleteTrip && (
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete "${trip.name}" from history?`)) {
+                            onDeleteTrip(trip.id);
+                          }
+                        }}
+                        className="btn btn-danger text-xs"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
                 </td>
               )}
             </tr>
@@ -82,7 +98,7 @@ function TripTable({ trips, title, onLoadTrip }: { trips: HistoricalTrip[]; titl
 }
 
 export default function HistoryTab({ onLoadTrip }: HistoryTabProps) {
-  const { trips, loading, selectedCategory, setSelectedCategory } = useHistoricalData();
+  const { trips, loading, selectedCategory, setSelectedCategory, deleteTrip } = useHistoricalData();
 
   const trips2025 = trips.filter(t => (t.year || 2025) === 2025);
   const trips2026 = trips.filter(t => t.year === 2026);
@@ -189,7 +205,7 @@ export default function HistoryTab({ onLoadTrip }: HistoryTabProps) {
       </div>
 
       {/* 2026 Trip Performance */}
-      <TripTable trips={trips2026} title="2026 Trip Performance" onLoadTrip={onLoadTrip} />
+      <TripTable trips={trips2026} title="2026 Trip Performance" onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} />
 
       {/* 2025 Trip Performance */}
       <TripTable trips={trips2025} title="2025 Trip Performance" />

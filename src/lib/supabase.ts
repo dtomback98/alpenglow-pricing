@@ -269,6 +269,23 @@ export async function fetchHistoricalTrips(category?: string): Promise<Historica
   }));
 }
 
+// Delete a historical trip entry
+export async function deleteHistoricalTrip(id: string): Promise<boolean> {
+  if (!supabase) return false;
+
+  const { error } = await supabase
+    .from('historical_trips')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting historical trip:', error);
+    return false;
+  }
+
+  return true;
+}
+
 // Save a trip to history with calculated values at a specific pax level
 export async function saveToHistory(
   config: TripConfiguration,
