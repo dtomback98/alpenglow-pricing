@@ -128,7 +128,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           </div>
           <div className="form-group">
             <label className="form-label">Max Pax</label>
-            <input type="number" min="1" value={paxMax} onChange={(e) => updateConfig({ paxMax: Number(e.target.value) })} className="w-full" />
+            <input type="number" min="1" value={paxMax} onChange={(e) => updateConfig({ paxMax: Math.max(paxMin, Number(e.target.value)) })} className="w-full" />
           </div>
           <div className="form-group">
             <label className="form-label">Pax Step</label>

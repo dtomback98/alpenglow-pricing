@@ -200,7 +200,7 @@ export function useTripData(): UseTripDataReturn {
         // If we deleted the selected trip, reset to default
         if (selectedTripId === id) {
           setSelectedTripId(null);
-          setConfigState(DEFAULT_CONFIG);
+          setConfigState(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
         }
       }
     } catch (err) {

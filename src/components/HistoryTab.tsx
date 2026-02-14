@@ -108,19 +108,20 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
       refresh();
     }
   }, [refreshKey, refresh]);
-  const [chartYearFilter, setChartYearFilter] = useState<'all' | '2025' | '2026'>('all');
-  const [statsYearFilter, setStatsYearFilter] = useState<'all' | '2025' | '2026'>('all');
+  const currentYear = new Date().getFullYear();
+  const [chartYearFilter, setChartYearFilter] = useState<string>('all');
+  const [statsYearFilter, setStatsYearFilter] = useState<string>('all');
 
   const trips2025 = trips.filter(t => (t.year || 2025) === 2025);
-  const trips2026 = trips.filter(t => t.year === 2026);
+  const tripsCurrentYear = trips.filter(t => t.year === currentYear);
 
-  const statsTrips = statsYearFilter === '2025' ? trips2025
-    : statsYearFilter === '2026' ? trips2026
+  const getFilteredTrips = (filter: string) =>
+    filter === '2025' ? trips2025
+    : filter === String(currentYear) ? tripsCurrentYear
     : trips;
 
-  const chartTrips = chartYearFilter === '2025' ? trips2025
-    : chartYearFilter === '2026' ? trips2026
-    : trips;
+  const statsTrips = getFilteredTrips(statsYearFilter);
+  const chartTrips = getFilteredTrips(chartYearFilter);
 
   const chartData = chartTrips.map(trip => ({
     name: trip.name,
@@ -165,12 +166,12 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
           <h2 className="text-lg font-semibold">Summary Statistics</h2>
           <select
             value={statsYearFilter}
-            onChange={(e) => setStatsYearFilter(e.target.value as 'all' | '2025' | '2026')}
+            onChange={(e) => setStatsYearFilter(e.target.value)}
             className="text-sm"
           >
             <option value="all">All Years</option>
             <option value="2025">2025 Only</option>
-            <option value="2026">2026 Only</option>
+            <option value={String(currentYear)}>{currentYear} Only</option>
           </select>
         </div>
       </div>
@@ -187,7 +188,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
         </div>
         <div className="card">
           <div className="text-sm text-ag-text-muted mb-1">Total Profit</div>
-          <div className="text-2xl font-bold text-ag-success">
+          <div className={`text-2xl font-bold ${statsTrips.reduce((sum, t) => sum + t.grossProfit, 0) >= 0 ? 'text-ag-success' : 'text-ag-danger'}`}>
             {formatCurrency(statsTrips.reduce((sum, t) => sum + t.grossProfit, 0))}
           </div>
         </div>
@@ -205,12 +206,12 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
           <h2 className="text-lg font-semibold">Margin by Trip</h2>
           <select
             value={chartYearFilter}
-            onChange={(e) => setChartYearFilter(e.target.value as 'all' | '2025' | '2026')}
+            onChange={(e) => setChartYearFilter(e.target.value)}
             className="text-sm"
           >
             <option value="all">All Years</option>
             <option value="2025">2025 Only</option>
-            <option value="2026">2026 Only</option>
+            <option value={String(currentYear)}>{currentYear} Only</option>
           </select>
         </div>
         <div className="h-64">
@@ -248,8 +249,8 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
         </div>
       </div>
 
-      {/* 2026 Trip Performance */}
-      <TripTable trips={trips2026} title="2026 Trip Performance" onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} />
+      {/* Current Year Trip Performance */}
+      <TripTable trips={tripsCurrentYear} title={`${currentYear} Trip Performance`} onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} />
 
       {/* 2025 Trip Performance */}
       <TripTable trips={trips2025} title="2025 Trip Performance" />

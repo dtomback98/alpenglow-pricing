@@ -85,10 +85,21 @@ function rowToConfig(row: any): TripConfiguration {
     singleSupplementCount: 2,
   });
 
-  // Handle extension: new format or migrate from old pre_post
-  const extension = row.extension_config
+  // Handle extension: new format or migrate from old pre_post, merged with defaults
+  const rawExtension = row.extension_config
     ? row.extension_config
     : migratePrePostToExtension(row.pre_post);
+  const extension = {
+    ...DEFAULT_CONFIG.extension,
+    ...rawExtension,
+    singleSupplement: { ...DEFAULT_CONFIG.extension.singleSupplement, ...rawExtension?.singleSupplement },
+    hotelsMeals: { ...DEFAULT_CONFIG.extension.hotelsMeals, ...rawExtension?.hotelsMeals },
+    staffConfig: {
+      ...DEFAULT_CONFIG.extension.staffConfig,
+      ...rawExtension?.staffConfig,
+      staffByPax: { ...DEFAULT_CONFIG.extension.staffConfig.staffByPax, ...rawExtension?.staffConfig?.staffByPax },
+    },
+  };
 
   return {
     id: row.id,

@@ -142,14 +142,16 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   // Revenue calculations
   const baseRevenue = effectivePrice * pax;
 
-  // Discounts (gated)
+  // Discounts (gated, clamped to pax count)
   const discountsOn = config.discountsEnabled !== false;
-  const earlyBirdCost = discountsOn ? config.earlyBirdDiscount * (config.earlyBirdCountByPax?.[pax] || 0) : 0;
-  const loyaltyCost = discountsOn ? effectivePrice * (config.loyaltyCountByPax?.[pax] || 0) * config.loyaltyDiscountRate : 0;
+  const earlyBirdCount = discountsOn ? Math.min(config.earlyBirdCountByPax?.[pax] || 0, pax) : 0;
+  const earlyBirdCost = config.earlyBirdDiscount * earlyBirdCount;
+  const loyaltyCount = discountsOn ? Math.min(config.loyaltyCountByPax?.[pax] || 0, pax) : 0;
+  const loyaltyCost = effectivePrice * loyaltyCount * config.loyaltyDiscountRate;
 
-  // Single supplement (gated)
+  // Single supplement (gated, clamped to pax count)
   const singleSuppOn = config.singleSupplement.enabled !== false;
-  const singleSupplementGuests = singleSuppOn ? (config.singleSupplement.countByPax?.[pax] ?? 0) : 0;
+  const singleSupplementGuests = singleSuppOn ? Math.min(config.singleSupplement.countByPax?.[pax] ?? 0, pax) : 0;
   const singleSupplementRevenue = singleSuppOn ? config.singleSupplement.singleSupplement * singleSupplementGuests : 0;
 
   // Extension
@@ -237,9 +239,9 @@ export function calculateAllPax(config: TripConfiguration): PaxCalculation[] {
   const results: PaxCalculation[] = [];
   const min = config.paxMin || 1;
   const max = config.paxMax || 16;
-  const step = config.paxStep || 1;
+  const step = Math.max(1, Math.round(config.paxStep || 1));
 
-  for (let pax = min; pax <= max; pax += step) {
+  for (let pax = min; pax <= max && results.length < 100; pax += step) {
     results.push(calculateForPax(pax, config));
   }
 
