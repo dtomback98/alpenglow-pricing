@@ -24,7 +24,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
     singleSupplement: 950,
     singleRoomExtra: 300,
     countByPax: Object.fromEntries(
-      Array.from({ length: 16 }, (_, i) => [i + 1, 2])
+      Array.from({ length: 16 }, (_, i) => [i + 1, 0])
     ),
   },
 
@@ -33,7 +33,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
     extensionPrice: 350,
     extensionNights: 1,
     countByPax: Object.fromEntries(
-      Array.from({ length: 16 }, (_, i) => [i + 1, i + 1])
+      Array.from({ length: 16 }, (_, i) => [i + 1, 0])
     ),
     singleSupplement: {
       enabled: true,
@@ -41,7 +41,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
       singleSupplement: 950,
       singleRoomExtra: 300,
       countByPax: Object.fromEntries(
-        Array.from({ length: 16 }, (_, i) => [i + 1, 2])
+        Array.from({ length: 16 }, (_, i) => [i + 1, 0])
       ),
     },
     hotelsMeals: {

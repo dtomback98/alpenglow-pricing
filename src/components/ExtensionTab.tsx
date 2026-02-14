@@ -150,7 +150,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 <div className="form-group w-48">
                   <label className="form-label">Guest Count</label>
                   <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                  <input type="number" min="0" value={ext.countByPax?.[paxCounts[0]] ?? paxCounts[0]} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtension({ countByPax: c }); }} className="w-full" />
+                  <input type="number" min="0" value={ext.countByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtension({ countByPax: c }); }} className="w-full" />
                 </div>
               </div>
             ) : (
@@ -164,7 +164,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   {paxCounts.map((p) => (
                     <div key={p} className="form-group">
                       <label className="form-label text-center">{p} pax</label>
-                      <input type="number" min="0" value={ext.countByPax?.[p] ?? p} onChange={(e) => updateExtension({ countByPax: { ...ext.countByPax, [p]: Number(e.target.value) } })} className="w-full text-center" />
+                      <input type="number" min="0" value={ext.countByPax?.[p] ?? 0} onChange={(e) => updateExtension({ countByPax: { ...ext.countByPax, [p]: Number(e.target.value) } })} className="w-full text-center" />
                     </div>
                   ))}
                 </div>
@@ -230,20 +230,20 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   <div className="form-group w-48">
                     <label className="form-label">Number of Guests</label>
                     <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                    <input type="number" min="0" value={ext.singleSupplement.countByPax?.[paxCounts[0]] ?? 2} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtSingleSupplement({ countByPax: c }); }} className="w-full" />
+                    <input type="number" min="0" value={ext.singleSupplement.countByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtSingleSupplement({ countByPax: c }); }} className="w-full" />
                   </div>
                 </div>
               ) : (
                 <div className="mt-4 pt-4 border-t border-ag-border">
                   <div className="flex items-center justify-between mb-2">
                     <label className="form-label mb-0">Single Supplement Guests by Pax</label>
-                    <button onClick={() => { const c: { [k: number]: number } = {}; const b = ext.singleSupplement.countByPax?.[paxCounts[0]] ?? 2; for (const p of paxCounts) c[p] = b; updateExtSingleSupplement({ countByPax: c }); }} className="btn btn-secondary text-xs">Apply First to All</button>
+                    <button onClick={() => { const c: { [k: number]: number } = {}; const b = ext.singleSupplement.countByPax?.[paxCounts[0]] ?? 0; for (const p of paxCounts) c[p] = b; updateExtSingleSupplement({ countByPax: c }); }} className="btn btn-secondary text-xs">Apply First to All</button>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
                     {paxCounts.map((p) => (
                       <div key={p} className="form-group">
                         <label className="form-label text-center">{p} pax</label>
-                        <input type="number" min="0" value={ext.singleSupplement.countByPax?.[p] ?? 2} onChange={(e) => updateExtSingleSupplement({ countByPax: { ...ext.singleSupplement.countByPax, [p]: Number(e.target.value) } })} className="w-full text-center" />
+                        <input type="number" min="0" value={ext.singleSupplement.countByPax?.[p] ?? 0} onChange={(e) => updateExtSingleSupplement({ countByPax: { ...ext.singleSupplement.countByPax, [p]: Number(e.target.value) } })} className="w-full text-center" />
                       </div>
                     ))}
                   </div>

@@ -61,7 +61,7 @@ export default function SummaryTab({ config }: SummaryTabProps) {
 
       {/* Core vs Extension vs Combined Margins */}
       <div className="card overflow-x-auto">
-        <h2 className="text-lg font-semibold mb-4">Core vs Extension Margins</h2>
+        <h2 className="text-lg font-semibold mb-4">Gross Margin Summary</h2>
         <table className="pricing-table">
           <thead>
             <tr>
@@ -98,41 +98,6 @@ export default function SummaryTab({ config }: SummaryTabProps) {
                 </tr>
               );
             })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Gross Margin Summary by Pax */}
-      <div className="card overflow-x-auto">
-        <h2 className="text-lg font-semibold mb-4">Gross Margin Summary by Pax</h2>
-        <table className="pricing-table">
-          <thead>
-            <tr>
-              <th>Pax</th>
-              <th>Revenue</th>
-              <th>Costs</th>
-              <th>Gross Profit</th>
-              <th>Margin</th>
-              <th>Per Pax Profit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {calculations.map((calc) => (
-              <tr key={calc.pax}>
-                <td className="font-medium">{calc.pax}</td>
-                <td>{formatCurrency(calc.totalRevenue)}</td>
-                <td>{formatCurrency(calc.totalCosts)}</td>
-                <td className={getProfitColor(calc.grossProfit)}>
-                  {formatCurrency(calc.grossProfit)}
-                </td>
-                <td className={getMarginColor(calc.margin)}>
-                  {formatPercent(calc.margin)}
-                </td>
-                <td className={getProfitColor(calc.perPaxProfit)}>
-                  {formatCurrency(calc.perPaxProfit)}
-                </td>
-              </tr>
-            ))}
           </tbody>
         </table>
       </div>
