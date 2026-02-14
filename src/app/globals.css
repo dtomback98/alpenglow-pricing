@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ag-bg: #0f172a;
+  --ag-card: #1e293b;
+  --ag-card-lighter: #334155;
+  --ag-accent: #f97316;
+  --ag-text: #f8fafc;
+  --ag-text-muted: #94a3b8;
+  --ag-border: #475569;
+}
+
+body {
+  background-color: var(--ag-bg);
+  color: var(--ag-text);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ag-card);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ag-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ag-text-muted);
+}
+
+/* Input styling */
+input[type="number"],
+input[type="text"],
+select {
+  @apply bg-ag-card-lighter border border-ag-border rounded px-3 py-2 text-ag-text;
+  @apply focus:outline-none focus:border-ag-accent focus:ring-1 focus:ring-ag-accent;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+/* Toggle switch */
+.toggle-switch {
+  @apply relative inline-flex h-6 w-11 items-center rounded-full;
+  @apply bg-ag-card-lighter transition-colors;
+}
+
+.toggle-switch.active {
+  @apply bg-ag-accent;
+}
+
+.toggle-switch-handle {
+  @apply inline-block h-4 w-4 transform rounded-full bg-white transition-transform;
+}
+
+/* Table styling */
+.pricing-table {
+  @apply w-full border-collapse;
+}
+
+.pricing-table th,
+.pricing-table td {
+  @apply px-4 py-3 text-left border-b border-ag-border;
+}
+
+.pricing-table th {
+  @apply bg-ag-card-lighter text-ag-text-muted font-medium text-sm uppercase tracking-wider;
+}
+
+.pricing-table tr:hover td {
+  @apply bg-ag-card-lighter/50;
+}
+
+/* Card styling */
+.card {
+  @apply bg-ag-card rounded-lg p-6 border border-ag-border;
+}
+
+/* Button styling */
+.btn {
+  @apply px-4 py-2 rounded font-medium transition-colors;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-ag-bg;
+}
+
+.btn-primary {
+  @apply bg-ag-accent text-white hover:bg-ag-accent-hover focus:ring-ag-accent;
+}
+
+.btn-secondary {
+  @apply bg-ag-card-lighter text-ag-text hover:bg-ag-border focus:ring-ag-border;
+}
+
+.btn-danger {
+  @apply bg-ag-danger text-white hover:bg-red-600 focus:ring-ag-danger;
+}
+
+/* Tab styling */
+.tab {
+  @apply px-4 py-2 font-medium transition-colors border-b-2;
+  @apply text-ag-text-muted border-transparent hover:text-ag-text;
+}
+
+.tab.active {
+  @apply text-ag-accent border-ag-accent;
+}
+
+/* Form group */
+.form-group {
+  @apply mb-4;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-ag-text-muted mb-1;
+}
