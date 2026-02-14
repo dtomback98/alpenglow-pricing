@@ -2,6 +2,7 @@
 
 import { TripConfiguration } from '@/lib/types';
 import { calculateAllPax, formatCurrency, formatPercent, getMarginColor, getProfitColor } from '@/lib/calculations';
+import { exportTripSummary } from '@/lib/excelExport';
 import RevenueVsCostsChart from './charts/RevenueVsCostsChart';
 import MarginChart from './charts/MarginChart';
 
@@ -18,6 +19,16 @@ export default function SummaryTab({ config }: SummaryTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Export button */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => exportTripSummary(config, calculations)}
+          className="btn btn-secondary text-sm"
+        >
+          Export to Excel
+        </button>
+      </div>
+
       {/* Key metrics cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="card">

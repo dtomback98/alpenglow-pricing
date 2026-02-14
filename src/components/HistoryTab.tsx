@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useHistoricalData } from '@/hooks/useHistoricalData';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants';
 import { formatCurrency, formatPercent, getMarginColor } from '@/lib/calculations';
+import { exportHistoricalTrips } from '@/lib/excelExport';
 import { HistoricalTrip } from '@/lib/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -142,7 +143,19 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
     <div className="space-y-6">
       {/* Category filter */}
       <div className="card">
-        <h2 className="text-lg font-semibold mb-4">Filter by Category</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Filter by Category</h2>
+          <button
+            onClick={() => exportHistoricalTrips(
+              trips,
+              statsYearFilter === 'all' ? 'all_years' : statsYearFilter,
+              selectedCategory || 'all_categories'
+            )}
+            className="btn btn-secondary text-sm"
+          >
+            Export to Excel
+          </button>
+        </div>
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((cat) => {
             const isActive = cat === 'All' ? selectedCategory === null : selectedCategory === cat;
