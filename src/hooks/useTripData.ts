@@ -111,6 +111,7 @@ export function useTripData(): UseTripDataReturn {
 
   // Save current trip
   const saveTrip = useCallback(async () => {
+    if (saving) return;
     if (!isSupabaseConfigured()) {
       setError('Supabase not configured. Data will not persist.');
       return;

@@ -74,7 +74,7 @@ function migrateSingleSupplementConfig(config: any): any {
   const count = config.singleSupplementCount ?? 2;
   const countByPax: { [pax: number]: number } = {};
   for (let p = 1; p <= 16; p++) countByPax[p] = count;
-  return { singleSupplement: config.singleSupplement, singleRoomExtra: config.singleRoomExtra, countByPax };
+  return { enabled: config.enabled ?? true, singleSupplement: config.singleSupplement, singleRoomExtra: config.singleRoomExtra, countByPax };
 }
 
 // Convert database row to TripConfiguration

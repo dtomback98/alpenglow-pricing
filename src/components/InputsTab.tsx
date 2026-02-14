@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TripConfiguration, StaffMember, TripSpecificCost } from '@/lib/types';
 
 interface InputsTabProps {
@@ -42,7 +42,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
 
   const paxMin = config.paxMin || 1;
   const paxMax = config.paxMax || 16;
-  const paxStep = config.paxStep || 1;
+  const paxStep = Math.max(1, Math.round(config.paxStep || 1));
 
   const paxCounts: number[] = [];
   for (let p = paxMin; p <= paxMax; p += paxStep) {
@@ -50,6 +50,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   }
 
   const [selectedStaffPax, setSelectedStaffPax] = useState(paxMin);
+  useEffect(() => { setSelectedStaffPax(paxMin); }, [paxMin]);
   const discountsPerPax = config.uiPreferences?.discountsPerPax ?? false;
   const singleSuppPerPax = config.uiPreferences?.singleSuppPerPax ?? false;
   const setDiscountsPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, discountsPerPax: val } });

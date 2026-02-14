@@ -66,7 +66,7 @@ export default function SummaryTab({ config }: SummaryTabProps) {
         <div className="card">
           <div className="text-sm text-ag-text-muted mb-1">Break-even Point</div>
           <div className="text-2xl font-bold text-ag-warning">
-            {calculations.find(c => c.grossProfit > 0)?.pax || 'N/A'} pax
+            {(() => { const bp = calculations.find(c => c.grossProfit > 0)?.pax; return bp ? `${bp} pax` : 'N/A'; })()}
           </div>
           <div className="text-sm text-ag-text-muted">
             Minimum for profit

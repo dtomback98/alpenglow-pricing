@@ -63,11 +63,17 @@ export function useHistoricalData(): UseHistoricalDataReturn {
   }, [loadData]);
 
   const deleteTrip = useCallback(async (id: string): Promise<boolean> => {
-    const success = await deleteHistoricalTrip(id);
-    if (success) {
-      await loadData();
+    try {
+      const success = await deleteHistoricalTrip(id);
+      if (success) {
+        await loadData();
+      }
+      return success;
+    } catch (err) {
+      console.error('Failed to delete trip:', err);
+      setError('Failed to delete trip');
+      return false;
     }
-    return success;
   }, [loadData]);
 
   return {

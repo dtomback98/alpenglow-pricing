@@ -147,7 +147,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
           <h2 className="text-lg font-semibold">Filter by Category</h2>
           <button
             onClick={() => exportHistoricalTrips(
-              trips,
+              statsTrips,
               statsYearFilter === 'all' ? 'all_years' : statsYearFilter,
               selectedCategory || 'all_categories'
             )}

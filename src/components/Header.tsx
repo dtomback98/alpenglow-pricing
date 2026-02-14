@@ -41,7 +41,7 @@ export default function Header({
 
   const paxMin = config.paxMin || 1;
   const paxMax = config.paxMax || 16;
-  const paxStep = config.paxStep || 1;
+  const paxStep = Math.max(1, Math.round(config.paxStep || 1));
 
   // Reset historyPax when trip's pax range changes
   useEffect(() => {

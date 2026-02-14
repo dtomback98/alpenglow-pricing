@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TripConfiguration, StaffMember } from '@/lib/types';
 
 interface ExtensionTabProps {
@@ -29,7 +29,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
 
   const paxMin = config.paxMin || 1;
   const paxMax = config.paxMax || 16;
-  const paxStep = config.paxStep || 1;
+  const paxStep = Math.max(1, Math.round(config.paxStep || 1));
 
   const paxCounts: number[] = [];
   for (let p = paxMin; p <= paxMax; p += paxStep) {
@@ -41,6 +41,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
   const setExtPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, extPerPax: val } });
   const setExtSuppPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, extSuppPerPax: val } });
   const [selectedStaffPax, setSelectedStaffPax] = useState(paxMin);
+  useEffect(() => { setSelectedStaffPax(paxMin); }, [paxMin]);
 
   const effectiveStaffPax = paxCounts.includes(selectedStaffPax) ? selectedStaffPax : paxCounts[0] || 1;
 
@@ -58,7 +59,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
   const currentExtStaff = getExtStaff();
 
   const updateExtStaffMember = (index: number, updates: Partial<StaffMember>) => {
-    const newStaff = [...(ext.staffConfig.staffByPax[effectiveStaffPax] || [])];
+    const newStaff = [...currentExtStaff];
     newStaff[index] = { ...newStaff[index], ...updates };
     updateExtStaff({
       staffByPax: { ...ext.staffConfig.staffByPax, [effectiveStaffPax]: newStaff },
