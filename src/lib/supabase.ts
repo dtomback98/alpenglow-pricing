@@ -259,6 +259,7 @@ export async function fetchHistoricalTrips(category?: string): Promise<Historica
     revenue: Number(row.revenue),
     grossProfit: Number(row.gross_profit),
     margin: Number(row.margin),
+    notes: row.notes || '',
     tripDate: row.trip_date,
     createdAt: row.created_at,
   }));
