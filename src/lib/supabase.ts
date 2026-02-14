@@ -141,6 +141,7 @@ function configToRow(config: TripConfiguration): any {
     staff_config: config.staffConfig,
     transport_config: config.transportConfig,
     trip_specific: config.tripSpecific,
+    ui_preferences: config.uiPreferences || {},
   };
 }
 
