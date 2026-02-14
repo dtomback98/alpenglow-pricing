@@ -36,8 +36,10 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
     paxCounts.push(p);
   }
 
-  const [extPerPax, setExtPerPax] = useState(false);
-  const [extSuppPerPax, setExtSuppPerPax] = useState(false);
+  const extPerPax = config.uiPreferences?.extPerPax ?? false;
+  const extSuppPerPax = config.uiPreferences?.extSuppPerPax ?? false;
+  const setExtPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, extPerPax: val } });
+  const setExtSuppPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, extSuppPerPax: val } });
   const [selectedStaffPax, setSelectedStaffPax] = useState(paxMin);
 
   const effectiveStaffPax = paxCounts.includes(selectedStaffPax) ? selectedStaffPax : paxCounts[0] || 1;
@@ -183,7 +185,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               {ext.singleSupplement.enabled !== false && (
                 <>
                   <button onClick={() => updateExtSingleSupplement({ inheritFromMain: !ext.singleSupplement.inheritFromMain })} className={`btn text-xs ${ext.singleSupplement.inheritFromMain ? 'btn-secondary' : 'btn-primary'}`}>
-                    {ext.singleSupplement.inheritFromMain ? 'Inherit' : 'Custom'}
+                    {ext.singleSupplement.inheritFromMain ? 'Match Core Inputs' : 'Custom'}
                   </button>
                   {!ext.singleSupplement.inheritFromMain && (
                     <button onClick={() => setExtSuppPerPax(!extSuppPerPax)} className={`btn text-xs ${extSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>
@@ -262,7 +264,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
             <div className="flex gap-2">
               {ext.hotelsMeals.enabled !== false && (
                 <button onClick={() => updateExtHotelsMeals({ inheritFromMain: !ext.hotelsMeals.inheritFromMain })} className={`btn text-xs ${ext.hotelsMeals.inheritFromMain ? 'btn-secondary' : 'btn-primary'}`}>
-                  {ext.hotelsMeals.inheritFromMain ? 'Inherit' : 'Custom'}
+                  {ext.hotelsMeals.inheritFromMain ? 'Match Core Inputs' : 'Custom'}
                 </button>
               )}
               <button onClick={() => updateExtHotelsMeals({ enabled: ext.hotelsMeals.enabled === false })} className={`btn text-xs ${ext.hotelsMeals.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -325,7 +327,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
             <div className="flex gap-2">
               {ext.staffConfig.enabled !== false && (
                 <button onClick={() => updateExtStaff({ inheritFromMain: !ext.staffConfig.inheritFromMain })} className={`btn text-xs ${ext.staffConfig.inheritFromMain ? 'btn-secondary' : 'btn-primary'}`}>
-                  {ext.staffConfig.inheritFromMain ? 'Inherit' : 'Custom'}
+                  {ext.staffConfig.inheritFromMain ? 'Match Core Inputs' : 'Custom'}
                 </button>
               )}
               <button onClick={() => updateExtStaff({ enabled: ext.staffConfig.enabled === false })} className={`btn text-xs ${ext.staffConfig.enabled === false ? 'btn-danger' : 'btn-primary'}`}>

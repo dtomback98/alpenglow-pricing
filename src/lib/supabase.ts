@@ -113,6 +113,7 @@ function rowToConfig(row: any): TripConfiguration {
     staffConfig: migrateStaffConfig(row.staff_config),
     transportConfig: row.transport_config,
     tripSpecific: row.trip_specific,
+    uiPreferences: row.ui_preferences || {},
   };
 }
 

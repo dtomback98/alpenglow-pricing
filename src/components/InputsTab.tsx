@@ -50,8 +50,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   }
 
   const [selectedStaffPax, setSelectedStaffPax] = useState(paxMin);
-  const [discountsPerPax, setDiscountsPerPax] = useState(false);
-  const [singleSuppPerPax, setSingleSuppPerPax] = useState(false);
+  const discountsPerPax = config.uiPreferences?.discountsPerPax ?? false;
+  const singleSuppPerPax = config.uiPreferences?.singleSuppPerPax ?? false;
+  const setDiscountsPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, discountsPerPax: val } });
+  const setSingleSuppPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, singleSuppPerPax: val } });
 
 
   const effectiveStaffPax = paxCounts.includes(selectedStaffPax) ? selectedStaffPax : paxCounts[0] || 1;

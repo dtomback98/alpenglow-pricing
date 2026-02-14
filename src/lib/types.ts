@@ -105,11 +105,21 @@ export interface SingleSupplementConfig {
   countByPax: { [pax: number]: number };
 }
 
+export interface UiPreferences {
+  discountsPerPax?: boolean;
+  singleSuppPerPax?: boolean;
+  extPerPax?: boolean;
+  extSuppPerPax?: boolean;
+}
+
 export interface TripConfiguration {
   id?: string;
   name: string;
   createdAt?: string;
   updatedAt?: string;
+
+  // UI mode preferences (persisted across tab switches)
+  uiPreferences?: UiPreferences;
 
   // Core trip data
   tripPrice: number;
