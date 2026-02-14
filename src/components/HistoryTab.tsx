@@ -11,6 +11,7 @@ const CATEGORIES = ['All', 'Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 
 interface HistoryTabProps {
   onLoadTrip?: (tripConfigId: string) => void;
+  refreshKey?: number;
 }
 
 function TripTable({ trips, title, onLoadTrip, onDeleteTrip }: { trips: HistoricalTrip[]; title: string; onLoadTrip?: (id: string) => void; onDeleteTrip?: (id: string) => void }) {
@@ -98,8 +99,15 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip }: { trips: Historic
   );
 }
 
-export default function HistoryTab({ onLoadTrip }: HistoryTabProps) {
-  const { trips, loading, selectedCategory, setSelectedCategory, deleteTrip } = useHistoricalData();
+export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) {
+  const { trips, loading, selectedCategory, setSelectedCategory, deleteTrip, refresh } = useHistoricalData();
+
+  // Re-fetch when refreshKey changes (e.g. after Save to History)
+  const [lastRefreshKey, setLastRefreshKey] = useState(refreshKey);
+  if (refreshKey !== lastRefreshKey) {
+    setLastRefreshKey(refreshKey);
+    refresh();
+  }
   const [chartYearFilter, setChartYearFilter] = useState<'all' | '2025' | '2026'>('all');
 
   const trips2025 = trips.filter(t => (t.year || 2025) === 2025);

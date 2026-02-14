@@ -12,11 +12,20 @@ import HistoryTab from './HistoryTab';
 
 export default function PricingTool() {
   const [activeTab, setActiveTab] = useState<TabType>('summary');
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const tripData = useTripData();
 
   const handleLoadTrip = (tripConfigId: string) => {
     tripData.selectTrip(tripConfigId);
     setActiveTab('summary');
+  };
+
+  const handleSaveToHistory = async (pax: number, category: string): Promise<boolean> => {
+    const success = await tripData.saveTripsToHistory(pax, category);
+    if (success) {
+      setHistoryRefreshKey(k => k + 1);
+    }
+    return success;
   };
 
   return (
@@ -28,7 +37,7 @@ export default function PricingTool() {
         selectedTripId={tripData.selectedTripId}
         selectTrip={tripData.selectTrip}
         saveTrip={tripData.saveTrip}
-        saveTripsToHistory={tripData.saveTripsToHistory}
+        saveTripsToHistory={handleSaveToHistory}
         createNewTrip={tripData.createNewTrip}
         saving={tripData.saving}
         isConnected={tripData.isConnected}
@@ -54,7 +63,7 @@ export default function PricingTool() {
           />
         )}
         {activeTab === 'history' && (
-          <HistoryTab onLoadTrip={handleLoadTrip} />
+          <HistoryTab onLoadTrip={handleLoadTrip} refreshKey={historyRefreshKey} />
         )}
       </div>
     </div>
