@@ -3,12 +3,89 @@
 import { useHistoricalData } from '@/hooks/useHistoricalData';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants';
 import { formatCurrency, formatPercent, getMarginColor } from '@/lib/calculations';
+import { HistoricalTrip } from '@/lib/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const CATEGORIES = ['All', 'Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 
-export default function HistoryTab() {
+interface HistoryTabProps {
+  onLoadTrip?: (tripConfigId: string) => void;
+}
+
+function TripTable({ trips, title, onLoadTrip }: { trips: HistoricalTrip[]; title: string; onLoadTrip?: (id: string) => void }) {
+  if (trips.length === 0) {
+    return (
+      <div className="card">
+        <h2 className="text-lg font-semibold mb-4">{title}</h2>
+        <p className="text-sm text-ag-text-muted">No trips to display.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card overflow-x-auto">
+      <h2 className="text-lg font-semibold mb-4">{title}</h2>
+      <table className="pricing-table">
+        <thead>
+          <tr>
+            <th>Trip</th>
+            <th>Cat</th>
+            <th>Pax</th>
+            <th>$/Pax</th>
+            <th>Revenue</th>
+            <th>Profit</th>
+            <th>Margin</th>
+            <th>Notes</th>
+            {onLoadTrip && <th></th>}
+          </tr>
+        </thead>
+        <tbody>
+          {trips.map((trip) => (
+            <tr key={trip.id}>
+              <td className="font-medium">{trip.name}</td>
+              <td>
+                {trip.category && (
+                  <span
+                    className="px-2 py-1 rounded text-xs font-medium"
+                    style={{ backgroundColor: `${CATEGORY_COLORS[trip.category] || '#3b82f6'}30`, color: CATEGORY_COLORS[trip.category] || '#3b82f6' }}
+                  >
+                    {trip.category}
+                  </span>
+                )}
+              </td>
+              <td>{trip.pax}</td>
+              <td>{formatCurrency(trip.pricePerPax)}</td>
+              <td>{formatCurrency(trip.revenue)}</td>
+              <td className={trip.grossProfit >= 0 ? 'text-ag-success' : 'text-ag-danger'}>
+                {formatCurrency(trip.grossProfit)}
+              </td>
+              <td className={getMarginColor(trip.margin)}>{formatPercent(trip.margin)}</td>
+              <td className="text-sm text-ag-text-muted max-w-xs truncate">{trip.notes}</td>
+              {onLoadTrip && (
+                <td>
+                  {trip.tripConfigId && (
+                    <button
+                      onClick={() => onLoadTrip(trip.tripConfigId!)}
+                      className="btn btn-secondary text-xs"
+                    >
+                      Load
+                    </button>
+                  )}
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default function HistoryTab({ onLoadTrip }: HistoryTabProps) {
   const { trips, loading, selectedCategory, setSelectedCategory } = useHistoricalData();
+
+  const trips2025 = trips.filter(t => (t.year || 2025) === 2025);
+  const trips2026 = trips.filter(t => t.year === 2026);
 
   const chartData = trips.map(trip => ({
     name: trip.name,
@@ -111,47 +188,11 @@ export default function HistoryTab() {
         </div>
       </div>
 
-      {/* Historical trips table */}
-      <div className="card overflow-x-auto">
-        <h2 className="text-lg font-semibold mb-4">2025 Trip Performance</h2>
-        <table className="pricing-table">
-          <thead>
-            <tr>
-              <th>Trip</th>
-              <th>Cat</th>
-              <th>Pax</th>
-              <th>$/Pax</th>
-              <th>Revenue</th>
-              <th>Profit</th>
-              <th>Margin</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {trips.map((trip) => (
-              <tr key={trip.id}>
-                <td className="font-medium">{trip.name}</td>
-                <td>
-                  <span
-                    className="px-2 py-1 rounded text-xs font-medium"
-                    style={{ backgroundColor: `${CATEGORY_COLORS[trip.category] || '#3b82f6'}30`, color: CATEGORY_COLORS[trip.category] || '#3b82f6' }}
-                  >
-                    {trip.category}
-                  </span>
-                </td>
-                <td>{trip.pax}</td>
-                <td>{formatCurrency(trip.pricePerPax)}</td>
-                <td>{formatCurrency(trip.revenue)}</td>
-                <td className={trip.grossProfit >= 0 ? 'text-ag-success' : 'text-ag-danger'}>
-                  {formatCurrency(trip.grossProfit)}
-                </td>
-                <td className={getMarginColor(trip.margin)}>{formatPercent(trip.margin)}</td>
-                <td className="text-sm text-ag-text-muted max-w-xs truncate">{trip.notes}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* 2026 Trip Performance */}
+      <TripTable trips={trips2026} title="2026 Trip Performance" onLoadTrip={onLoadTrip} />
+
+      {/* 2025 Trip Performance */}
+      <TripTable trips={trips2025} title="2025 Trip Performance" />
 
       {/* Target margins footer */}
       <div className="card text-center text-sm">

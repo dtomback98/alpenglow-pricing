@@ -14,6 +14,11 @@ export default function PricingTool() {
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const tripData = useTripData();
 
+  const handleLoadTrip = (tripConfigId: string) => {
+    tripData.selectTrip(tripConfigId);
+    setActiveTab('summary');
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
       <Header
@@ -23,6 +28,7 @@ export default function PricingTool() {
         selectedTripId={tripData.selectedTripId}
         selectTrip={tripData.selectTrip}
         saveTrip={tripData.saveTrip}
+        saveTripsToHistory={tripData.saveTripsToHistory}
         createNewTrip={tripData.createNewTrip}
         saving={tripData.saving}
         isConnected={tripData.isConnected}
@@ -48,7 +54,7 @@ export default function PricingTool() {
           />
         )}
         {activeTab === 'history' && (
-          <HistoryTab />
+          <HistoryTab onLoadTrip={handleLoadTrip} />
         )}
       </div>
     </div>

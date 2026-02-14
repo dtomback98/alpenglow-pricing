@@ -8,6 +8,7 @@ import {
   fetchTripConfiguration,
   saveTripConfiguration,
   deleteTripConfiguration,
+  saveToHistory,
   isSupabaseConfigured,
 } from '@/lib/supabase';
 
@@ -19,6 +20,7 @@ interface UseTripDataReturn {
   selectedTripId: string | null;
   selectTrip: (id: string | null) => void;
   saveTrip: () => Promise<void>;
+  saveTripsToHistory: (pax: number, category: string) => Promise<boolean>;
   deleteTrip: (id: string) => Promise<void>;
   createNewTrip: () => void;
   loading: boolean;
@@ -140,6 +142,48 @@ export function useTripData(): UseTripDataReturn {
     }
   }, [config, selectedTripId]);
 
+  // Save current trip to history at a specific pax level
+  const saveTripsToHistory = useCallback(async (pax: number, category: string): Promise<boolean> => {
+    if (!isSupabaseConfigured()) {
+      setError('Supabase not configured.');
+      return false;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      // Save the trip config first if not already saved
+      let configToUse = config;
+      if (!selectedTripId) {
+        const saved = await saveTripConfiguration(config);
+        if (!saved) {
+          setError('Failed to save trip before adding to history');
+          return false;
+        }
+        setSelectedTripId(saved.id || null);
+        setConfigState(saved);
+        configToUse = saved;
+
+        const updatedTrips = await fetchTripConfigurations();
+        setTrips(updatedTrips);
+      }
+
+      const success = await saveToHistory(configToUse, pax, category);
+      if (!success) {
+        setError('Failed to save to history');
+        return false;
+      }
+      return true;
+    } catch (err) {
+      setError('Failed to save to history');
+      console.error(err);
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }, [config, selectedTripId]);
+
   // Delete a trip
   const deleteTrip = useCallback(async (id: string) => {
     if (!isSupabaseConfigured()) return;
@@ -177,6 +221,7 @@ export function useTripData(): UseTripDataReturn {
     selectedTripId,
     selectTrip,
     saveTrip,
+    saveTripsToHistory,
     deleteTrip,
     createNewTrip,
     loading,

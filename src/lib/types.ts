@@ -183,6 +183,8 @@ export interface HistoricalTrip {
   notes?: string;
   tripDate?: string;
   createdAt?: string;
+  year?: number;
+  tripConfigId?: string;
 }
 
 export type TabType = 'summary' | 'inputs-core' | 'inputs-extension' | 'history';

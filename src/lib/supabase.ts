@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { TripConfiguration, HistoricalTrip } from './types';
 import { DEFAULT_CONFIG } from './constants';
+import { calculateForPax } from './calculations';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -262,5 +263,61 @@ export async function fetchHistoricalTrips(category?: string): Promise<Historica
     notes: row.notes || '',
     tripDate: row.trip_date,
     createdAt: row.created_at,
+    year: row.year || 2025,
+    tripConfigId: row.trip_config_id || undefined,
   }));
+}
+
+// Save a trip to history with calculated values at a specific pax level
+export async function saveToHistory(
+  config: TripConfiguration,
+  pax: number,
+  category: string
+): Promise<boolean> {
+  if (!supabase || !config.id) return false;
+
+  const calc = calculateForPax(pax, config);
+
+  // Check if this trip already has a history entry
+  const { data: existing } = await supabase
+    .from('historical_trips')
+    .select('id')
+    .eq('trip_config_id', config.id)
+    .single();
+
+  const row = {
+    name: config.name,
+    category,
+    pax,
+    price_per_pax: calc.totalRevenue / pax,
+    revenue: calc.totalRevenue,
+    gross_profit: calc.grossProfit,
+    margin: calc.margin,
+    year: 2026,
+    trip_config_id: config.id,
+    notes: '',
+  };
+
+  if (existing) {
+    const { error } = await supabase
+      .from('historical_trips')
+      .update(row)
+      .eq('id', existing.id);
+
+    if (error) {
+      console.error('Error updating history entry:', error);
+      return false;
+    }
+  } else {
+    const { error } = await supabase
+      .from('historical_trips')
+      .insert(row);
+
+    if (error) {
+      console.error('Error inserting history entry:', error);
+      return false;
+    }
+  }
+
+  return true;
 }

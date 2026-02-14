@@ -1,7 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { TripConfiguration } from '@/lib/types';
 import TripSelector from './TripSelector';
+
+const CATEGORIES = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 
 interface HeaderProps {
   config: TripConfiguration;
@@ -10,6 +13,7 @@ interface HeaderProps {
   selectedTripId: string | null;
   selectTrip: (id: string | null) => void;
   saveTrip: () => Promise<void>;
+  saveTripsToHistory: (pax: number, category: string) => Promise<boolean>;
   createNewTrip: () => void;
   saving: boolean;
   isConnected: boolean;
@@ -23,11 +27,40 @@ export default function Header({
   selectedTripId,
   selectTrip,
   saveTrip,
+  saveTripsToHistory,
   createNewTrip,
   saving,
   isConnected,
   error,
 }: HeaderProps) {
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyPax, setHistoryPax] = useState(config.paxMin || 1);
+  const [historyCategory, setHistoryCategory] = useState('Beg');
+  const [historySaving, setHistorySaving] = useState(false);
+  const [historySuccess, setHistorySuccess] = useState(false);
+
+  const paxMin = config.paxMin || 1;
+  const paxMax = config.paxMax || 16;
+  const paxStep = config.paxStep || 1;
+  const paxOptions: number[] = [];
+  for (let p = paxMin; p <= paxMax; p += paxStep) {
+    paxOptions.push(p);
+  }
+
+  const handleSaveToHistory = async () => {
+    setHistorySaving(true);
+    setHistorySuccess(false);
+    const success = await saveTripsToHistory(historyPax, historyCategory);
+    setHistorySaving(false);
+    if (success) {
+      setHistorySuccess(true);
+      setTimeout(() => {
+        setShowHistoryModal(false);
+        setHistorySuccess(false);
+      }, 1500);
+    }
+  };
+
   return (
     <header className="card mb-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -78,6 +111,65 @@ export default function Header({
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
+
+          {/* Save to History button */}
+          <div className="relative">
+            <button
+              onClick={() => setShowHistoryModal(!showHistoryModal)}
+              disabled={saving}
+              className="btn btn-secondary"
+            >
+              Save to History
+            </button>
+
+            {showHistoryModal && (
+              <div className="absolute right-0 top-full mt-2 w-72 bg-ag-card border border-ag-border rounded-lg shadow-lg p-4 z-50">
+                <h3 className="text-sm font-semibold text-ag-text mb-3">Save to 2026 History</h3>
+
+                <div className="form-group mb-3">
+                  <label className="form-label">Pax Size</label>
+                  <select
+                    value={historyPax}
+                    onChange={(e) => setHistoryPax(Number(e.target.value))}
+                    className="w-full"
+                  >
+                    {paxOptions.map(p => (
+                      <option key={p} value={p}>{p} pax</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group mb-4">
+                  <label className="form-label">Category</label>
+                  <select
+                    value={historyCategory}
+                    onChange={(e) => setHistoryCategory(e.target.value)}
+                    className="w-full"
+                  >
+                    {CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveToHistory}
+                    disabled={historySaving}
+                    className="btn btn-primary flex-1"
+                  >
+                    {historySaving ? 'Saving...' : historySuccess ? 'Saved!' : 'Confirm'}
+                  </button>
+                  <button
+                    onClick={() => setShowHistoryModal(false)}
+                    className="btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
