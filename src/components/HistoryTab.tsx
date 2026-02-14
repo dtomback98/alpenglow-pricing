@@ -64,7 +64,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip }: { trips: Historic
                 {formatCurrency(trip.grossProfit)}
               </td>
               <td className={getMarginColor(trip.margin)}>{formatPercent(trip.margin)}</td>
-              <td className="text-sm text-ag-text-muted max-w-md whitespace-normal">{trip.notes}</td>
+              <td className="text-sm text-ag-text-muted" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{trip.notes}</td>
               {hasActions && (
                 <td>
                   <div className="flex gap-1">
