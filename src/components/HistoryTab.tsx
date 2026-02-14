@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useHistoricalData } from '@/hooks/useHistoricalData';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants';
 import { formatCurrency, formatPercent, getMarginColor } from '@/lib/calculations';
@@ -99,11 +100,16 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip }: { trips: Historic
 
 export default function HistoryTab({ onLoadTrip }: HistoryTabProps) {
   const { trips, loading, selectedCategory, setSelectedCategory, deleteTrip } = useHistoricalData();
+  const [chartYearFilter, setChartYearFilter] = useState<'all' | '2025' | '2026'>('all');
 
   const trips2025 = trips.filter(t => (t.year || 2025) === 2025);
   const trips2026 = trips.filter(t => t.year === 2026);
 
-  const chartData = trips.map(trip => ({
+  const chartTrips = chartYearFilter === '2025' ? trips2025
+    : chartYearFilter === '2026' ? trips2026
+    : trips;
+
+  const chartData = chartTrips.map(trip => ({
     name: trip.name,
     margin: trip.margin,
     grossProfit: trip.grossProfit,
@@ -168,7 +174,18 @@ export default function HistoryTab({ onLoadTrip }: HistoryTabProps) {
 
       {/* Margin chart */}
       <div className="card">
-        <h2 className="text-lg font-semibold mb-4">Margin by Trip</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Margin by Trip</h2>
+          <select
+            value={chartYearFilter}
+            onChange={(e) => setChartYearFilter(e.target.value as 'all' | '2025' | '2026')}
+            className="text-sm"
+          >
+            <option value="all">All Years</option>
+            <option value="2025">2025 Only</option>
+            <option value="2026">2026 Only</option>
+          </select>
+        </div>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
