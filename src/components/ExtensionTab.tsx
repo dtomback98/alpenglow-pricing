@@ -203,7 +203,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
             <p className="text-sm text-ag-text-muted">Section disabled — extension single supplement will not be applied.</p>
           ) : ext.singleSupplement.inheritFromMain ? (
             <div>
-              <p className="text-sm text-ag-text-muted mb-3">Using values from main trip single supplement.</p>
+              <p className="text-sm text-ag-text-muted mb-3">Rates from main trip. Set guest count for extension below.</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
                   <label className="form-label">Single Supplement Price ($)</label>
@@ -212,6 +212,13 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 <div className="form-group">
                   <label className="form-label">Single Room Extra Cost ($)</label>
                   <input type="number" value={resolvedSingleRoomExtra} disabled className="w-full opacity-50 cursor-not-allowed" />
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-ag-border">
+                <div className="form-group w-48">
+                  <label className="form-label">Number of Extension Guests</label>
+                  <p className="text-xs text-ag-text-muted mb-1">How many extension guests take single supplement</p>
+                  <input type="number" min="0" value={ext.singleSupplement.countByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtSingleSupplement({ countByPax: c }); }} className="w-full" />
                 </div>
               </div>
             </div>
@@ -340,15 +347,13 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
           ) : ext.staffConfig.inheritFromMain ? (
             <div>
               <p className="text-sm text-ag-text-muted mb-3">Using staff from main trip (scaled to {ext.extensionNights} extension night{ext.extensionNights !== 1 ? 's' : ''}).</p>
-              {extPerPax && (
-                <div className="flex gap-2 mb-4 flex-wrap">
-                  {paxCounts.map((p) => (
-                    <button key={p} onClick={() => setSelectedStaffPax(p)} className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${selectedStaffPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-hover text-ag-text-muted hover:text-ag-text'}`}>
-                      {p} pax
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="flex gap-2 mb-4 flex-wrap">
+                {paxCounts.map((p) => (
+                  <button key={p} onClick={() => setSelectedStaffPax(p)} className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${selectedStaffPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-hover text-ag-text-muted hover:text-ag-text'}`}>
+                    {p} pax
+                  </button>
+                ))}
+              </div>
               <div className="space-y-3">
                 {currentExtStaff.map((staff, index) => (
                   <div key={index} className="flex items-end gap-4 pb-3 border-b border-ag-border last:border-0">
@@ -384,15 +389,13 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
             </div>
           ) : (
             <>
-              {extPerPax && (
-                <div className="flex gap-2 mb-4 flex-wrap">
-                  {paxCounts.map((p) => (
-                    <button key={p} onClick={() => setSelectedStaffPax(p)} className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${selectedStaffPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-hover text-ag-text-muted hover:text-ag-text'}`}>
-                      {p} pax
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="flex gap-2 mb-4 flex-wrap">
+                {paxCounts.map((p) => (
+                  <button key={p} onClick={() => setSelectedStaffPax(p)} className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${selectedStaffPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-hover text-ag-text-muted hover:text-ag-text'}`}>
+                    {p} pax
+                  </button>
+                ))}
+              </div>
               <div className="space-y-4">
                 {currentExtStaff.map((staff, index) => (
                   <div key={index} className="flex items-end gap-4 pb-4 border-b border-ag-border last:border-0">

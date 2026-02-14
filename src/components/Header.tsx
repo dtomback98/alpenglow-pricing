@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TripConfiguration } from '@/lib/types';
 import TripSelector from './TripSelector';
 
@@ -42,6 +42,11 @@ export default function Header({
   const paxMin = config.paxMin || 1;
   const paxMax = config.paxMax || 16;
   const paxStep = config.paxStep || 1;
+
+  // Reset historyPax when trip's pax range changes
+  useEffect(() => {
+    setHistoryPax(paxMin);
+  }, [paxMin, paxMax, paxStep]);
   const paxOptions: number[] = [];
   for (let p = paxMin; p <= paxMax; p += paxStep) {
     paxOptions.push(p);

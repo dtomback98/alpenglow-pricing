@@ -34,12 +34,10 @@ export function useHistoricalData(): UseHistoricalDataReturn {
 
     try {
       if (isSupabaseConfigured()) {
-        // Try to load from Supabase first
+        // Always use Supabase data when configured
         const data = await fetchHistoricalTrips(selectedCategory || undefined);
-        if (data.length > 0) {
-          setTrips(data);
-          return;
-        }
+        setTrips(data);
+        return;
       }
 
       // Fall back to local JSON data

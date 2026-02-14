@@ -12,6 +12,10 @@ interface SummaryTabProps {
 export default function SummaryTab({ config }: SummaryTabProps) {
   const calculations = calculateAllPax(config);
 
+  if (calculations.length === 0) {
+    return <div className="card text-center text-ag-text-muted py-8">No calculations to display. Check that Min Pax is less than Max Pax.</div>;
+  }
+
   return (
     <div className="space-y-6">
       {/* Key metrics cards */}

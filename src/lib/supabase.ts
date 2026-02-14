@@ -293,7 +293,7 @@ export async function saveToHistory(
   pax: number,
   category: string
 ): Promise<boolean> {
-  if (!supabase || !config.id) return false;
+  if (!supabase || !config.id || pax <= 0) return false;
 
   const calc = calculateForPax(pax, config);
 
@@ -305,7 +305,8 @@ export async function saveToHistory(
     revenue: calc.totalRevenue,
     gross_profit: calc.grossProfit,
     margin: calc.margin,
-    year: 2026,
+    year: new Date().getFullYear(),
+    trip_date: new Date().toISOString().split('T')[0],
     trip_config_id: config.id,
     notes: '',
   };

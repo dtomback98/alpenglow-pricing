@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useHistoricalData } from '@/hooks/useHistoricalData';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants';
 import { formatCurrency, formatPercent, getMarginColor } from '@/lib/calculations';
@@ -103,11 +103,11 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
   const { trips, loading, selectedCategory, setSelectedCategory, deleteTrip, refresh } = useHistoricalData();
 
   // Re-fetch when refreshKey changes (e.g. after Save to History)
-  const [lastRefreshKey, setLastRefreshKey] = useState(refreshKey);
-  if (refreshKey !== lastRefreshKey) {
-    setLastRefreshKey(refreshKey);
-    refresh();
-  }
+  useEffect(() => {
+    if (refreshKey && refreshKey > 0) {
+      refresh();
+    }
+  }, [refreshKey, refresh]);
   const [chartYearFilter, setChartYearFilter] = useState<'all' | '2025' | '2026'>('all');
 
   const trips2025 = trips.filter(t => (t.year || 2025) === 2025);

@@ -86,7 +86,7 @@ export function useTripData(): UseTripDataReturn {
   const selectTrip = useCallback(async (id: string | null) => {
     if (id === null) {
       setSelectedTripId(null);
-      setConfigState(DEFAULT_CONFIG);
+      setConfigState(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
       return;
     }
 
@@ -98,6 +98,8 @@ export function useTripData(): UseTripDataReturn {
       if (trip) {
         setSelectedTripId(id);
         setConfigState(trip);
+      } else {
+        setError('Trip not found. It may have been deleted.');
       }
     } catch (err) {
       setError('Failed to load trip');
@@ -210,7 +212,7 @@ export function useTripData(): UseTripDataReturn {
   // Create a new trip
   const createNewTrip = useCallback(() => {
     setSelectedTripId(null);
-    setConfigState({ ...DEFAULT_CONFIG, name: 'New Trip' });
+    setConfigState({ ...JSON.parse(JSON.stringify(DEFAULT_CONFIG)), name: 'New Trip' });
   }, []);
 
   return {
