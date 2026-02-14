@@ -109,9 +109,14 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
     }
   }, [refreshKey, refresh]);
   const [chartYearFilter, setChartYearFilter] = useState<'all' | '2025' | '2026'>('all');
+  const [statsYearFilter, setStatsYearFilter] = useState<'all' | '2025' | '2026'>('all');
 
   const trips2025 = trips.filter(t => (t.year || 2025) === 2025);
   const trips2026 = trips.filter(t => t.year === 2026);
+
+  const statsTrips = statsYearFilter === '2025' ? trips2025
+    : statsYearFilter === '2026' ? trips2026
+    : trips;
 
   const chartTrips = chartYearFilter === '2025' ? trips2025
     : chartYearFilter === '2026' ? trips2026
@@ -124,8 +129,8 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
     category: trip.category,
   }));
 
-  const avgMargin = trips.length > 0
-    ? trips.reduce((sum, t) => sum + t.margin, 0) / trips.length
+  const avgMargin = statsTrips.length > 0
+    ? statsTrips.reduce((sum, t) => sum + t.margin, 0) / statsTrips.length
     : 0;
 
   if (loading) {
@@ -155,21 +160,35 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
       </div>
 
       {/* Summary stats */}
+      <div className="card mb-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Summary Statistics</h2>
+          <select
+            value={statsYearFilter}
+            onChange={(e) => setStatsYearFilter(e.target.value as 'all' | '2025' | '2026')}
+            className="text-sm"
+          >
+            <option value="all">All Years</option>
+            <option value="2025">2025 Only</option>
+            <option value="2026">2026 Only</option>
+          </select>
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="card">
           <div className="text-sm text-ag-text-muted mb-1">Total Trips</div>
-          <div className="text-2xl font-bold text-ag-text">{trips.length}</div>
+          <div className="text-2xl font-bold text-ag-text">{statsTrips.length}</div>
         </div>
         <div className="card">
           <div className="text-sm text-ag-text-muted mb-1">Total Revenue</div>
           <div className="text-2xl font-bold text-ag-text">
-            {formatCurrency(trips.reduce((sum, t) => sum + t.revenue, 0))}
+            {formatCurrency(statsTrips.reduce((sum, t) => sum + t.revenue, 0))}
           </div>
         </div>
         <div className="card">
           <div className="text-sm text-ag-text-muted mb-1">Total Profit</div>
           <div className="text-2xl font-bold text-ag-success">
-            {formatCurrency(trips.reduce((sum, t) => sum + t.grossProfit, 0))}
+            {formatCurrency(statsTrips.reduce((sum, t) => sum + t.grossProfit, 0))}
           </div>
         </div>
         <div className="card">
