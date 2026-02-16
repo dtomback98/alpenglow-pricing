@@ -72,10 +72,10 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     extensionSingleRoomCost = roomExtra * suppCount * extension.extensionNights;
   }
 
-  // Hotels & meals
+  // Hotels & meals (only when guests take the extension)
   let extensionHotelsCost = 0;
   let extensionMealsCost = 0;
-  if (extension.hotelsMeals.enabled !== false) {
+  if (extension.hotelsMeals.enabled !== false && extPaxCount > 0) {
     const hm = extension.hotelsMeals;
     const hotelRate = hm.inheritFromMain ? config.hotelsMeals.hotelCostPerNight : hm.hotelCostPerNight;
     const lunchRate = hm.inheritFromMain ? config.hotelsMeals.lunchCostPerDay : hm.lunchCostPerDay;
@@ -86,9 +86,9 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     extensionMealsCost = (lunchRate + dinnerRate) * extension.extensionNights * extPaxCount + additionalMeals;
   }
 
-  // Staff
+  // Staff (only when guests take the extension)
   let extensionStaffCost = 0;
-  if (extension.staffConfig.enabled !== false) {
+  if (extension.staffConfig.enabled !== false && extPaxCount > 0) {
     const sc = extension.staffConfig;
     if (sc.inheritFromMain) {
       // Use main staff but scale days to extension nights

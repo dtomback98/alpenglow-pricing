@@ -143,10 +143,11 @@ export function useTripData(): UseTripDataReturn {
     } finally {
       setSaving(false);
     }
-  }, [config, selectedTripId]);
+  }, [config, selectedTripId, saving]);
 
   // Save current trip to history at a specific pax level
   const saveTripsToHistory = useCallback(async (pax: number, category: string): Promise<boolean> => {
+    if (saving) return false;
     if (!isSupabaseConfigured()) {
       setError('Supabase not configured.');
       return false;
@@ -185,7 +186,7 @@ export function useTripData(): UseTripDataReturn {
     } finally {
       setSaving(false);
     }
-  }, [config, selectedTripId]);
+  }, [config, selectedTripId, saving]);
 
   // Delete a trip
   const deleteTrip = useCallback(async (id: string) => {
