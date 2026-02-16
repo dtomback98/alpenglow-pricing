@@ -54,6 +54,24 @@ function migratePrePostToExtension(prePost: any): TripConfiguration['extension']
   };
 }
 
+// Migrate logistics: derive mode from perPax if mode missing
+function migrateLogistics(logistics: any): any {
+  if (!logistics) return logistics;
+  if (!logistics.mode) {
+    return { ...logistics, mode: logistics.perPax ? 'perPaxPerDay' : 'perDay' };
+  }
+  return logistics;
+}
+
+// Migrate trip-specific: add hypoxico if missing
+function migrateTripSpecific(tripSpecific: any): any {
+  if (!tripSpecific) return tripSpecific;
+  if (!tripSpecific.hypoxico) {
+    return { ...tripSpecific, hypoxico: { amount: 0, perPax: false } };
+  }
+  return tripSpecific;
+}
+
 // Migrate old staff config (flat staff array) to new per-pax format
 function migrateStaffConfig(staffConfig: any): any {
   if (staffConfig?.staffByPax) return staffConfig;
@@ -120,10 +138,10 @@ function rowToConfig(row: any): TripConfiguration {
     singleSupplement,
     extension,
     hotelsMeals: row.hotels_meals,
-    logistics: row.logistics,
+    logistics: migrateLogistics(row.logistics),
     staffConfig: migrateStaffConfig(row.staff_config),
     transportConfig: row.transport_config,
-    tripSpecific: row.trip_specific,
+    tripSpecific: migrateTripSpecific(row.trip_specific),
     uiPreferences: row.ui_preferences || {},
   };
 }

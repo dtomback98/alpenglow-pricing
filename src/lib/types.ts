@@ -57,6 +57,7 @@ export interface LogisticsConfig {
   baseRate: number;
   rates: LogisticsRate[];
   perPax: boolean;
+  mode?: 'perPaxPerDay' | 'perDay' | 'total';
   includesGuide: boolean;
 }
 
@@ -69,6 +70,7 @@ export interface StaffMember {
 
 export interface StaffConfig {
   enabled: boolean;
+  useCustomStaffDays: boolean;
   staffByPax: { [pax: number]: StaffMember[] };
   travelDays: number;
   travelDayRate: number;
@@ -95,6 +97,7 @@ export interface TripSpecificConfig {
   jacketsApparel: TripSpecificCost;
   insurance: TripSpecificCost;
   contingency: TripSpecificCost;
+  hypoxico: TripSpecificCost;
   otherCosts: TripSpecificCost;
 }
 

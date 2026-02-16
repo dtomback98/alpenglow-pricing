@@ -16,6 +16,7 @@ const TRIP_SPECIFIC_FIELDS: { key: keyof Omit<TripConfiguration['tripSpecific'],
   { key: 'jacketsApparel', label: 'Jackets & Apparel' },
   { key: 'insurance', label: 'Insurance' },
   { key: 'contingency', label: 'Contingency' },
+  { key: 'hypoxico', label: 'Hypoxico' },
   { key: 'otherCosts', label: 'Other Costs' },
 ];
 
@@ -51,6 +52,23 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
 
   const [selectedStaffPax, setSelectedStaffPax] = useState(paxMin);
   useEffect(() => { setSelectedStaffPax(paxMin); }, [paxMin]);
+
+  // Auto-sync staff days with tripDays when not using custom days
+  useEffect(() => {
+    if (!config.staffConfig.useCustomStaffDays && config.staffConfig.enabled !== false) {
+      const newStaffByPax: { [pax: number]: StaffMember[] } = {};
+      let changed = false;
+      for (const [pax, staff] of Object.entries(config.staffConfig.staffByPax)) {
+        newStaffByPax[Number(pax)] = (staff as StaffMember[]).map(s => {
+          if (s.days !== config.tripDays) changed = true;
+          return { ...s, days: config.tripDays };
+        });
+      }
+      if (changed) {
+        updateConfig({ staffConfig: { ...config.staffConfig, staffByPax: newStaffByPax } });
+      }
+    }
+  }, [config.tripDays, config.staffConfig.useCustomStaffDays]);
   const discountsPerPax = config.uiPreferences?.discountsPerPax ?? false;
   const singleSuppPerPax = config.uiPreferences?.singleSuppPerPax ?? false;
   const setDiscountsPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, discountsPerPax: val } });
@@ -316,9 +334,19 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
       <div className={`card ${config.staffConfig.enabled === false ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Staff Configuration</h2>
-          <button onClick={() => updateNestedConfig('staffConfig', { enabled: config.staffConfig.enabled === false })} className={`btn text-xs ${config.staffConfig.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
-            {config.staffConfig.enabled === false ? 'Inactive' : 'Active'}
-          </button>
+          <div className="flex gap-2">
+            {config.staffConfig.enabled !== false && (
+              <button
+                onClick={() => updateNestedConfig('staffConfig', { useCustomStaffDays: !config.staffConfig.useCustomStaffDays })}
+                className={`btn text-xs ${config.staffConfig.useCustomStaffDays ? 'btn-primary' : 'btn-secondary'}`}
+              >
+                {config.staffConfig.useCustomStaffDays ? 'Custom Days' : 'Trip Days'}
+              </button>
+            )}
+            <button onClick={() => updateNestedConfig('staffConfig', { enabled: config.staffConfig.enabled === false })} className={`btn text-xs ${config.staffConfig.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
+              {config.staffConfig.enabled === false ? 'Inactive' : 'Active'}
+            </button>
+          </div>
         </div>
         {config.staffConfig.enabled === false ? (
           <p className="text-sm text-ag-text-muted">Section disabled — staff costs will not be applied to calculations.</p>
@@ -344,7 +372,13 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   </div>
                   <div className="form-group w-24">
                     <label className="form-label">Days</label>
-                    <input type="number" value={staff.days} onChange={(e) => updateStaffMember(index, { days: Number(e.target.value) })} className="w-full" />
+                    <input
+                      type="number"
+                      value={config.staffConfig.useCustomStaffDays ? staff.days : config.tripDays}
+                      onChange={(e) => updateStaffMember(index, { days: Number(e.target.value) })}
+                      disabled={!config.staffConfig.useCustomStaffDays}
+                      className={`w-full ${!config.staffConfig.useCustomStaffDays ? 'opacity-60' : ''}`}
+                    />
                   </div>
                   <div className="form-group w-24">
                     <label className="form-label">Quantity</label>
@@ -383,28 +417,22 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
         {config.transportConfig.enabled === false ? (
           <p className="text-sm text-ag-text-muted">Section disabled — transport costs will not be applied to calculations.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="form-group">
-              <label className="form-label">Flight Cost/Person ($)</label>
+              <label className="form-label">Guide Flights Per Person ($)</label>
               <input type="number" value={config.transportConfig.flightCostPerPerson} onChange={(e) => updateNestedConfig('transportConfig', { flightCostPerPerson: Number(e.target.value) })} className="w-full" />
             </div>
             <div className="form-group">
-              <label className="form-label">Ground Transport Total ($)</label>
+              <label className="form-label">Ground Transport — total for trip ($)</label>
               <input type="number" value={config.transportConfig.groundTransportTotal} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportTotal: Number(e.target.value) })} className="w-full" />
             </div>
             <div className="form-group">
-              <label className="form-label">Airport Transfers ($)</label>
+              <label className="form-label">Airport Transfers — total for trip ($)</label>
               <input type="number" value={config.transportConfig.airportTransfers} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfers: Number(e.target.value) })} className="w-full" />
             </div>
             <div className="form-group">
-              <label className="form-label">Local Transport ($)</label>
+              <label className="form-label">Local Transport — total for trip ($)</label>
               <input type="number" value={config.transportConfig.localTransport} onChange={(e) => updateNestedConfig('transportConfig', { localTransport: Number(e.target.value) })} className="w-full" />
-            </div>
-            <div className="form-group flex items-end">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={config.transportConfig.groundTransportPerPax} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                <span>Ground Transport Per Pax</span>
-              </label>
             </div>
           </div>
         )}
@@ -456,24 +484,34 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
         ) : (
           <>
             <div className="mb-4">
-              <div className="form-group w-48">
-                <label className="form-label">Base Rate ($)</label>
-                <input type="number" value={config.logistics.baseRate} onChange={(e) => updateNestedConfig('logistics', { baseRate: Number(e.target.value) })} className="w-full" />
-              </div>
-            </div>
-            <div className="mb-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={config.logistics.perPax} onChange={(e) => updateNestedConfig('logistics', { perPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                <span>Per Pax</span>
-                <span className="text-xs text-ag-text-muted">
-                  {config.logistics.perPax ? '(rate × pax × trip days = total logistics cost)' : '(rate × trip days = total logistics cost)'}
+              <div className="flex gap-2 items-center">
+                {(['perPaxPerDay', 'perDay', 'total'] as const).map((m) => {
+                  const logisticsMode = config.logistics.mode || (config.logistics.perPax ? 'perPaxPerDay' : 'perDay');
+                  const labels = { perPaxPerDay: 'Rate × Pax × Days', perDay: 'Rate × Days', total: 'Total Cost' };
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => updateNestedConfig('logistics', { mode: m, perPax: m === 'perPaxPerDay' })}
+                      className={`btn text-xs ${logisticsMode === m ? 'btn-primary' : 'btn-secondary'}`}
+                    >
+                      {labels[m]}
+                    </button>
+                  );
+                })}
+                <span className="text-xs text-ag-text-muted ml-2">
+                  {(() => {
+                    const mode = config.logistics.mode || (config.logistics.perPax ? 'perPaxPerDay' : 'perDay');
+                    if (mode === 'perPaxPerDay') return '(rate × pax × trip days)';
+                    if (mode === 'total') return '(entered value is total cost)';
+                    return '(rate × trip days)';
+                  })()}
                 </span>
-              </label>
+              </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
               {paxCounts.map((p) => {
                 const existing = config.logistics.rates.find(r => r.pax === p);
-                const rateValue = existing ? existing.rate : config.logistics.baseRate;
+                const rateValue = existing ? existing.rate : 0;
                 return (
                   <div key={p} className="form-group">
                     <label className="form-label text-center">{p} pax</label>

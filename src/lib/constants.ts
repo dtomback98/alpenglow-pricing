@@ -78,7 +78,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
 
   logistics: {
     enabled: true,
-    baseRate: 400,
+    baseRate: 0,
     rates: [
       { pax: 1, rate: 500 },
       { pax: 2, rate: 500 },
@@ -98,11 +98,13 @@ export const DEFAULT_CONFIG: TripConfiguration = {
       { pax: 16, rate: 375 },
     ],
     perPax: false,
+    mode: 'perDay' as const,
     includesGuide: false,
   },
 
   staffConfig: {
     enabled: true,
+    useCustomStaffDays: false,
     staffByPax: Object.fromEntries(
       Array.from({ length: 16 }, (_, i) => [
         i + 1,
@@ -132,6 +134,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
     jacketsApparel: { amount: 150, perPax: true },
     insurance: { amount: 200, perPax: true },
     contingency: { amount: 1000, perPax: false },
+    hypoxico: { amount: 0, perPax: false },
     otherCosts: { amount: 0, perPax: false },
   },
 };

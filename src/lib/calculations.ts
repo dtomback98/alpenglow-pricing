@@ -3,7 +3,7 @@ import { TripConfiguration, PaxCalculation, LogisticsConfig, StaffMember } from 
 // Get logistics rate based on pax count
 export function getLogisticsRate(pax: number, logistics: LogisticsConfig): number {
   const match = logistics.rates.find((r) => r.pax === pax);
-  return match ? match.rate : logistics.baseRate;
+  return match ? match.rate : 0;
 }
 
 // Calculate staff costs for a given pax count
@@ -125,6 +125,7 @@ function calculateTripSpecificCost(pax: number, config: TripConfiguration): numb
     tripSpecific.jacketsApparel,
     tripSpecific.insurance,
     tripSpecific.contingency,
+    tripSpecific.hypoxico || { amount: 0, perPax: false },
     tripSpecific.otherCosts,
   ];
 
@@ -170,9 +171,13 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   // Logistics (gated)
   const logisticsOn = config.logistics.enabled !== false;
   const logisticsRate = getLogisticsRate(pax, config.logistics);
-  const logisticsCost = logisticsOn
-    ? (config.logistics.perPax ? logisticsRate * config.tripDays * pax : logisticsRate * config.tripDays)
-    : 0;
+  const logisticsMode = config.logistics.mode || (config.logistics.perPax ? 'perPaxPerDay' : 'perDay');
+  let logisticsCost = 0;
+  if (logisticsOn) {
+    if (logisticsMode === 'perPaxPerDay') logisticsCost = logisticsRate * config.tripDays * pax;
+    else if (logisticsMode === 'total') logisticsCost = logisticsRate;
+    else logisticsCost = logisticsRate * config.tripDays;
+  }
 
   // Staff (gated)
   const staffOn = config.staffConfig.enabled !== false;
@@ -181,11 +186,7 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   // Transport (gated)
   const transportOn = config.transportConfig.enabled !== false;
   const flightCost = transportOn ? config.transportConfig.flightCostPerPerson * pax : 0;
-  const groundTransport = transportOn
-    ? (config.transportConfig.groundTransportPerPax
-      ? config.transportConfig.groundTransportTotal * pax
-      : config.transportConfig.groundTransportTotal)
-    : 0;
+  const groundTransport = transportOn ? config.transportConfig.groundTransportTotal : 0;
   const transportCost = transportOn
     ? flightCost + groundTransport + config.transportConfig.airportTransfers + config.transportConfig.localTransport
     : 0;

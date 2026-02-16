@@ -64,17 +64,10 @@ export default function MarginChart({ calculations }: MarginChartProps) {
           />
           <ReferenceLine
             yAxisId="left"
-            y={30}
+            y={42.5}
             stroke="#22c55e"
             strokeDasharray="3 3"
-            label={{ value: '30% target', fill: '#22c55e', fontSize: 12 }}
-          />
-          <ReferenceLine
-            yAxisId="left"
-            y={20}
-            stroke="#eab308"
-            strokeDasharray="3 3"
-            label={{ value: '20% min', fill: '#eab308', fontSize: 12 }}
+            label={{ value: '42.5% target', fill: '#22c55e', fontSize: 12 }}
           />
           <Line
             yAxisId="left"
