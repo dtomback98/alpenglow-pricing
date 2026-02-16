@@ -14,7 +14,6 @@ interface UseHistoricalDataReturn {
   error: string | null;
   selectedCategory: string | null;
   setSelectedCategory: (category: string | null) => void;
-  categories: string[];
   refresh: () => Promise<void>;
   deleteTrip: (id: string) => Promise<boolean>;
 }
@@ -24,9 +23,6 @@ export function useHistoricalData(): UseHistoricalDataReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
-  // Get unique categories from the data
-  const categories = Array.from(new Set(HISTORICAL_DATA.map(t => t.category))).sort();
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -82,7 +78,6 @@ export function useHistoricalData(): UseHistoricalDataReturn {
     error,
     selectedCategory,
     setSelectedCategory,
-    categories,
     refresh: loadData,
     deleteTrip,
   };

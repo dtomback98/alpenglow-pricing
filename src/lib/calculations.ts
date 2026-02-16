@@ -55,7 +55,7 @@ function calculateExtension(pax: number, config: TripConfiguration) {
 
   if (!extension.enabled) return zeros;
 
-  const extPaxCount = extension.countByPax?.[pax] ?? 0;
+  const extPaxCount = Math.min(extension.countByPax?.[pax] ?? 0, pax);
 
   // Extension revenue
   const extensionRevenue = extension.extensionPrice * extPaxCount;
@@ -67,7 +67,7 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     const ss = extension.singleSupplement;
     const suppPrice = ss.inheritFromMain ? config.singleSupplement.singleSupplement : ss.singleSupplement;
     const roomExtra = ss.inheritFromMain ? config.singleSupplement.singleRoomExtra : ss.singleRoomExtra;
-    const suppCount = ss.countByPax?.[pax] ?? 0;
+    const suppCount = Math.min(ss.countByPax?.[pax] ?? 0, extPaxCount);
     extensionSingleSuppRevenue = suppPrice * suppCount;
     extensionSingleRoomCost = roomExtra * suppCount * extension.extensionNights;
   }

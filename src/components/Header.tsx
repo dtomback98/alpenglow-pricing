@@ -129,7 +129,7 @@ export default function Header({
 
             {showHistoryModal && (
               <div className="absolute right-0 top-full mt-2 w-72 bg-ag-card border border-ag-border rounded-lg shadow-lg p-4 z-50">
-                <h3 className="text-sm font-semibold text-ag-text mb-3">Save to 2026 History</h3>
+                <h3 className="text-sm font-semibold text-ag-text mb-3">Save to {new Date().getFullYear()} History</h3>
 
                 <div className="form-group mb-3">
                   <label className="form-label">Pax Size</label>

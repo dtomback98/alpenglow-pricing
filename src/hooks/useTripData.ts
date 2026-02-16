@@ -30,7 +30,7 @@ interface UseTripDataReturn {
 }
 
 export function useTripData(): UseTripDataReturn {
-  const [config, setConfigState] = useState<TripConfiguration>(DEFAULT_CONFIG);
+  const [config, setConfigState] = useState<TripConfiguration>(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
   const [trips, setTrips] = useState<TripConfiguration[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
