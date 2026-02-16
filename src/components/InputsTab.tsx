@@ -326,7 +326,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <>
             <div className="flex gap-2 mb-4 flex-wrap">
               {paxCounts.map((p) => (
-                <button key={p} onClick={() => setSelectedStaffPax(p)} className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${selectedStaffPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-hover text-ag-text-muted hover:text-ag-text'}`}>
+                <button key={p} onClick={() => setSelectedStaffPax(p)} className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${selectedStaffPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-lighter text-ag-text-muted hover:text-ag-text'}`}>
                   {p} pax
                 </button>
               ))}

@@ -116,3 +116,11 @@ Historical performance data:
 - Old extension configs missing new fields crashed ExtensionTab — now deep-merged with defaults
 - Total Profit stat was always green — now red when negative
 - Notes column was truncated — now wraps with inline styles
+- Header "Save to History" modal had hardcoded "2026" — now uses dynamic year
+- Extension guest count was not clamped to pax — now uses Math.min(count, pax)
+- Extension single supplement count was not clamped to extension guest count — now clamped
+- Initial useState used raw DEFAULT_CONFIG reference — now deep-cloned
+- useHistoricalData returned unused `categories` derived from local JSON — removed dead code
+- Extension additionalMealCosts and staff charged even with 0 extension guests — now gated on extPaxCount > 0
+- saveTripsToHistory was missing saving guard — now checks saving flag before proceeding
+- saving missing from useCallback deps causing stale closure race condition — now in dependency arrays
