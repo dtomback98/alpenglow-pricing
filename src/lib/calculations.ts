@@ -185,7 +185,8 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
 
   // Transport (gated)
   const transportOn = config.transportConfig.enabled !== false;
-  const flightCost = transportOn ? config.transportConfig.flightCostPerPerson * pax : 0;
+  const flightCostPer = config.transportConfig.flightCostByPax?.[pax] ?? config.transportConfig.flightCostPerPerson;
+  const flightCost = transportOn ? flightCostPer * pax : 0;
   const groundTransport = transportOn ? config.transportConfig.groundTransportTotal : 0;
   const transportCost = transportOn
     ? flightCost + groundTransport + config.transportConfig.airportTransfers + config.transportConfig.localTransport

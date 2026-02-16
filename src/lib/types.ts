@@ -79,6 +79,7 @@ export interface StaffConfig {
 export interface TransportConfig {
   enabled: boolean;
   flightCostPerPerson: number;
+  flightCostByPax?: { [pax: number]: number };
   groundTransportTotal: number;
   groundTransportPerPax: boolean;
   airportTransfers: number;
@@ -111,6 +112,7 @@ export interface SingleSupplementConfig {
 export interface UiPreferences {
   discountsPerPax?: boolean;
   singleSuppPerPax?: boolean;
+  transportPerPax?: boolean;
   extPerPax?: boolean;
   extSuppPerPax?: boolean;
 }
