@@ -9,7 +9,6 @@ import {
   saveTripConfiguration,
   deleteTripConfiguration,
   saveToHistory,
-  fetchCurrentYearTripConfigIds,
   isSupabaseConfigured,
 } from '@/lib/supabase';
 
@@ -24,7 +23,6 @@ interface UseTripDataReturn {
   saveTripsToHistory: (pax: number, category: string) => Promise<boolean>;
   deleteTrip: (id: string) => Promise<void>;
   createNewTrip: () => void;
-  refreshCurrentYearIds: () => Promise<void>;
   loading: boolean;
   saving: boolean;
   error: string | null;
@@ -33,23 +31,12 @@ interface UseTripDataReturn {
 
 export function useTripData(): UseTripDataReturn {
   const [config, setConfigState] = useState<TripConfiguration>(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
-  const [allTrips, setAllTrips] = useState<TripConfiguration[]>([]);
-  const [currentYearConfigIds, setCurrentYearConfigIds] = useState<Set<string>>(new Set());
+  const [trips, setTrips] = useState<TripConfiguration[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-
-  // Show all saved trip configs + trips with current year history entries
-  // (allTrips already only contains configs that exist in the DB)
-  const trips = allTrips;
-
-  // Helper to refresh the current year config IDs
-  const refreshCurrentYearIds = useCallback(async () => {
-    const ids = await fetchCurrentYearTripConfigIds();
-    setCurrentYearConfigIds(ids);
-  }, []);
 
   // Load trips on mount
   useEffect(() => {
@@ -65,20 +52,11 @@ export function useTripData(): UseTripDataReturn {
       setError(null);
 
       try {
-        const [loadedTrips, yearIds] = await Promise.all([
-          fetchTripConfigurations(),
-          fetchCurrentYearTripConfigIds(),
-        ]);
-        setAllTrips(loadedTrips);
-        setCurrentYearConfigIds(yearIds);
+        const loadedTrips = await fetchTripConfigurations();
+        setTrips(loadedTrips);
 
-        // If we have trips, select the most recent one that's in the current year
-        const currentYearTrips = loadedTrips.filter(t => t.id && yearIds.has(t.id));
-        if (currentYearTrips.length > 0) {
-          const mostRecent = currentYearTrips[0];
-          setSelectedTripId(mostRecent.id || null);
-          setConfigState(mostRecent);
-        } else if (loadedTrips.length > 0) {
+        // If we have trips, select the most recent one
+        if (loadedTrips.length > 0) {
           const mostRecent = loadedTrips[0];
           setSelectedTripId(mostRecent.id || null);
           setConfigState(mostRecent);
@@ -155,7 +133,7 @@ export function useTripData(): UseTripDataReturn {
 
         // Refresh trips list
         const updatedTrips = await fetchTripConfigurations();
-        setAllTrips(updatedTrips);
+        setTrips(updatedTrips);
       } else {
         setError('Failed to save trip');
       }
@@ -193,15 +171,13 @@ export function useTripData(): UseTripDataReturn {
       setConfigState(saved);
 
       const updatedTrips = await fetchTripConfigurations();
-      setAllTrips(updatedTrips);
+      setTrips(updatedTrips);
 
       const success = await saveToHistory(saved, pax, category);
       if (!success) {
         setError('Failed to save to history');
         return false;
       }
-      // Refresh current year IDs so the new trip appears in the filtered dropdown
-      await refreshCurrentYearIds();
       return true;
     } catch (err) {
       setError('Failed to save to history');
@@ -210,7 +186,7 @@ export function useTripData(): UseTripDataReturn {
     } finally {
       setSaving(false);
     }
-  }, [config, selectedTripId, saving, refreshCurrentYearIds]);
+  }, [config, selectedTripId, saving]);
 
   // Delete a trip
   const deleteTrip = useCallback(async (id: string) => {
@@ -221,7 +197,7 @@ export function useTripData(): UseTripDataReturn {
       if (success) {
         // Refresh trips list
         const updatedTrips = await fetchTripConfigurations();
-        setAllTrips(updatedTrips);
+        setTrips(updatedTrips);
 
         // If we deleted the selected trip, reset to default
         if (selectedTripId === id) {
@@ -252,7 +228,6 @@ export function useTripData(): UseTripDataReturn {
     saveTripsToHistory,
     deleteTrip,
     createNewTrip,
-    refreshCurrentYearIds,
     loading,
     saving,
     error,

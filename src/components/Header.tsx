@@ -15,6 +15,7 @@ interface HeaderProps {
   saveTrip: () => Promise<void>;
   saveTripsToHistory: (pax: number, category: string) => Promise<boolean>;
   createNewTrip: () => void;
+  deleteTrip: (id: string) => Promise<void>;
   saving: boolean;
   isConnected: boolean;
   error: string | null;
@@ -29,6 +30,7 @@ export default function Header({
   saveTrip,
   saveTripsToHistory,
   createNewTrip,
+  deleteTrip,
   saving,
   isConnected,
   error,
@@ -97,6 +99,7 @@ export default function Header({
             selectedTripId={selectedTripId}
             selectTrip={selectTrip}
             createNewTrip={createNewTrip}
+            deleteTrip={deleteTrip}
           />
 
           {/* Trip name input */}

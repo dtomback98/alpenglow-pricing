@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { TabType } from '@/lib/types';
 import { useTripData } from '@/hooks/useTripData';
 import Header from './Header';
@@ -14,13 +14,6 @@ export default function PricingTool() {
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const tripData = useTripData();
-
-  // Refresh the trip dropdown filter when history changes (e.g. after delete)
-  useEffect(() => {
-    if (historyRefreshKey > 0) {
-      tripData.refreshCurrentYearIds();
-    }
-  }, [historyRefreshKey]);
 
   const handleLoadTrip = (tripConfigId: string) => {
     tripData.selectTrip(tripConfigId);
@@ -46,6 +39,7 @@ export default function PricingTool() {
         saveTrip={tripData.saveTrip}
         saveTripsToHistory={handleSaveToHistory}
         createNewTrip={tripData.createNewTrip}
+        deleteTrip={tripData.deleteTrip}
         saving={tripData.saving}
         isConnected={tripData.isConnected}
         error={tripData.error}

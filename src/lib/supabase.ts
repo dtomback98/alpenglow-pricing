@@ -281,25 +281,6 @@ export async function fetchHistoricalTrips(category?: string): Promise<Historica
   }));
 }
 
-// Fetch trip_config_ids that have history entries for the current year
-export async function fetchCurrentYearTripConfigIds(): Promise<Set<string>> {
-  if (!supabase) return new Set();
-
-  const currentYear = new Date().getFullYear();
-  const { data, error } = await supabase
-    .from('historical_trips')
-    .select('trip_config_id')
-    .eq('year', currentYear)
-    .not('trip_config_id', 'is', null);
-
-  if (error) {
-    console.error('Error fetching current year trip config ids:', error);
-    return new Set();
-  }
-
-  return new Set((data || []).map(row => row.trip_config_id).filter(Boolean));
-}
-
 // Delete a historical trip entry
 export async function deleteHistoricalTrip(id: string): Promise<boolean> {
   if (!supabase) return false;
