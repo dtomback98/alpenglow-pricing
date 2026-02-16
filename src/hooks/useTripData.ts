@@ -41,10 +41,9 @@ export function useTripData(): UseTripDataReturn {
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  // Filter trips to only show those with current year history entries (+ currently active trip)
-  const trips = allTrips.filter(t =>
-    (t.id && currentYearConfigIds.has(t.id)) || t.id === selectedTripId
-  );
+  // Show all saved trip configs + trips with current year history entries
+  // (allTrips already only contains configs that exist in the DB)
+  const trips = allTrips;
 
   // Helper to refresh the current year config IDs
   const refreshCurrentYearIds = useCallback(async () => {
