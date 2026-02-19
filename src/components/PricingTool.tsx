@@ -20,8 +20,8 @@ export default function PricingTool() {
     setActiveTab('summary');
   };
 
-  const handleSaveToHistory = async (pax: number, category: string): Promise<boolean> => {
-    const success = await tripData.saveTripsToHistory(pax, category);
+  const handleSaveToHistory = async (pax: number, category: string, year?: number, status?: string): Promise<boolean> => {
+    const success = await tripData.saveTripsToHistory(pax, category, year, status);
     if (success) {
       setHistoryRefreshKey(k => k + 1);
     }

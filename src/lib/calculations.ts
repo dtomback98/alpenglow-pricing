@@ -81,9 +81,18 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     const lunchRate = hm.inheritFromMain ? config.hotelsMeals.lunchCostPerDay : hm.lunchCostPerDay;
     const dinnerRate = hm.inheritFromMain ? config.hotelsMeals.dinnerCostPerNight : hm.dinnerCostPerNight;
     const additionalMeals = hm.inheritFromMain ? config.hotelsMeals.additionalMealCosts : hm.additionalMealCosts;
+    const extHmMode = hm.inheritFromMain ? (config.hotelsMeals.mode || 'perPaxPerNight') : (hm.mode || 'perPaxPerNight');
 
-    extensionHotelsCost = hotelRate * extension.extensionNights * extPaxCount;
-    extensionMealsCost = (lunchRate + dinnerRate) * extension.extensionNights * extPaxCount + additionalMeals;
+    if (extHmMode === 'perPaxPerNight') {
+      extensionHotelsCost = hotelRate * extension.extensionNights * extPaxCount;
+      extensionMealsCost = (lunchRate + dinnerRate) * extension.extensionNights * extPaxCount + additionalMeals;
+    } else if (extHmMode === 'perNight') {
+      extensionHotelsCost = hotelRate * extension.extensionNights;
+      extensionMealsCost = (lunchRate + dinnerRate) * extension.extensionNights + additionalMeals;
+    } else {
+      extensionHotelsCost = hotelRate;
+      extensionMealsCost = lunchRate + dinnerRate + additionalMeals;
+    }
   }
 
   // Staff (only when guests take the extension)
@@ -161,12 +170,27 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   const totalRevenue = baseRevenue - earlyBirdCost - loyaltyCost + singleSupplementRevenue
     + ext.extensionRevenue + ext.extensionSingleSuppRevenue;
 
-  // Hotels & meals (gated)
+  // Hotels & meals (gated, with mode)
   const hotelsMealsOn = config.hotelsMeals.enabled !== false;
-  const hotelsCost = hotelsMealsOn ? config.hotelsMeals.hotelCostPerNight * config.tripNights * pax : 0;
-  const lunchCost = hotelsMealsOn ? config.hotelsMeals.lunchCostPerDay * config.tripDays * pax : 0;
-  const dinnerCost = hotelsMealsOn ? config.hotelsMeals.dinnerCostPerNight * config.tripNights * pax : 0;
-  const mealsCost = hotelsMealsOn ? lunchCost + dinnerCost + config.hotelsMeals.additionalMealCosts : 0;
+  const hmMode = config.hotelsMeals.mode || 'perPaxPerNight';
+  let hotelsCost = 0;
+  let mealsCost = 0;
+  if (hotelsMealsOn) {
+    if (hmMode === 'perPaxPerNight') {
+      hotelsCost = config.hotelsMeals.hotelCostPerNight * config.tripNights * pax;
+      const lunchCost = config.hotelsMeals.lunchCostPerDay * config.tripDays * pax;
+      const dinnerCost = config.hotelsMeals.dinnerCostPerNight * config.tripNights * pax;
+      mealsCost = lunchCost + dinnerCost + config.hotelsMeals.additionalMealCosts;
+    } else if (hmMode === 'perNight') {
+      hotelsCost = config.hotelsMeals.hotelCostPerNight * config.tripNights;
+      const lunchCost = config.hotelsMeals.lunchCostPerDay * config.tripDays;
+      const dinnerCost = config.hotelsMeals.dinnerCostPerNight * config.tripNights;
+      mealsCost = lunchCost + dinnerCost + config.hotelsMeals.additionalMealCosts;
+    } else {
+      hotelsCost = config.hotelsMeals.hotelCostPerNight;
+      mealsCost = config.hotelsMeals.lunchCostPerDay + config.hotelsMeals.dinnerCostPerNight + config.hotelsMeals.additionalMealCosts;
+    }
+  }
 
   // Logistics (gated)
   const logisticsOn = config.logistics.enabled !== false;
@@ -183,13 +207,22 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   const staffOn = config.staffConfig.enabled !== false;
   const staffCost = staffOn ? calculateStaffCost(pax, config) : 0;
 
-  // Transport (gated)
+  // Guide flights (part of staff config, gated with staff)
+  const guideFlightCostPer = config.staffConfig.guideFlightCost || 0;
+  const guideFlightCount = config.staffConfig.guideFlightCountByPax?.[pax] ?? 0;
+  const guideFlightsCost = staffOn ? guideFlightCostPer * guideFlightCount : 0;
+
+  // Staff guide meals (gated with staff)
+  const staffMealsAmount = config.staffConfig.staffMealsCost || 0;
+  const staffMealsMode = config.staffConfig.staffMealsMode || 'perDay';
+  const staffMealsCost = staffOn
+    ? (staffMealsMode === 'perDay' ? staffMealsAmount * config.tripDays : staffMealsAmount)
+    : 0;
+
+  // Transport (gated — flights removed, now in staff section)
   const transportOn = config.transportConfig.enabled !== false;
-  const flightCostPer = config.transportConfig.flightCostByPax?.[pax] ?? config.transportConfig.flightCostPerPerson;
-  const flightCost = transportOn ? flightCostPer * pax : 0;
-  const groundTransport = transportOn ? config.transportConfig.groundTransportTotal : 0;
   const transportCost = transportOn
-    ? flightCost + groundTransport + config.transportConfig.airportTransfers + config.transportConfig.localTransport
+    ? config.transportConfig.groundTransportTotal + config.transportConfig.airportTransfers + config.transportConfig.localTransport
     : 0;
 
   // Trip-specific (gated)
@@ -199,11 +232,29 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   // Single room extra cost (gated with single supplement)
   const singleRoomCost = singleSuppOn ? config.singleSupplement.singleRoomExtra * singleSupplementGuests * config.tripNights : 0;
 
-  // Total costs
-  const totalCosts = hotelsCost + mealsCost + logisticsCost + staffCost +
-    transportCost + tripSpecificCost + singleRoomCost + ext.extensionTotalCost;
+  // Apply inflation multiplier to all costs
+  const inflationMultiplier = 1 + (config.inflationRate || 0);
+  const iHotelsCost = hotelsCost * inflationMultiplier;
+  const iMealsCost = mealsCost * inflationMultiplier;
+  const iLogisticsCost = logisticsCost * inflationMultiplier;
+  const iStaffCost = staffCost * inflationMultiplier;
+  const iGuideFlightsCost = guideFlightsCost * inflationMultiplier;
+  const iStaffMealsCost = staffMealsCost * inflationMultiplier;
+  const iTransportCost = transportCost * inflationMultiplier;
+  const iTripSpecificCost = tripSpecificCost * inflationMultiplier;
+  const iSingleRoomCost = singleRoomCost * inflationMultiplier;
+  const iExtHotelsCost = ext.extensionHotelsCost * inflationMultiplier;
+  const iExtMealsCost = ext.extensionMealsCost * inflationMultiplier;
+  const iExtStaffCost = ext.extensionStaffCost * inflationMultiplier;
+  const iExtSingleRoomCost = ext.extensionSingleRoomCost * inflationMultiplier;
+  const iExtTotalCost = iExtHotelsCost + iExtMealsCost + iExtStaffCost + iExtSingleRoomCost;
 
-  // Profit calculations
+  // Total costs (all inflated)
+  const totalCosts = iHotelsCost + iMealsCost + iLogisticsCost + iStaffCost +
+    iGuideFlightsCost + iStaffMealsCost + iTransportCost + iTripSpecificCost +
+    iSingleRoomCost + iExtTotalCost;
+
+  // Profit calculations (revenue NOT inflated)
   const grossProfit = totalRevenue - totalCosts;
   const margin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
   const perPaxProfit = pax > 0 ? grossProfit / pax : 0;
@@ -215,21 +266,23 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
     loyaltyCost,
     singleSupplementRevenue,
     totalRevenue,
-    hotelsCost,
-    mealsCost,
-    logisticsCost,
-    staffCost,
-    transportCost,
-    tripSpecificCost,
-    singleRoomCost,
+    hotelsCost: iHotelsCost,
+    mealsCost: iMealsCost,
+    logisticsCost: iLogisticsCost,
+    staffCost: iStaffCost,
+    guideFlightsCost: iGuideFlightsCost,
+    staffMealsCost: iStaffMealsCost,
+    transportCost: iTransportCost,
+    tripSpecificCost: iTripSpecificCost,
+    singleRoomCost: iSingleRoomCost,
     totalCosts,
     extensionRevenue: ext.extensionRevenue,
     extensionSingleSuppRevenue: ext.extensionSingleSuppRevenue,
-    extensionHotelsCost: ext.extensionHotelsCost,
-    extensionMealsCost: ext.extensionMealsCost,
-    extensionStaffCost: ext.extensionStaffCost,
-    extensionSingleRoomCost: ext.extensionSingleRoomCost,
-    extensionTotalCost: ext.extensionTotalCost,
+    extensionHotelsCost: iExtHotelsCost,
+    extensionMealsCost: iExtMealsCost,
+    extensionStaffCost: iExtStaffCost,
+    extensionSingleRoomCost: iExtSingleRoomCost,
+    extensionTotalCost: iExtTotalCost,
     grossProfit,
     margin,
     perPaxProfit,

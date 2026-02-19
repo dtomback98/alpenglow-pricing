@@ -9,6 +9,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
   paxMin: 1,
   paxMax: 16,
   paxStep: 1,
+  inflationRate: 0,
   discountsEnabled: true,
   earlyBirdDiscount: 200,
   earlyBirdCountByPax: Object.fromEntries(
@@ -70,6 +71,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
 
   hotelsMeals: {
     enabled: true,
+    mode: 'perPaxPerNight' as const,
     hotelCostPerNight: 120,
     lunchCostPerDay: 25,
     dinnerCostPerNight: 45,
@@ -116,11 +118,17 @@ export const DEFAULT_CONFIG: TripConfiguration = {
     ),
     travelDays: 2,
     travelDayRate: 150,
+    guideFlightCost: 800,
+    guideFlightCountByPax: Object.fromEntries(
+      Array.from({ length: 16 }, (_, i) => [i + 1, 2])
+    ),
+    staffMealsCost: 0,
+    staffMealsMode: 'perDay' as const,
   },
 
   transportConfig: {
     enabled: true,
-    flightCostPerPerson: 800,
+    flightCostPerPerson: 0,
     groundTransportTotal: 2000,
     groundTransportPerPax: false,
     airportTransfers: 500,

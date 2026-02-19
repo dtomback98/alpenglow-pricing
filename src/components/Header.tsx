@@ -13,7 +13,7 @@ interface HeaderProps {
   selectedTripId: string | null;
   selectTrip: (id: string | null) => void;
   saveTrip: () => Promise<void>;
-  saveTripsToHistory: (pax: number, category: string) => Promise<boolean>;
+  saveTripsToHistory: (pax: number, category: string, year?: number, status?: string) => Promise<boolean>;
   createNewTrip: () => void;
   deleteTrip: (id: string) => Promise<void>;
   saving: boolean;
@@ -40,6 +40,9 @@ export default function Header({
   const [historyCategory, setHistoryCategory] = useState('Beg');
   const [historySaving, setHistorySaving] = useState(false);
   const [historySuccess, setHistorySuccess] = useState(false);
+  const currentYear = new Date().getFullYear();
+  const [historyYear, setHistoryYear] = useState(currentYear);
+  const [historyStatus, setHistoryStatus] = useState<'budgeted' | 'run'>('budgeted');
 
   const paxMin = config.paxMin || 1;
   const paxMax = config.paxMax || 16;
@@ -57,7 +60,7 @@ export default function Header({
   const handleSaveToHistory = async () => {
     setHistorySaving(true);
     setHistorySuccess(false);
-    const success = await saveTripsToHistory(historyPax, historyCategory);
+    const success = await saveTripsToHistory(historyPax, historyCategory, historyYear, historyStatus);
     setHistorySaving(false);
     if (success) {
       setHistorySuccess(true);
@@ -132,7 +135,7 @@ export default function Header({
 
             {showHistoryModal && (
               <div className="absolute right-0 top-full mt-2 w-72 bg-ag-card border border-ag-border rounded-lg shadow-lg p-4 z-50">
-                <h3 className="text-sm font-semibold text-ag-text mb-3">Save to {new Date().getFullYear()} History</h3>
+                <h3 className="text-sm font-semibold text-ag-text mb-3">Save to {historyYear} History</h3>
 
                 <div className="form-group mb-3">
                   <label className="form-label">Pax Size</label>
@@ -147,7 +150,7 @@ export default function Header({
                   </select>
                 </div>
 
-                <div className="form-group mb-4">
+                <div className="form-group mb-3">
                   <label className="form-label">Category</label>
                   <select
                     value={historyCategory}
@@ -157,6 +160,22 @@ export default function Header({
                     {CATEGORIES.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
+                  </select>
+                </div>
+
+                <div className="form-group mb-3">
+                  <label className="form-label">Year</label>
+                  <select value={historyYear} onChange={(e) => setHistoryYear(Number(e.target.value))} className="w-full">
+                    <option value={currentYear}>{currentYear}</option>
+                    <option value={currentYear + 1}>{currentYear + 1}</option>
+                  </select>
+                </div>
+
+                <div className="form-group mb-4">
+                  <label className="form-label">Status</label>
+                  <select value={historyStatus} onChange={(e) => setHistoryStatus(e.target.value as 'budgeted' | 'run')} className="w-full">
+                    <option value="budgeted">Budgeted</option>
+                    <option value="run">Run</option>
                   </select>
                 </div>
 

@@ -30,27 +30,27 @@ export default function SummaryTab({ config }: SummaryTabProps) {
       </div>
 
       {/* Key metrics cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="card">
-          <div className="text-sm text-ag-text-muted mb-1">Base Price</div>
-          <div className="text-2xl font-bold text-ag-text">
-            {formatCurrency(config.tripPrice)}
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="text-sm text-ag-text-muted mb-1">Trip Duration</div>
-          <div className="text-2xl font-bold text-ag-text">
-            {config.tripDays} days
-          </div>
-          <div className="text-sm text-ag-text-muted">
-            {config.tripNights} nights
-          </div>
-        </div>
-
-        {(() => {
-          const bestCalc = calculations.reduce((best, curr) => curr.margin > best.margin ? curr : best);
-          return (
+      {(() => {
+        const bestCalc = calculations.reduce((best, curr) => curr.margin > best.margin ? curr : best);
+        const revenuePerPax = bestCalc.pax > 0 ? bestCalc.totalRevenue / bestCalc.pax : 0;
+        const revenuePerPaxPerDay = bestCalc.pax > 0 && config.tripDays > 0 ? bestCalc.totalRevenue / bestCalc.pax / config.tripDays : 0;
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="card">
+              <div className="text-sm text-ag-text-muted mb-1">Base Price</div>
+              <div className="text-2xl font-bold text-ag-text">
+                {formatCurrency(config.tripPrice)}
+              </div>
+            </div>
+            <div className="card">
+              <div className="text-sm text-ag-text-muted mb-1">Trip Duration</div>
+              <div className="text-2xl font-bold text-ag-text">
+                {config.tripDays} days
+              </div>
+              <div className="text-sm text-ag-text-muted">
+                {config.tripNights} nights
+              </div>
+            </div>
             <div className="card">
               <div className="text-sm text-ag-text-muted mb-1">Best Margin ({bestCalc.pax} pax)</div>
               <div className={`text-2xl font-bold ${getMarginColor(bestCalc.margin)}`}>
@@ -60,19 +60,36 @@ export default function SummaryTab({ config }: SummaryTabProps) {
                 Profit: {formatCurrency(bestCalc.grossProfit)}
               </div>
             </div>
-          );
-        })()}
-
-        <div className="card">
-          <div className="text-sm text-ag-text-muted mb-1">Break-even Point</div>
-          <div className="text-2xl font-bold text-ag-warning">
-            {(() => { const bp = calculations.find(c => c.grossProfit > 0)?.pax; return bp ? `${bp} pax` : 'N/A'; })()}
+            <div className="card">
+              <div className="text-sm text-ag-text-muted mb-1">Break-even Point</div>
+              <div className="text-2xl font-bold text-ag-warning">
+                {(() => { const bp = calculations.find(c => c.grossProfit > 0)?.pax; return bp ? `${bp} pax` : 'N/A'; })()}
+              </div>
+              <div className="text-sm text-ag-text-muted">
+                Minimum for profit
+              </div>
+            </div>
+            <div className="card">
+              <div className="text-sm text-ag-text-muted mb-1">Revenue/Pax ({bestCalc.pax} pax)</div>
+              <div className="text-2xl font-bold text-ag-text">
+                {formatCurrency(revenuePerPax)}
+              </div>
+              <div className="text-sm text-ag-text-muted">
+                At best margin pax level
+              </div>
+            </div>
+            <div className="card">
+              <div className="text-sm text-ag-text-muted mb-1">Revenue/Pax/Day ({bestCalc.pax} pax)</div>
+              <div className="text-2xl font-bold text-ag-text">
+                {formatCurrency(revenuePerPaxPerDay)}
+              </div>
+              <div className="text-sm text-ag-text-muted">
+                At best margin pax level
+              </div>
+            </div>
           </div>
-          <div className="text-sm text-ag-text-muted">
-            Minimum for profit
-          </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Core vs Extension vs Combined Margins */}
       <div className="card overflow-x-auto">
@@ -160,6 +177,8 @@ export default function SummaryTab({ config }: SummaryTabProps) {
               <th>Hotels</th>
               <th>Meals</th>
               <th>Staff</th>
+              <th>Guide Flights</th>
+              <th>Staff Meals</th>
               <th>Transport</th>
               <th>Logistics</th>
               <th>Trip Specific</th>
@@ -175,6 +194,8 @@ export default function SummaryTab({ config }: SummaryTabProps) {
                 <td>{formatCurrency(calc.hotelsCost)}</td>
                 <td>{formatCurrency(calc.mealsCost)}</td>
                 <td>{formatCurrency(calc.staffCost)}</td>
+                <td>{formatCurrency(calc.guideFlightsCost)}</td>
+                <td>{formatCurrency(calc.staffMealsCost)}</td>
                 <td>{formatCurrency(calc.transportCost)}</td>
                 <td>{formatCurrency(calc.logisticsCost)}</td>
                 <td>{formatCurrency(calc.tripSpecificCost)}</td>

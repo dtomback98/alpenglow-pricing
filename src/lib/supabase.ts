@@ -119,6 +119,12 @@ function rowToConfig(row: any): TripConfiguration {
     },
   };
 
+  // Migrate guide flights from transport to staff config
+  const staffConfig = migrateStaffConfig(row.staff_config);
+  if (staffConfig && !staffConfig.guideFlightCost && row.transport_config?.flightCostPerPerson) {
+    staffConfig.guideFlightCost = row.transport_config.flightCostPerPerson;
+  }
+
   return {
     id: row.id,
     name: row.name,
@@ -130,6 +136,7 @@ function rowToConfig(row: any): TripConfiguration {
     paxMin: row.pax_min || 1,
     paxMax: row.pax_max || 16,
     paxStep: row.pax_step || 1,
+    inflationRate: row.inflation_rate || 0,
     discountsEnabled: row.discounts_enabled ?? true,
     earlyBirdDiscount: Number(row.early_bird_discount),
     earlyBirdCountByPax: row.early_bird_count_by_pax || migrateEarlyBirdTakeup(Number(row.early_bird_takeup), row.pax_max || 16),
@@ -139,7 +146,7 @@ function rowToConfig(row: any): TripConfiguration {
     extension,
     hotelsMeals: row.hotels_meals,
     logistics: migrateLogistics(row.logistics),
-    staffConfig: migrateStaffConfig(row.staff_config),
+    staffConfig,
     transportConfig: row.transport_config,
     tripSpecific: migrateTripSpecific(row.trip_specific),
     uiPreferences: row.ui_preferences || {},
@@ -156,6 +163,7 @@ function configToRow(config: TripConfiguration): any {
     pax_min: config.paxMin,
     pax_max: config.paxMax,
     pax_step: config.paxStep,
+    inflation_rate: config.inflationRate || 0,
     discounts_enabled: config.discountsEnabled,
     early_bird_discount: config.earlyBirdDiscount,
     early_bird_count_by_pax: config.earlyBirdCountByPax,
@@ -296,6 +304,7 @@ export async function fetchHistoricalTrips(category?: string): Promise<Historica
     createdAt: row.created_at,
     year: row.year || 2025,
     tripConfigId: row.trip_config_id || undefined,
+    status: (row.status || (row.year && row.year <= 2025 ? 'run' : 'budgeted')) as 'budgeted' | 'run',
   }));
 }
 
@@ -320,7 +329,9 @@ export async function deleteHistoricalTrip(id: string): Promise<boolean> {
 export async function saveToHistory(
   config: TripConfiguration,
   pax: number,
-  category: string
+  category: string,
+  year?: number,
+  status?: string
 ): Promise<boolean> {
   if (!supabase || !config.id || pax <= 0) return false;
 
@@ -334,10 +345,11 @@ export async function saveToHistory(
     revenue: calc.totalRevenue,
     gross_profit: calc.grossProfit,
     margin: calc.margin,
-    year: new Date().getFullYear(),
+    year: year || new Date().getFullYear(),
     trip_date: new Date().toISOString().split('T')[0],
     trip_config_id: config.id,
     notes: '',
+    status: status || 'budgeted',
   };
 
   const { error } = await supabase
@@ -346,6 +358,26 @@ export async function saveToHistory(
 
   if (error) {
     console.error('Error inserting history entry:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// Update a historical trip entry (status, notes)
+export async function updateHistoricalTrip(
+  id: string,
+  updates: { status?: string; notes?: string }
+): Promise<boolean> {
+  if (!supabase) return false;
+
+  const { error } = await supabase
+    .from('historical_trips')
+    .update(updates)
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error updating historical trip:', error);
     return false;
   }
 

@@ -15,7 +15,16 @@ interface HistoryTabProps {
   refreshKey?: number;
 }
 
-function TripTable({ trips, title, onLoadTrip, onDeleteTrip }: { trips: HistoricalTrip[]; title: string; onLoadTrip?: (id: string) => void; onDeleteTrip?: (id: string) => void }) {
+function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip }: {
+  trips: HistoricalTrip[];
+  title: string;
+  onLoadTrip?: (id: string) => void;
+  onDeleteTrip?: (id: string) => void;
+  onUpdateTrip?: (id: string, updates: { status?: string; notes?: string }) => Promise<boolean>;
+}) {
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editNoteText, setEditNoteText] = useState('');
+
   if (trips.length === 0) {
     return (
       <div className="card">
@@ -25,7 +34,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip }: { trips: Historic
     );
   }
 
-  const hasActions = onLoadTrip || onDeleteTrip;
+  const hasActions = onLoadTrip || onDeleteTrip || onUpdateTrip;
 
   return (
     <div className="card overflow-x-auto">
@@ -35,6 +44,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip }: { trips: Historic
           <tr>
             <th>Trip</th>
             <th>Cat</th>
+            <th>Status</th>
             <th>Pax</th>
             <th>$/Pax</th>
             <th>Revenue</th>
@@ -58,6 +68,13 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip }: { trips: Historic
                   </span>
                 )}
               </td>
+              <td>
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  trip.status === 'run' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                }`}>
+                  {trip.status === 'run' ? 'Run' : 'Budgeted'}
+                </span>
+              </td>
               <td>{trip.pax}</td>
               <td>{formatCurrency(trip.pricePerPax)}</td>
               <td>{formatCurrency(trip.revenue)}</td>
@@ -65,7 +82,37 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip }: { trips: Historic
                 {formatCurrency(trip.grossProfit)}
               </td>
               <td className={getMarginColor(trip.margin)}>{formatPercent(trip.margin)}</td>
-              <td className="text-sm text-ag-text-muted" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{trip.notes}</td>
+              <td style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                {editingNoteId === trip.id ? (
+                  <div className="flex flex-col gap-1">
+                    <textarea
+                      value={editNoteText}
+                      onChange={(e) => setEditNoteText(e.target.value)}
+                      className="w-full text-sm p-1"
+                      rows={2}
+                    />
+                    <div className="flex gap-1">
+                      <button className="btn btn-primary text-xs" onClick={async () => {
+                        if (onUpdateTrip) {
+                          await onUpdateTrip(trip.id, { notes: editNoteText });
+                        }
+                        setEditingNoteId(null);
+                      }}>Save</button>
+                      <button className="btn btn-secondary text-xs" onClick={() => setEditingNoteId(null)}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-1">
+                    <span className="text-sm text-ag-text-muted">{trip.notes || '\u2014'}</span>
+                    {onUpdateTrip && (
+                      <button className="btn btn-secondary text-xs shrink-0" onClick={() => {
+                        setEditingNoteId(trip.id);
+                        setEditNoteText(trip.notes || '');
+                      }}>Edit</button>
+                    )}
+                  </div>
+                )}
+              </td>
               {hasActions && (
                 <td>
                   <div className="flex gap-1">
@@ -75,6 +122,16 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip }: { trips: Historic
                         className="btn btn-secondary text-xs"
                       >
                         Load
+                      </button>
+                    )}
+                    {onUpdateTrip && trip.status === 'budgeted' && (
+                      <button
+                        onClick={async () => {
+                          await onUpdateTrip(trip.id, { status: 'run' });
+                        }}
+                        className="btn btn-secondary text-xs"
+                      >
+                        Mark Run
                       </button>
                     )}
                     {onDeleteTrip && (
@@ -101,7 +158,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip }: { trips: Historic
 }
 
 export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) {
-  const { trips, loading, selectedCategory, setSelectedCategory, deleteTrip, refresh } = useHistoricalData();
+  const { trips, loading, selectedCategory, setSelectedCategory, deleteTrip, updateTrip, refresh } = useHistoricalData();
 
   // Re-fetch when refreshKey changes (e.g. after Save to History)
   useEffect(() => {
@@ -110,15 +167,18 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
     }
   }, [refreshKey, refresh]);
   const currentYear = new Date().getFullYear();
+  const nextYear = currentYear + 1;
   const [chartYearFilter, setChartYearFilter] = useState<string>('all');
   const [statsYearFilter, setStatsYearFilter] = useState<string>('all');
 
   const trips2025 = trips.filter(t => (t.year || 2025) === 2025);
   const tripsCurrentYear = trips.filter(t => t.year === currentYear);
+  const tripsNextYear = trips.filter(t => t.year === nextYear);
 
   const getFilteredTrips = (filter: string) =>
     filter === '2025' ? trips2025
     : filter === String(currentYear) ? tripsCurrentYear
+    : filter === String(nextYear) ? tripsNextYear
     : trips;
 
   const statsTrips = getFilteredTrips(statsYearFilter);
@@ -185,6 +245,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
             <option value="all">All Years</option>
             <option value="2025">2025 Only</option>
             <option value={String(currentYear)}>{currentYear} Only</option>
+            <option value={String(nextYear)}>{nextYear} Only</option>
           </select>
         </div>
       </div>
@@ -225,6 +286,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
             <option value="all">All Years</option>
             <option value="2025">2025 Only</option>
             <option value={String(currentYear)}>{currentYear} Only</option>
+            <option value={String(nextYear)}>{nextYear} Only</option>
           </select>
         </div>
         <div className="h-64">
@@ -262,8 +324,13 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
         </div>
       </div>
 
+      {/* Next Year Trip Performance */}
+      {tripsNextYear.length > 0 && (
+        <TripTable trips={tripsNextYear} title={`${nextYear} Trip Performance`} onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} onUpdateTrip={updateTrip} />
+      )}
+
       {/* Current Year Trip Performance */}
-      <TripTable trips={tripsCurrentYear} title={`${currentYear} Trip Performance`} onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} />
+      <TripTable trips={tripsCurrentYear} title={`${currentYear} Trip Performance`} onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} onUpdateTrip={updateTrip} />
 
       {/* 2025 Trip Performance */}
       <TripTable trips={trips2025} title="2025 Trip Performance" />

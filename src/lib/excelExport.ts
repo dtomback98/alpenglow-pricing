@@ -52,6 +52,8 @@ export function exportTripSummary(config: TripConfiguration, calculations: PaxCa
     'Hotels': round2(calc.hotelsCost),
     'Meals': round2(calc.mealsCost),
     'Staff': round2(calc.staffCost),
+    'Guide Flights': round2(calc.guideFlightsCost),
+    'Staff Meals': round2(calc.staffMealsCost),
     'Transport': round2(calc.transportCost),
     'Logistics': round2(calc.logisticsCost),
     'Trip Specific': round2(calc.tripSpecificCost),
@@ -78,6 +80,7 @@ export function exportHistoricalTrips(trips: HistoricalTrip[], yearLabel: string
     'Revenue': round2(t.revenue),
     'Gross Profit': round2(t.grossProfit),
     'Margin %': round2(t.margin),
+    'Status': t.status || 'budgeted',
     'Notes': t.notes || '',
   }));
 

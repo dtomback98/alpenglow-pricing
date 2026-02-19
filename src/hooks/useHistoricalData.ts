@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { HistoricalTrip } from '@/lib/types';
-import { fetchHistoricalTrips, deleteHistoricalTrip, isSupabaseConfigured } from '@/lib/supabase';
+import { fetchHistoricalTrips, deleteHistoricalTrip, updateHistoricalTrip, isSupabaseConfigured } from '@/lib/supabase';
 import historicalData from '@/lib/historical-data.json';
 
 // Type the imported JSON data
@@ -16,6 +16,7 @@ interface UseHistoricalDataReturn {
   setSelectedCategory: (category: string | null) => void;
   refresh: () => Promise<void>;
   deleteTrip: (id: string) => Promise<boolean>;
+  updateTrip: (id: string, updates: { status?: string; notes?: string }) => Promise<boolean>;
 }
 
 export function useHistoricalData(): UseHistoricalDataReturn {
@@ -72,6 +73,20 @@ export function useHistoricalData(): UseHistoricalDataReturn {
     }
   }, [loadData]);
 
+  const updateTrip = useCallback(async (id: string, updates: { status?: string; notes?: string }): Promise<boolean> => {
+    try {
+      const success = await updateHistoricalTrip(id, updates);
+      if (success) {
+        await loadData();
+      }
+      return success;
+    } catch (err) {
+      console.error('Failed to update trip:', err);
+      setError('Failed to update trip');
+      return false;
+    }
+  }, [loadData]);
+
   return {
     trips,
     loading,
@@ -80,5 +95,6 @@ export function useHistoricalData(): UseHistoricalDataReturn {
     setSelectedCategory,
     refresh: loadData,
     deleteTrip,
+    updateTrip,
   };
 }

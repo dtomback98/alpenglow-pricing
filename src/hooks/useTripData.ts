@@ -20,7 +20,7 @@ interface UseTripDataReturn {
   selectedTripId: string | null;
   selectTrip: (id: string | null) => void;
   saveTrip: () => Promise<void>;
-  saveTripsToHistory: (pax: number, category: string) => Promise<boolean>;
+  saveTripsToHistory: (pax: number, category: string, year?: number, status?: string) => Promise<boolean>;
   deleteTrip: (id: string) => Promise<void>;
   createNewTrip: () => void;
   loading: boolean;
@@ -146,7 +146,7 @@ export function useTripData(): UseTripDataReturn {
   }, [config, selectedTripId, saving]);
 
   // Save current trip to history at a specific pax level
-  const saveTripsToHistory = useCallback(async (pax: number, category: string): Promise<boolean> => {
+  const saveTripsToHistory = useCallback(async (pax: number, category: string, year?: number, status?: string): Promise<boolean> => {
     if (saving) return false;
     if (!isSupabaseConfigured()) {
       setError('Supabase not configured.');
@@ -173,7 +173,7 @@ export function useTripData(): UseTripDataReturn {
       const updatedTrips = await fetchTripConfigurations();
       setTrips(updatedTrips);
 
-      const success = await saveToHistory(saved, pax, category);
+      const success = await saveToHistory(saved, pax, category, year, status);
       if (!success) {
         setError('Failed to save to history');
         return false;

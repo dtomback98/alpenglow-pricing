@@ -11,6 +11,7 @@ export interface ExtensionSingleSupplementConfig {
 export interface ExtensionHotelsMealsConfig {
   enabled: boolean;
   inheritFromMain: boolean;
+  mode?: 'perPaxPerNight' | 'perNight' | 'total';
   hotelCostPerNight: number;
   lunchCostPerDay: number;
   dinnerCostPerNight: number;
@@ -41,6 +42,7 @@ export interface ExtensionConfig {
 
 export interface HotelsMealsConfig {
   enabled: boolean;
+  mode?: 'perPaxPerNight' | 'perNight' | 'total';
   hotelCostPerNight: number;
   lunchCostPerDay: number;
   dinnerCostPerNight: number;
@@ -74,6 +76,10 @@ export interface StaffConfig {
   staffByPax: { [pax: number]: StaffMember[] };
   travelDays: number;
   travelDayRate: number;
+  guideFlightCost?: number;
+  guideFlightCountByPax?: { [pax: number]: number };
+  staffMealsCost?: number;
+  staffMealsMode?: 'perDay' | 'total';
 }
 
 export interface TransportConfig {
@@ -133,6 +139,7 @@ export interface TripConfiguration {
   paxMin: number;
   paxMax: number;
   paxStep: number;
+  inflationRate?: number;
 
   // Discounts
   discountsEnabled: boolean;
@@ -167,6 +174,8 @@ export interface PaxCalculation {
   mealsCost: number;
   logisticsCost: number;
   staffCost: number;
+  guideFlightsCost: number;
+  staffMealsCost: number;
   transportCost: number;
   tripSpecificCost: number;
   singleRoomCost: number;
@@ -200,6 +209,7 @@ export interface HistoricalTrip {
   createdAt?: string;
   year?: number;
   tripConfigId?: string;
+  status?: 'budgeted' | 'run';
 }
 
 export type TabType = 'summary' | 'inputs-core' | 'inputs-extension' | 'history';
