@@ -119,9 +119,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
     travelDays: 2,
     travelDayRate: 150,
     guideFlightCost: 800,
-    guideFlightCountByPax: Object.fromEntries(
-      Array.from({ length: 16 }, (_, i) => [i + 1, 2])
-    ),
+    guideFlightCount: 2,
     staffMealsCost: 0,
     staffMealsMode: 'perDay' as const,
   },
