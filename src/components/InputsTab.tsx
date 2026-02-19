@@ -429,8 +429,16 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 <button onClick={addStaffMember} className="btn btn-secondary">+ Add Staff Member</button>
                 <button onClick={copyStaffToAll} className="btn btn-secondary">Copy to All Pax</button>
               </div>
+              {/* Guide flights count — embedded in pax tab */}
+              <div className="mt-4 pt-4 border-t border-ag-border">
+                <div className="form-group w-48">
+                  <label className="form-label">Guide Flights Needed</label>
+                  <p className="text-xs text-ag-text-muted mb-1">Number of flights at {effectiveStaffPax} pax</p>
+                  <input type="number" min="0" value={config.staffConfig.guideFlightCountByPax?.[effectiveStaffPax] ?? 0} onChange={(e) => updateNestedConfig('staffConfig', { guideFlightCountByPax: { ...config.staffConfig.guideFlightCountByPax, [effectiveStaffPax]: Number(e.target.value) } })} className="w-full" />
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-ag-border">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-ag-border">
               <div className="form-group">
                 <label className="form-label">Travel Days</label>
                 <p className="text-xs text-ag-text-muted mb-1">Extra travel days — applied to all staff</p>
@@ -441,18 +449,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 <p className="text-xs text-ag-text-muted mb-1">Per staff member, per travel day</p>
                 <input type="number" value={config.staffConfig.travelDayRate} onChange={(e) => updateNestedConfig('staffConfig', { travelDayRate: Number(e.target.value) })} className="w-full" />
               </div>
-            </div>
-            {/* Guide Flights */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-ag-border">
               <div className="form-group">
                 <label className="form-label">Guide Flight Cost ($)</label>
                 <p className="text-xs text-ag-text-muted mb-1">Flat cost per guide flight</p>
                 <input type="number" value={config.staffConfig.guideFlightCost || 0} onChange={(e) => updateNestedConfig('staffConfig', { guideFlightCost: Number(e.target.value) })} className="w-full" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Number of Guide Flights</label>
-                <p className="text-xs text-ag-text-muted mb-1">Total flights needed across all staff</p>
-                <input type="number" min="0" value={config.staffConfig.guideFlightCount ?? 0} onChange={(e) => updateNestedConfig('staffConfig', { guideFlightCount: Number(e.target.value) })} className="w-full" />
               </div>
             </div>
             {/* Staff Guide Meals */}

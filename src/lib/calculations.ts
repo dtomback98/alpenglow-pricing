@@ -209,7 +209,7 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
 
   // Guide flights (part of staff config, gated with staff)
   const guideFlightCostPer = config.staffConfig.guideFlightCost || 0;
-  const guideFlightCount = config.staffConfig.guideFlightCount ?? 0;
+  const guideFlightCount = config.staffConfig.guideFlightCountByPax?.[pax] ?? 0;
   const guideFlightsCost = staffOn ? guideFlightCostPer * guideFlightCount : 0;
 
   // Staff guide meals (gated with staff)
