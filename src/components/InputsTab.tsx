@@ -526,18 +526,49 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               Check &quot;Per Pax&quot; to multiply the cost by the number of participants
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {TRIP_SPECIFIC_FIELDS.map(({ key, label }) => (
-                <div key={key} className="form-group">
-                  <label className="form-label">{label} ($)</label>
-                  <div className="flex gap-3 items-center">
-                    <input type="number" value={config.tripSpecific[key].amount} onChange={(e) => updateTripSpecificCost(key, { amount: Number(e.target.value) })} className="flex-1 min-w-0" />
-                    <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                      <input type="checkbox" checked={config.tripSpecific[key].perPax} onChange={(e) => updateTripSpecificCost(key, { perPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                      <span>Per Pax</span>
-                    </label>
+              {TRIP_SPECIFIC_FIELDS.map(({ key, label }) => {
+                const isInsurance = key === 'insurance';
+                const isPercentMode = isInsurance && config.tripSpecific.insurance.percentOfRevenue;
+                return (
+                  <div key={key} className="form-group">
+                    <label className="form-label">{label} {isPercentMode ? '(%)' : '($)'}</label>
+                    {isInsurance && (
+                      <div className="flex gap-1 mb-1">
+                        <button
+                          onClick={() => updateTripSpecificCost('insurance', { percentOfRevenue: false, perPax: false })}
+                          className={`btn text-xs ${!isPercentMode ? 'btn-primary' : 'btn-secondary'}`}
+                        >
+                          Flat $
+                        </button>
+                        <button
+                          onClick={() => updateTripSpecificCost('insurance', { percentOfRevenue: true, perPax: false })}
+                          className={`btn text-xs ${isPercentMode ? 'btn-primary' : 'btn-secondary'}`}
+                        >
+                          % of Revenue
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex gap-3 items-center">
+                      <input
+                        type="number"
+                        step={isPercentMode ? '0.01' : undefined}
+                        value={isPercentMode ? config.tripSpecific.insurance.amount * 100 : config.tripSpecific[key].amount}
+                        onChange={(e) => updateTripSpecificCost(key, { amount: isPercentMode ? Number(e.target.value) / 100 : Number(e.target.value) })}
+                        className="flex-1 min-w-0"
+                      />
+                      {!isPercentMode && (
+                        <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                          <input type="checkbox" checked={config.tripSpecific[key].perPax} onChange={(e) => updateTripSpecificCost(key, { perPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                          <span>Per Pax</span>
+                        </label>
+                      )}
+                    </div>
+                    {isPercentMode && (
+                      <p className="text-xs text-ag-text-muted mt-1">Calculated as % of total revenue</p>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}

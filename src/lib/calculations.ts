@@ -124,7 +124,7 @@ function calculateExtension(pax: number, config: TripConfiguration) {
 }
 
 // Calculate trip-specific cost with per-pax option
-function calculateTripSpecificCost(pax: number, config: TripConfiguration): number {
+function calculateTripSpecificCost(pax: number, config: TripConfiguration, totalRevenue: number): number {
   const { tripSpecific } = config;
   let total = 0;
 
@@ -139,7 +139,11 @@ function calculateTripSpecificCost(pax: number, config: TripConfiguration): numb
   ];
 
   for (const cost of costs) {
-    total += cost.perPax ? cost.amount * pax : cost.amount;
+    if (cost.percentOfRevenue) {
+      total += cost.amount * totalRevenue;
+    } else {
+      total += cost.perPax ? cost.amount * pax : cost.amount;
+    }
   }
 
   return total;
@@ -227,7 +231,7 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
 
   // Trip-specific (gated)
   const tripSpecificOn = config.tripSpecific.enabled !== false;
-  const tripSpecificCost = tripSpecificOn ? calculateTripSpecificCost(pax, config) : 0;
+  const tripSpecificCost = tripSpecificOn ? calculateTripSpecificCost(pax, config, totalRevenue) : 0;
 
   // Single room extra cost (gated with single supplement)
   const singleRoomCost = singleSuppOn ? config.singleSupplement.singleRoomExtra * singleSupplementGuests * config.tripNights : 0;

@@ -95,6 +95,7 @@ export interface TransportConfig {
 export interface TripSpecificCost {
   amount: number;
   perPax: boolean;
+  percentOfRevenue?: boolean;
 }
 
 export interface TripSpecificConfig {
