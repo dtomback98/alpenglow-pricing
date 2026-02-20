@@ -128,9 +128,8 @@ export const DEFAULT_CONFIG: TripConfiguration = {
 
   transportConfig: {
     enabled: true,
-    flightCostPerPerson: 0,
+    flightCostPerPerson: 0, // Legacy — flights now in staffConfig
     groundTransportTotal: 2000,
-    groundTransportPerPax: false,
     airportTransfers: 500,
     localTransport: 300,
   },
@@ -145,13 +144,6 @@ export const DEFAULT_CONFIG: TripConfiguration = {
     hypoxico: { amount: 0, perPax: false },
     otherCosts: { amount: 0, perPax: false },
   },
-};
-
-// Pax range for calculations
-export const PAX_RANGE = {
-  min: 1,
-  max: 16,
-  step: 1,
 };
 
 // Chart colors

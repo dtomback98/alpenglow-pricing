@@ -56,11 +56,11 @@ export interface LogisticsRate {
 
 export interface LogisticsConfig {
   enabled: boolean;
-  baseRate: number;
+  baseRate: number; // Legacy — unused but kept for DB compat
   rates: LogisticsRate[];
-  perPax: boolean;
+  perPax: boolean; // Legacy — mode is authoritative, perPax used as fallback
   mode?: 'perPaxPerDay' | 'perDay' | 'total';
-  includesGuide: boolean;
+  includesGuide: boolean; // Legacy — unused but kept for DB compat
 }
 
 export interface StaffMember {
@@ -84,10 +84,8 @@ export interface StaffConfig {
 
 export interface TransportConfig {
   enabled: boolean;
-  flightCostPerPerson: number;
-  flightCostByPax?: { [pax: number]: number };
+  flightCostPerPerson: number; // Legacy — flights now in StaffConfig, kept for migration
   groundTransportTotal: number;
-  groundTransportPerPax: boolean;
   airportTransfers: number;
   localTransport: number;
 }
@@ -120,7 +118,6 @@ export interface UiPreferences {
   pricingPerPax?: boolean;
   discountsPerPax?: boolean;
   singleSuppPerPax?: boolean;
-  transportPerPax?: boolean;
   extPerPax?: boolean;
   extSuppPerPax?: boolean;
 }
