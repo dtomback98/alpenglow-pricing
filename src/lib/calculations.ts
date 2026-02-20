@@ -152,16 +152,18 @@ function calculateTripSpecificCost(pax: number, config: TripConfiguration, total
 // Calculate all values for a specific pax count
 export function calculateForPax(pax: number, config: TripConfiguration): PaxCalculation {
   const effectivePrice = config.tripPriceByPax?.[pax] ?? config.tripPrice;
+  const isTotalPricing = config.tripPriceMode === 'total' && !config.tripPriceByPax;
 
   // Revenue calculations
-  const baseRevenue = effectivePrice * pax;
+  const baseRevenue = isTotalPricing ? effectivePrice : effectivePrice * pax;
+  const perPersonPrice = isTotalPricing ? (pax > 0 ? effectivePrice / pax : 0) : effectivePrice;
 
   // Discounts (gated, clamped to pax count)
   const discountsOn = config.discountsEnabled !== false;
   const earlyBirdCount = discountsOn ? Math.min(config.earlyBirdCountByPax?.[pax] || 0, pax) : 0;
   const earlyBirdCost = config.earlyBirdDiscount * earlyBirdCount;
   const loyaltyCount = discountsOn ? Math.min(config.loyaltyCountByPax?.[pax] || 0, pax) : 0;
-  const loyaltyCost = effectivePrice * loyaltyCount * config.loyaltyDiscountRate;
+  const loyaltyCost = perPersonPrice * loyaltyCount * config.loyaltyDiscountRate;
 
   // Single supplement (gated, clamped to pax count)
   const singleSuppOn = config.singleSupplement.enabled !== false;

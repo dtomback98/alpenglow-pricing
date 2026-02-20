@@ -136,7 +136,9 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="form-group">
             <label className="form-label">Trip Price ($)</label>
-            <p className="text-xs text-ag-text-muted mb-1">Per person for entire trip</p>
+            <p className="text-xs text-ag-text-muted mb-1">
+              {pricingPerPax ? 'Per person at each pax level' : config.tripPriceMode === 'total' ? 'Total revenue for entire trip' : 'Per person for entire trip'}
+            </p>
             <input type="number" value={config.tripPrice} onChange={(e) => {
               const val = Number(e.target.value);
               if (!pricingPerPax) {
@@ -145,6 +147,12 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 updateConfig({ tripPrice: val });
               }
             }} className="w-full" />
+            {!pricingPerPax && (
+              <div className="flex gap-1 mt-2">
+                <button onClick={() => updateConfig({ tripPriceMode: undefined })} className={`btn text-xs ${config.tripPriceMode !== 'total' ? 'btn-primary' : 'btn-secondary'}`}>Per Person</button>
+                <button onClick={() => updateConfig({ tripPriceMode: 'total' })} className={`btn text-xs ${config.tripPriceMode === 'total' ? 'btn-primary' : 'btn-secondary'}`}>Total for Trip</button>
+              </div>
+            )}
           </div>
           <div className="form-group">
             <label className="form-label">Trip Days</label>

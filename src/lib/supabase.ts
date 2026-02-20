@@ -150,6 +150,7 @@ function rowToConfig(row: any): TripConfiguration {
     transportConfig: row.transport_config,
     tripSpecific: migrateTripSpecific(row.trip_specific),
     uiPreferences: row.ui_preferences || {},
+    tripPriceMode: row.ui_preferences?.tripPriceMode || undefined,
     tripPriceByPax: row.ui_preferences?.tripPriceByPax || undefined,
   };
 }
@@ -179,7 +180,7 @@ function configToRow(config: TripConfiguration): any {
     staff_config: config.staffConfig,
     transport_config: config.transportConfig,
     trip_specific: config.tripSpecific,
-    ui_preferences: { ...(config.uiPreferences || {}), tripPriceByPax: config.tripPriceByPax },
+    ui_preferences: { ...(config.uiPreferences || {}), tripPriceMode: config.tripPriceMode, tripPriceByPax: config.tripPriceByPax },
   };
 }
 

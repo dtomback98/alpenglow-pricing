@@ -133,6 +133,7 @@ export interface TripConfiguration {
 
   // Core trip data
   tripPrice: number;
+  tripPriceMode?: 'perPerson' | 'total';
   tripPriceByPax?: { [pax: number]: number };
   tripDays: number;
   tripNights: number;
