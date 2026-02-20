@@ -18,9 +18,9 @@ export function calculateStaffCost(pax: number, config: TripConfiguration): numb
     totalCost += s.dailyRate * s.days * s.quantity;
   }
 
-  // Add travel day costs
-  const totalStaffCount = staff.reduce((sum, s) => sum + s.quantity, 0);
-  totalCost += staffConfig.travelDays * staffConfig.travelDayRate * totalStaffCount;
+  // Add travel day costs (only for guides who fly)
+  const flyingGuides = staffConfig.guideFlightCountByPax?.[pax] ?? 0;
+  totalCost += staffConfig.travelDays * staffConfig.travelDayRate * flyingGuides;
 
   return totalCost;
 }
