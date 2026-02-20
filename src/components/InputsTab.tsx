@@ -70,9 +70,67 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   const pricingPerPax = config.uiPreferences?.pricingPerPax ?? false;
   const discountsPerPax = config.uiPreferences?.discountsPerPax ?? false;
   const singleSuppPerPax = config.uiPreferences?.singleSuppPerPax ?? false;
+  const hotelsMealsPerPax = config.uiPreferences?.hotelsMealsPerPax ?? false;
   const setPricingPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, pricingPerPax: val } }));
   const setDiscountsPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, discountsPerPax: val } }));
   const setSingleSuppPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, singleSuppPerPax: val } }));
+
+  const [selectedHMPax, setSelectedHMPax] = useState(paxMin);
+  useEffect(() => { setSelectedHMPax(paxMin); }, [paxMin]);
+  const effectiveHMPax = paxCounts.includes(selectedHMPax) ? selectedHMPax : paxCounts[0] || 1;
+
+  const toggleHotelsMealsPerPax = (val: boolean) => {
+    if (val) {
+      // Switching to per-pax: initialize byPax from flat rates if empty
+      updateConfig(prev => {
+        const hm = prev.hotelsMeals;
+        const needsInit = !hm.hotelCostByPax || Object.keys(hm.hotelCostByPax).length === 0;
+        if (!needsInit) return { uiPreferences: { ...prev.uiPreferences, hotelsMealsPerPax: true } };
+        const hotelByPax: { [k: number]: number } = {};
+        const lunchByPax: { [k: number]: number } = {};
+        const dinnerByPax: { [k: number]: number } = {};
+        const additionalByPax: { [k: number]: number } = {};
+        for (const p of paxCounts) {
+          hotelByPax[p] = hm.hotelCostPerNight;
+          lunchByPax[p] = hm.lunchCostPerDay;
+          dinnerByPax[p] = hm.dinnerCostPerNight;
+          additionalByPax[p] = hm.additionalMealCosts;
+        }
+        return {
+          uiPreferences: { ...prev.uiPreferences, hotelsMealsPerPax: true },
+          hotelsMeals: { ...hm, hotelCostByPax: hotelByPax, lunchCostByPax: lunchByPax, dinnerCostByPax: dinnerByPax, additionalMealCostsByPax: additionalByPax },
+        };
+      });
+    } else {
+      // Switching to simple: clear byPax data
+      updateConfig(prev => ({
+        uiPreferences: { ...prev.uiPreferences, hotelsMealsPerPax: false },
+        hotelsMeals: { ...prev.hotelsMeals, hotelCostByPax: undefined, lunchCostByPax: undefined, dinnerCostByPax: undefined, additionalMealCostsByPax: undefined },
+      }));
+    }
+  };
+
+  const copyHMToAllPax = () => {
+    updateConfig(prev => {
+      const hm = prev.hotelsMeals;
+      const p = effectiveHMPax;
+      const hotel = hm.hotelCostByPax?.[p] ?? hm.hotelCostPerNight;
+      const lunch = hm.lunchCostByPax?.[p] ?? hm.lunchCostPerDay;
+      const dinner = hm.dinnerCostByPax?.[p] ?? hm.dinnerCostPerNight;
+      const additional = hm.additionalMealCostsByPax?.[p] ?? hm.additionalMealCosts;
+      const hotelByPax: { [k: number]: number } = {};
+      const lunchByPax: { [k: number]: number } = {};
+      const dinnerByPax: { [k: number]: number } = {};
+      const additionalByPax: { [k: number]: number } = {};
+      for (const pp of paxCounts) {
+        hotelByPax[pp] = hotel;
+        lunchByPax[pp] = lunch;
+        dinnerByPax[pp] = dinner;
+        additionalByPax[pp] = additional;
+      }
+      return { hotelsMeals: { ...hm, hotelCostByPax: hotelByPax, lunchCostByPax: lunchByPax, dinnerCostByPax: dinnerByPax, additionalMealCostsByPax: additionalByPax } };
+    });
+  };
 
 
   const effectiveStaffPax = paxCounts.includes(selectedStaffPax) ? selectedStaffPax : paxCounts[0] || 1;
@@ -355,9 +413,16 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
       <div className={`card ${config.hotelsMeals.enabled === false ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Hotels & Meals</h2>
-          <button onClick={() => updateNestedConfig('hotelsMeals', { enabled: config.hotelsMeals.enabled === false })} className={`btn text-xs ${config.hotelsMeals.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
-            {config.hotelsMeals.enabled === false ? 'Inactive' : 'Active'}
-          </button>
+          <div className="flex gap-2">
+            {config.hotelsMeals.enabled !== false && (
+              <button onClick={() => toggleHotelsMealsPerPax(!hotelsMealsPerPax)} className={`btn text-xs ${hotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>
+                {hotelsMealsPerPax ? 'Per Pax Mode' : 'Simple Mode'}
+              </button>
+            )}
+            <button onClick={() => updateNestedConfig('hotelsMeals', { enabled: config.hotelsMeals.enabled === false })} className={`btn text-xs ${config.hotelsMeals.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
+              {config.hotelsMeals.enabled === false ? 'Inactive' : 'Active'}
+            </button>
+          </div>
         </div>
         {config.hotelsMeals.enabled === false ? (
           <p className="text-sm text-ag-text-muted">Section disabled — hotels & meals will not be applied to calculations.</p>
@@ -384,28 +449,65 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 </span>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="form-group">
-                <label className="form-label">Hotel Cost ($)</label>
-                <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total for entire trip'}</p>
-                <input type="number" value={config.hotelsMeals.hotelCostPerNight} onChange={(e) => updateNestedConfig('hotelsMeals', { hotelCostPerNight: Number(e.target.value) })} className="w-full" />
+            {!hotelsMealsPerPax ? (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="form-group">
+                  <label className="form-label">Hotel Cost ($)</label>
+                  <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total for entire trip'}</p>
+                  <input type="number" value={config.hotelsMeals.hotelCostPerNight} onChange={(e) => updateNestedConfig('hotelsMeals', { hotelCostPerNight: Number(e.target.value) })} className="w-full" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Lunch Cost ($)</label>
+                  <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per day' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per day (flat)' : 'Total for entire trip'}</p>
+                  <input type="number" value={config.hotelsMeals.lunchCostPerDay} onChange={(e) => updateNestedConfig('hotelsMeals', { lunchCostPerDay: Number(e.target.value) })} className="w-full" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Dinner Cost ($)</label>
+                  <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total for entire trip'}</p>
+                  <input type="number" value={config.hotelsMeals.dinnerCostPerNight} onChange={(e) => updateNestedConfig('hotelsMeals', { dinnerCostPerNight: Number(e.target.value) })} className="w-full" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Additional Meal Costs ($)</label>
+                  <p className="text-xs text-ag-text-muted mb-1">Flat total for entire trip</p>
+                  <input type="number" value={config.hotelsMeals.additionalMealCosts} onChange={(e) => updateNestedConfig('hotelsMeals', { additionalMealCosts: Number(e.target.value) })} className="w-full" />
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Lunch Cost ($)</label>
-                <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per day' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per day (flat)' : 'Total for entire trip'}</p>
-                <input type="number" value={config.hotelsMeals.lunchCostPerDay} onChange={(e) => updateNestedConfig('hotelsMeals', { lunchCostPerDay: Number(e.target.value) })} className="w-full" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Dinner Cost ($)</label>
-                <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total for entire trip'}</p>
-                <input type="number" value={config.hotelsMeals.dinnerCostPerNight} onChange={(e) => updateNestedConfig('hotelsMeals', { dinnerCostPerNight: Number(e.target.value) })} className="w-full" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Additional Meal Costs ($)</label>
-                <p className="text-xs text-ag-text-muted mb-1">Flat total for entire trip</p>
-                <input type="number" value={config.hotelsMeals.additionalMealCosts} onChange={(e) => updateNestedConfig('hotelsMeals', { additionalMealCosts: Number(e.target.value) })} className="w-full" />
-              </div>
-            </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex gap-2 flex-wrap">
+                    {paxCounts.map((p) => (
+                      <button key={p} onClick={() => setSelectedHMPax(p)} className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${selectedHMPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-lighter text-ag-text-muted hover:text-ag-text'}`}>
+                        {p} pax
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={copyHMToAllPax} className="btn btn-secondary text-xs ml-2">Copy to All Pax</button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
+                  <div className="form-group">
+                    <label className="form-label">Hotel Cost ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total for entire trip'}</p>
+                    <input type="number" value={config.hotelsMeals.hotelCostByPax?.[effectiveHMPax] ?? config.hotelsMeals.hotelCostPerNight} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, hotelCostByPax: { ...prev.hotelsMeals.hotelCostByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Lunch Cost ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per day' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per day (flat)' : 'Total for entire trip'}</p>
+                    <input type="number" value={config.hotelsMeals.lunchCostByPax?.[effectiveHMPax] ?? config.hotelsMeals.lunchCostPerDay} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, lunchCostByPax: { ...prev.hotelsMeals.lunchCostByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Dinner Cost ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total for entire trip'}</p>
+                    <input type="number" value={config.hotelsMeals.dinnerCostByPax?.[effectiveHMPax] ?? config.hotelsMeals.dinnerCostPerNight} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, dinnerCostByPax: { ...prev.hotelsMeals.dinnerCostByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Additional Meal Costs ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">Flat total for entire trip</p>
+                    <input type="number" value={config.hotelsMeals.additionalMealCostsByPax?.[effectiveHMPax] ?? config.hotelsMeals.additionalMealCosts} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, additionalMealCostsByPax: { ...prev.hotelsMeals.additionalMealCostsByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
+                  </div>
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
@@ -540,18 +642,36 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="form-group">
               <label className="form-label">Ground Transport ($)</label>
-              <p className="text-xs text-ag-text-muted mb-1">Flat total for entire trip</p>
-              <input type="number" value={config.transportConfig.groundTransportTotal} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportTotal: Number(e.target.value) })} className="w-full" />
+              <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.groundTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
+              <div className="flex gap-3 items-center">
+                <input type="number" value={config.transportConfig.groundTransportTotal} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportTotal: Number(e.target.value) })} className="flex-1 min-w-0" />
+                <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                  <input type="checkbox" checked={config.transportConfig.groundTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                  <span>Per Pax</span>
+                </label>
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">Airport Transfers ($)</label>
-              <p className="text-xs text-ag-text-muted mb-1">Flat total for entire trip</p>
-              <input type="number" value={config.transportConfig.airportTransfers} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfers: Number(e.target.value) })} className="w-full" />
+              <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.airportTransfersPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
+              <div className="flex gap-3 items-center">
+                <input type="number" value={config.transportConfig.airportTransfers} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfers: Number(e.target.value) })} className="flex-1 min-w-0" />
+                <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                  <input type="checkbox" checked={config.transportConfig.airportTransfersPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfersPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                  <span>Per Pax</span>
+                </label>
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">Local Transport ($)</label>
-              <p className="text-xs text-ag-text-muted mb-1">Flat total for entire trip</p>
-              <input type="number" value={config.transportConfig.localTransport} onChange={(e) => updateNestedConfig('transportConfig', { localTransport: Number(e.target.value) })} className="w-full" />
+              <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.localTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
+              <div className="flex gap-3 items-center">
+                <input type="number" value={config.transportConfig.localTransport} onChange={(e) => updateNestedConfig('transportConfig', { localTransport: Number(e.target.value) })} className="flex-1 min-w-0" />
+                <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                  <input type="checkbox" checked={config.transportConfig.localTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { localTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                  <span>Per Pax</span>
+                </label>
+              </div>
             </div>
           </div>
         )}

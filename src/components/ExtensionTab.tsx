@@ -47,9 +47,65 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
   const extPerPax = config.uiPreferences?.extPerPax ?? false;
   const extSuppPerPax = config.uiPreferences?.extSuppPerPax ?? false;
   const extDiscountsPerPax = config.uiPreferences?.extDiscountsPerPax ?? false;
+  const extHotelsMealsPerPax = config.uiPreferences?.extHotelsMealsPerPax ?? false;
   const setExtPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extPerPax: val } }));
   const setExtSuppPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extSuppPerPax: val } }));
   const setExtDiscountsPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extDiscountsPerPax: val } }));
+
+  const [selectedExtHMPax, setSelectedExtHMPax] = useState(paxMin);
+  useEffect(() => { setSelectedExtHMPax(paxMin); }, [paxMin]);
+  const effectiveExtHMPax = paxCounts.includes(selectedExtHMPax) ? selectedExtHMPax : paxCounts[0] || 1;
+
+  const toggleExtHotelsMealsPerPax = (val: boolean) => {
+    if (val) {
+      updateConfig(prev => {
+        const hm = prev.extension.hotelsMeals;
+        const needsInit = !hm.hotelCostByPax || Object.keys(hm.hotelCostByPax).length === 0;
+        if (!needsInit) return { uiPreferences: { ...prev.uiPreferences, extHotelsMealsPerPax: true } };
+        const hotelByPax: { [k: number]: number } = {};
+        const lunchByPax: { [k: number]: number } = {};
+        const dinnerByPax: { [k: number]: number } = {};
+        const additionalByPax: { [k: number]: number } = {};
+        for (const p of paxCounts) {
+          hotelByPax[p] = hm.hotelCostPerNight;
+          lunchByPax[p] = hm.lunchCostPerDay;
+          dinnerByPax[p] = hm.dinnerCostPerNight;
+          additionalByPax[p] = hm.additionalMealCosts;
+        }
+        return {
+          uiPreferences: { ...prev.uiPreferences, extHotelsMealsPerPax: true },
+          extension: { ...prev.extension, hotelsMeals: { ...hm, hotelCostByPax: hotelByPax, lunchCostByPax: lunchByPax, dinnerCostByPax: dinnerByPax, additionalMealCostsByPax: additionalByPax } },
+        };
+      });
+    } else {
+      updateConfig(prev => ({
+        uiPreferences: { ...prev.uiPreferences, extHotelsMealsPerPax: false },
+        extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, hotelCostByPax: undefined, lunchCostByPax: undefined, dinnerCostByPax: undefined, additionalMealCostsByPax: undefined } },
+      }));
+    }
+  };
+
+  const copyExtHMToAllPax = () => {
+    updateConfig(prev => {
+      const hm = prev.extension.hotelsMeals;
+      const p = effectiveExtHMPax;
+      const hotel = hm.hotelCostByPax?.[p] ?? hm.hotelCostPerNight;
+      const lunch = hm.lunchCostByPax?.[p] ?? hm.lunchCostPerDay;
+      const dinner = hm.dinnerCostByPax?.[p] ?? hm.dinnerCostPerNight;
+      const additional = hm.additionalMealCostsByPax?.[p] ?? hm.additionalMealCosts;
+      const hotelByPax: { [k: number]: number } = {};
+      const lunchByPax: { [k: number]: number } = {};
+      const dinnerByPax: { [k: number]: number } = {};
+      const additionalByPax: { [k: number]: number } = {};
+      for (const pp of paxCounts) {
+        hotelByPax[pp] = hotel;
+        lunchByPax[pp] = lunch;
+        dinnerByPax[pp] = dinner;
+        additionalByPax[pp] = additional;
+      }
+      return { extension: { ...prev.extension, hotelsMeals: { ...hm, hotelCostByPax: hotelByPax, lunchCostByPax: lunchByPax, dinnerCostByPax: dinnerByPax, additionalMealCostsByPax: additionalByPax } } };
+    });
+  };
   const [selectedStaffPax, setSelectedStaffPax] = useState(paxMin);
   useEffect(() => { setSelectedStaffPax(paxMin); }, [paxMin]);
 
@@ -396,9 +452,16 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
             <h2 className="text-lg font-semibold">Extension - Hotels & Meals</h2>
             <div className="flex gap-2">
               {ext.hotelsMeals.enabled !== false && (
-                <button onClick={() => updateExtHotelsMeals({ inheritFromMain: !ext.hotelsMeals.inheritFromMain })} className={`btn text-xs ${ext.hotelsMeals.inheritFromMain ? 'btn-secondary' : 'btn-primary'}`}>
-                  {ext.hotelsMeals.inheritFromMain ? 'Match Core Inputs' : 'Custom'}
-                </button>
+                <>
+                  <button onClick={() => updateExtHotelsMeals({ inheritFromMain: !ext.hotelsMeals.inheritFromMain })} className={`btn text-xs ${ext.hotelsMeals.inheritFromMain ? 'btn-secondary' : 'btn-primary'}`}>
+                    {ext.hotelsMeals.inheritFromMain ? 'Match Core Inputs' : 'Custom'}
+                  </button>
+                  {!ext.hotelsMeals.inheritFromMain && (
+                    <button onClick={() => toggleExtHotelsMealsPerPax(!extHotelsMealsPerPax)} className={`btn text-xs ${extHotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>
+                      {extHotelsMealsPerPax ? 'Per Pax Mode' : 'Simple Mode'}
+                    </button>
+                  )}
+                </>
               )}
               <button onClick={() => updateExtHotelsMeals({ enabled: ext.hotelsMeals.enabled === false })} className={`btn text-xs ${ext.hotelsMeals.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
                 {ext.hotelsMeals.enabled === false ? 'Inactive' : 'Active'}
@@ -457,28 +520,65 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   </span>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="form-group">
-                  <label className="form-label">Hotel Cost ($)</label>
-                  <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
-                  <input type="number" value={ext.hotelsMeals.hotelCostPerNight} onChange={(e) => updateExtHotelsMeals({ hotelCostPerNight: Number(e.target.value) })} className="w-full" />
+              {!extHotelsMealsPerPax ? (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="form-group">
+                    <label className="form-label">Hotel Cost ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
+                    <input type="number" value={ext.hotelsMeals.hotelCostPerNight} onChange={(e) => updateExtHotelsMeals({ hotelCostPerNight: Number(e.target.value) })} className="w-full" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Lunch Cost ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per day' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per day (flat)' : 'Total'}</p>
+                    <input type="number" value={ext.hotelsMeals.lunchCostPerDay} onChange={(e) => updateExtHotelsMeals({ lunchCostPerDay: Number(e.target.value) })} className="w-full" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Dinner Cost ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
+                    <input type="number" value={ext.hotelsMeals.dinnerCostPerNight} onChange={(e) => updateExtHotelsMeals({ dinnerCostPerNight: Number(e.target.value) })} className="w-full" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Additional Meal Costs ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">Flat total</p>
+                    <input type="number" value={ext.hotelsMeals.additionalMealCosts} onChange={(e) => updateExtHotelsMeals({ additionalMealCosts: Number(e.target.value) })} className="w-full" />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Lunch Cost ($)</label>
-                  <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per day' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per day (flat)' : 'Total'}</p>
-                  <input type="number" value={ext.hotelsMeals.lunchCostPerDay} onChange={(e) => updateExtHotelsMeals({ lunchCostPerDay: Number(e.target.value) })} className="w-full" />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Dinner Cost ($)</label>
-                  <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
-                  <input type="number" value={ext.hotelsMeals.dinnerCostPerNight} onChange={(e) => updateExtHotelsMeals({ dinnerCostPerNight: Number(e.target.value) })} className="w-full" />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Additional Meal Costs ($)</label>
-                  <p className="text-xs text-ag-text-muted mb-1">Flat total</p>
-                  <input type="number" value={ext.hotelsMeals.additionalMealCosts} onChange={(e) => updateExtHotelsMeals({ additionalMealCosts: Number(e.target.value) })} className="w-full" />
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex gap-2 flex-wrap">
+                      {paxCounts.map((p) => (
+                        <button key={p} onClick={() => setSelectedExtHMPax(p)} className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${selectedExtHMPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-lighter text-ag-text-muted hover:text-ag-text'}`}>
+                          {p} pax
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={copyExtHMToAllPax} className="btn btn-secondary text-xs ml-2">Copy to All Pax</button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
+                    <div className="form-group">
+                      <label className="form-label">Hotel Cost ($)</label>
+                      <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
+                      <input type="number" value={ext.hotelsMeals.hotelCostByPax?.[effectiveExtHMPax] ?? ext.hotelsMeals.hotelCostPerNight} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, hotelCostByPax: { ...prev.extension.hotelsMeals.hotelCostByPax, [effectiveExtHMPax]: val } } } })); }} className="w-full" />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Lunch Cost ($)</label>
+                      <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per day' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per day (flat)' : 'Total'}</p>
+                      <input type="number" value={ext.hotelsMeals.lunchCostByPax?.[effectiveExtHMPax] ?? ext.hotelsMeals.lunchCostPerDay} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, lunchCostByPax: { ...prev.extension.hotelsMeals.lunchCostByPax, [effectiveExtHMPax]: val } } } })); }} className="w-full" />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Dinner Cost ($)</label>
+                      <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
+                      <input type="number" value={ext.hotelsMeals.dinnerCostByPax?.[effectiveExtHMPax] ?? ext.hotelsMeals.dinnerCostPerNight} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, dinnerCostByPax: { ...prev.extension.hotelsMeals.dinnerCostByPax, [effectiveExtHMPax]: val } } } })); }} className="w-full" />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Additional Meal Costs ($)</label>
+                      <p className="text-xs text-ag-text-muted mb-1">Flat total</p>
+                      <input type="number" value={ext.hotelsMeals.additionalMealCostsByPax?.[effectiveExtHMPax] ?? ext.hotelsMeals.additionalMealCosts} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, additionalMealCostsByPax: { ...prev.extension.hotelsMeals.additionalMealCostsByPax, [effectiveExtHMPax]: val } } } })); }} className="w-full" />
+                    </div>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

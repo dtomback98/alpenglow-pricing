@@ -90,10 +90,18 @@ function calculateExtension(pax: number, config: TripConfiguration) {
   let extensionMealsCost = 0;
   if (extension.hotelsMeals.enabled !== false && extPaxCount > 0) {
     const hm = extension.hotelsMeals;
-    const hotelRate = hm.inheritFromMain ? config.hotelsMeals.hotelCostPerNight : hm.hotelCostPerNight;
-    const lunchRate = hm.inheritFromMain ? config.hotelsMeals.lunchCostPerDay : hm.lunchCostPerDay;
-    const dinnerRate = hm.inheritFromMain ? config.hotelsMeals.dinnerCostPerNight : hm.dinnerCostPerNight;
-    const additionalMeals = hm.inheritFromMain ? config.hotelsMeals.additionalMealCosts : hm.additionalMealCosts;
+    const hotelRate = hm.inheritFromMain
+      ? (config.hotelsMeals.hotelCostByPax?.[pax] ?? config.hotelsMeals.hotelCostPerNight)
+      : (hm.hotelCostByPax?.[pax] ?? hm.hotelCostPerNight);
+    const lunchRate = hm.inheritFromMain
+      ? (config.hotelsMeals.lunchCostByPax?.[pax] ?? config.hotelsMeals.lunchCostPerDay)
+      : (hm.lunchCostByPax?.[pax] ?? hm.lunchCostPerDay);
+    const dinnerRate = hm.inheritFromMain
+      ? (config.hotelsMeals.dinnerCostByPax?.[pax] ?? config.hotelsMeals.dinnerCostPerNight)
+      : (hm.dinnerCostByPax?.[pax] ?? hm.dinnerCostPerNight);
+    const additionalMeals = hm.inheritFromMain
+      ? (config.hotelsMeals.additionalMealCostsByPax?.[pax] ?? config.hotelsMeals.additionalMealCosts)
+      : (hm.additionalMealCostsByPax?.[pax] ?? hm.additionalMealCosts);
     const extHmMode = hm.inheritFromMain ? (config.hotelsMeals.mode || 'perPaxPerNight') : (hm.mode || 'perPaxPerNight');
 
     if (extHmMode === 'perPaxPerNight') {
@@ -210,25 +218,25 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   const totalRevenue = baseRevenue - earlyBirdCost - loyaltyCost + singleSupplementRevenue
     + ext.extensionRevenue + ext.extensionSingleSuppRevenue - ext.extensionDiscountCost;
 
-  // Hotels & meals (gated, with mode)
+  // Hotels & meals (gated, with mode, with byPax resolution)
   const hotelsMealsOn = config.hotelsMeals.enabled !== false;
   const hmMode = config.hotelsMeals.mode || 'perPaxPerNight';
+  const hmHotelRate = config.hotelsMeals.hotelCostByPax?.[pax] ?? config.hotelsMeals.hotelCostPerNight;
+  const hmLunchRate = config.hotelsMeals.lunchCostByPax?.[pax] ?? config.hotelsMeals.lunchCostPerDay;
+  const hmDinnerRate = config.hotelsMeals.dinnerCostByPax?.[pax] ?? config.hotelsMeals.dinnerCostPerNight;
+  const hmAdditional = config.hotelsMeals.additionalMealCostsByPax?.[pax] ?? config.hotelsMeals.additionalMealCosts;
   let hotelsCost = 0;
   let mealsCost = 0;
   if (hotelsMealsOn) {
     if (hmMode === 'perPaxPerNight') {
-      hotelsCost = config.hotelsMeals.hotelCostPerNight * config.tripNights * pax;
-      const lunchCost = config.hotelsMeals.lunchCostPerDay * config.tripDays * pax;
-      const dinnerCost = config.hotelsMeals.dinnerCostPerNight * config.tripNights * pax;
-      mealsCost = lunchCost + dinnerCost + config.hotelsMeals.additionalMealCosts;
+      hotelsCost = hmHotelRate * config.tripNights * pax;
+      mealsCost = (hmLunchRate * config.tripDays + hmDinnerRate * config.tripNights) * pax + hmAdditional;
     } else if (hmMode === 'perNight') {
-      hotelsCost = config.hotelsMeals.hotelCostPerNight * config.tripNights;
-      const lunchCost = config.hotelsMeals.lunchCostPerDay * config.tripDays;
-      const dinnerCost = config.hotelsMeals.dinnerCostPerNight * config.tripNights;
-      mealsCost = lunchCost + dinnerCost + config.hotelsMeals.additionalMealCosts;
+      hotelsCost = hmHotelRate * config.tripNights;
+      mealsCost = hmLunchRate * config.tripDays + hmDinnerRate * config.tripNights + hmAdditional;
     } else {
-      hotelsCost = config.hotelsMeals.hotelCostPerNight;
-      mealsCost = config.hotelsMeals.lunchCostPerDay + config.hotelsMeals.dinnerCostPerNight + config.hotelsMeals.additionalMealCosts;
+      hotelsCost = hmHotelRate;
+      mealsCost = hmLunchRate + hmDinnerRate + hmAdditional;
     }
   }
 
@@ -266,9 +274,12 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
 
   // Transport (gated — flights removed, now in staff section)
   const transportOn = config.transportConfig.enabled !== false;
-  const transportCost = transportOn
-    ? config.transportConfig.groundTransportTotal + config.transportConfig.airportTransfers + config.transportConfig.localTransport
-    : 0;
+  let transportCost = 0;
+  if (transportOn) {
+    transportCost += config.transportConfig.groundTransportPerPax ? config.transportConfig.groundTransportTotal * pax : config.transportConfig.groundTransportTotal;
+    transportCost += config.transportConfig.airportTransfersPerPax ? config.transportConfig.airportTransfers * pax : config.transportConfig.airportTransfers;
+    transportCost += config.transportConfig.localTransportPerPax ? config.transportConfig.localTransport * pax : config.transportConfig.localTransport;
+  }
 
   // Trip-specific (gated)
   const tripSpecificOn = config.tripSpecific.enabled !== false;

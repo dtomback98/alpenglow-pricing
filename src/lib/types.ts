@@ -16,6 +16,10 @@ export interface ExtensionHotelsMealsConfig {
   lunchCostPerDay: number;
   dinnerCostPerNight: number;
   additionalMealCosts: number;
+  hotelCostByPax?: { [pax: number]: number };
+  lunchCostByPax?: { [pax: number]: number };
+  dinnerCostByPax?: { [pax: number]: number };
+  additionalMealCostsByPax?: { [pax: number]: number };
 }
 
 export interface ExtensionStaffConfig {
@@ -66,6 +70,10 @@ export interface HotelsMealsConfig {
   lunchCostPerDay: number;
   dinnerCostPerNight: number;
   additionalMealCosts: number;
+  hotelCostByPax?: { [pax: number]: number };
+  lunchCostByPax?: { [pax: number]: number };
+  dinnerCostByPax?: { [pax: number]: number };
+  additionalMealCostsByPax?: { [pax: number]: number };
 }
 
 export interface LogisticsRate {
@@ -105,8 +113,11 @@ export interface TransportConfig {
   enabled: boolean;
   flightCostPerPerson: number; // Legacy — flights now in StaffConfig, kept for migration
   groundTransportTotal: number;
+  groundTransportPerPax?: boolean;
   airportTransfers: number;
+  airportTransfersPerPax?: boolean;
   localTransport: number;
+  localTransportPerPax?: boolean;
 }
 
 export interface TripSpecificCost {
@@ -137,9 +148,11 @@ export interface UiPreferences {
   pricingPerPax?: boolean;
   discountsPerPax?: boolean;
   singleSuppPerPax?: boolean;
+  hotelsMealsPerPax?: boolean;
   extPerPax?: boolean;
   extSuppPerPax?: boolean;
   extDiscountsPerPax?: boolean;
+  extHotelsMealsPerPax?: boolean;
 }
 
 export interface TripConfiguration {
