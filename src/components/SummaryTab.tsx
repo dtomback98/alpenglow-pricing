@@ -36,9 +36,11 @@ export default function SummaryTab({ config }: SummaryTabProps) {
         return (
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <div className="card">
-              <div className="text-sm text-ag-text-muted mb-1">{config.tripPriceMode === 'total' ? 'Total Trip Price' : 'Base Price per Pax'}</div>
+              <div className="text-sm text-ag-text-muted mb-1">
+                {config.tripPriceMode === 'total' ? `Trip Price per Pax (${bestCalc.pax} pax)` : 'Base Price per Pax'}
+              </div>
               <div className="text-2xl font-bold text-ag-text">
-                {formatCurrency(config.tripPrice)}
+                {formatCurrency(config.tripPriceMode === 'total' && bestCalc.pax > 0 ? config.tripPrice / bestCalc.pax : config.tripPrice)}
               </div>
             </div>
             <div className="card">
