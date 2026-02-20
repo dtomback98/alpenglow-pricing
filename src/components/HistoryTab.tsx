@@ -173,11 +173,15 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
 
   const trips2025 = trips.filter(t => (t.year || 2025) === 2025);
   const tripsCurrentYear = trips.filter(t => t.year === currentYear);
+  const tripsCurrentYearRun = tripsCurrentYear.filter(t => t.status === 'run');
+  const tripsCurrentYearBudgeted = tripsCurrentYear.filter(t => t.status !== 'run');
   const tripsNextYear = trips.filter(t => t.year === nextYear);
 
   const getFilteredTrips = (filter: string) =>
     filter === '2025' ? trips2025
     : filter === String(currentYear) ? tripsCurrentYear
+    : filter === `${currentYear}-run` ? tripsCurrentYearRun
+    : filter === `${currentYear}-budgeted` ? tripsCurrentYearBudgeted
     : filter === String(nextYear) ? tripsNextYear
     : trips;
 
@@ -244,7 +248,9 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
           >
             <option value="all">All Years</option>
             <option value="2025">2025 Only</option>
-            <option value={String(currentYear)}>{currentYear} Only</option>
+            <option value={String(currentYear)}>{currentYear} — All</option>
+            <option value={`${currentYear}-run`}>{currentYear} — Trips Run</option>
+            <option value={`${currentYear}-budgeted`}>{currentYear} — Budgeted</option>
             <option value={String(nextYear)}>{nextYear} Only</option>
           </select>
         </div>
@@ -285,7 +291,9 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
           >
             <option value="all">All Years</option>
             <option value="2025">2025 Only</option>
-            <option value={String(currentYear)}>{currentYear} Only</option>
+            <option value={String(currentYear)}>{currentYear} — All</option>
+            <option value={`${currentYear}-run`}>{currentYear} — Trips Run</option>
+            <option value={`${currentYear}-budgeted`}>{currentYear} — Budgeted</option>
             <option value={String(nextYear)}>{nextYear} Only</option>
           </select>
         </div>
@@ -329,8 +337,11 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
         <TripTable trips={tripsNextYear} title={`${nextYear} Trip Performance`} onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} onUpdateTrip={updateTrip} />
       )}
 
-      {/* Current Year Trip Performance */}
-      <TripTable trips={tripsCurrentYear} title={`${currentYear} Trip Performance`} onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} onUpdateTrip={updateTrip} />
+      {/* Current Year Trips Run */}
+      <TripTable trips={tripsCurrentYearRun} title={`${currentYear} Trips Run`} onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} onUpdateTrip={updateTrip} />
+
+      {/* Current Year Budgeted Trips */}
+      <TripTable trips={tripsCurrentYearBudgeted} title={`${currentYear} Budgeted Trips`} onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} onUpdateTrip={updateTrip} />
 
       {/* 2025 Trip Performance */}
       <TripTable trips={trips2025} title="2025 Trip Performance" />
