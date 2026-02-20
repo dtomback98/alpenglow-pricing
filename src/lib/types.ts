@@ -26,6 +26,23 @@ export interface ExtensionStaffConfig {
   travelDayRate: number;
 }
 
+export interface ExtensionDiscountsConfig {
+  enabled: boolean;
+  inheritFromMain: boolean;
+  earlyBirdDiscount: number;
+  earlyBirdCountByPax: { [pax: number]: number };
+  loyaltyDiscountRate: number;
+  loyaltyCountByPax: { [pax: number]: number };
+}
+
+export interface ExtensionLogisticsConfig {
+  enabled: boolean;
+  inheritFromMain: boolean;
+  mode?: 'perPaxPerDay' | 'perDay' | 'total';
+  rates: LogisticsRate[];
+  baseRate: number;
+}
+
 export interface ExtensionConfig {
   enabled: boolean; // Master toggle on Core Trip Details card
 
@@ -35,9 +52,11 @@ export interface ExtensionConfig {
   countByPax: { [pax: number]: number };
 
   // Sub-sections (each can inherit from main or use custom values)
+  discounts: ExtensionDiscountsConfig;
   singleSupplement: ExtensionSingleSupplementConfig;
   hotelsMeals: ExtensionHotelsMealsConfig;
   staffConfig: ExtensionStaffConfig;
+  logisticsConfig: ExtensionLogisticsConfig;
 }
 
 export interface HotelsMealsConfig {
@@ -120,6 +139,7 @@ export interface UiPreferences {
   singleSuppPerPax?: boolean;
   extPerPax?: boolean;
   extSuppPerPax?: boolean;
+  extDiscountsPerPax?: boolean;
 }
 
 export interface TripConfiguration {
@@ -185,9 +205,11 @@ export interface PaxCalculation {
   // Extension breakdown
   extensionRevenue: number;
   extensionSingleSuppRevenue: number;
+  extensionDiscountCost: number;
   extensionHotelsCost: number;
   extensionMealsCost: number;
   extensionStaffCost: number;
+  extensionLogisticsCost: number;
   extensionSingleRoomCost: number;
   extensionTotalCost: number;
 

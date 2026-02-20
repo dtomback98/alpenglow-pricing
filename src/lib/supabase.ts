@@ -51,6 +51,8 @@ function migratePrePostToExtension(prePost: any): TripConfiguration['extension']
       ...DEFAULT_CONFIG.extension.staffConfig,
       staffByPax: { ...DEFAULT_CONFIG.extension.staffConfig.staffByPax },
     },
+    discounts: { ...DEFAULT_CONFIG.extension.discounts },
+    logisticsConfig: { ...DEFAULT_CONFIG.extension.logisticsConfig },
   };
 }
 
@@ -117,6 +119,8 @@ function rowToConfig(row: any): TripConfiguration {
       ...rawExtension?.staffConfig,
       staffByPax: { ...DEFAULT_CONFIG.extension.staffConfig.staffByPax, ...rawExtension?.staffConfig?.staffByPax },
     },
+    discounts: { ...DEFAULT_CONFIG.extension.discounts, ...rawExtension?.discounts },
+    logisticsConfig: { ...DEFAULT_CONFIG.extension.logisticsConfig, ...rawExtension?.logisticsConfig },
   };
 
   // Migrate guide flights from transport to staff config

@@ -100,12 +100,12 @@ export default function SummaryTab({ config }: SummaryTabProps) {
           </thead>
           <tbody>
             {calculations.map((calc) => {
-              const coreRevenue = calc.totalRevenue - calc.extensionRevenue - calc.extensionSingleSuppRevenue;
+              const coreRevenue = calc.totalRevenue - calc.extensionRevenue - calc.extensionSingleSuppRevenue + calc.extensionDiscountCost;
               const coreCosts = calc.totalCosts - calc.extensionTotalCost;
               const coreProfit = coreRevenue - coreCosts;
               const coreMargin = coreRevenue > 0 ? (coreProfit / coreRevenue) * 100 : 0;
 
-              const extRevenue = calc.extensionRevenue + calc.extensionSingleSuppRevenue;
+              const extRevenue = calc.extensionRevenue + calc.extensionSingleSuppRevenue - calc.extensionDiscountCost;
               const extCosts = calc.extensionTotalCost;
               const extProfit = extRevenue - extCosts;
               const extMargin = extRevenue > 0 ? (extProfit / extRevenue) * 100 : 0;
@@ -138,6 +138,7 @@ export default function SummaryTab({ config }: SummaryTabProps) {
               <th>Loyalty</th>
               <th>Extension</th>
               <th>Ext. Single Supp.</th>
+              <th>Ext. Discounts</th>
               <th>Single Supp.</th>
               <th>Total Revenue</th>
             </tr>
@@ -151,6 +152,7 @@ export default function SummaryTab({ config }: SummaryTabProps) {
                 <td className="text-ag-danger">-{formatCurrency(calc.loyaltyCost)}</td>
                 <td className="text-ag-success">+{formatCurrency(calc.extensionRevenue)}</td>
                 <td className="text-ag-success">+{formatCurrency(calc.extensionSingleSuppRevenue)}</td>
+                <td className="text-ag-danger">-{formatCurrency(calc.extensionDiscountCost)}</td>
                 <td className="text-ag-success">+{formatCurrency(calc.singleSupplementRevenue)}</td>
                 <td className="font-bold">{formatCurrency(calc.totalRevenue)}</td>
               </tr>
@@ -174,8 +176,12 @@ export default function SummaryTab({ config }: SummaryTabProps) {
               <th>Transport</th>
               <th>Logistics</th>
               <th>Trip Specific</th>
-              <th>Extension</th>
               <th>Single Room</th>
+              <th>Ext. Hotels</th>
+              <th>Ext. Meals</th>
+              <th>Ext. Staff</th>
+              <th>Ext. Logistics</th>
+              <th>Ext. Room</th>
               <th>Total Costs</th>
             </tr>
           </thead>
@@ -191,8 +197,12 @@ export default function SummaryTab({ config }: SummaryTabProps) {
                 <td>{formatCurrency(calc.transportCost)}</td>
                 <td>{formatCurrency(calc.logisticsCost)}</td>
                 <td>{formatCurrency(calc.tripSpecificCost)}</td>
-                <td>{formatCurrency(calc.extensionTotalCost)}</td>
                 <td>{formatCurrency(calc.singleRoomCost)}</td>
+                <td>{formatCurrency(calc.extensionHotelsCost)}</td>
+                <td>{formatCurrency(calc.extensionMealsCost)}</td>
+                <td>{formatCurrency(calc.extensionStaffCost)}</td>
+                <td>{formatCurrency(calc.extensionLogisticsCost)}</td>
+                <td>{formatCurrency(calc.extensionSingleRoomCost)}</td>
                 <td className="font-bold text-ag-danger">{formatCurrency(calc.totalCosts)}</td>
               </tr>
             ))}

@@ -36,10 +36,20 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
     paxCounts.push(p);
   }
 
+  const updateExtDiscounts = (updates: Partial<TripConfiguration['extension']['discounts']>) => {
+    updateConfig(prev => ({ extension: { ...prev.extension, discounts: { ...prev.extension.discounts, ...updates } } }));
+  };
+
+  const updateExtLogistics = (updates: Partial<TripConfiguration['extension']['logisticsConfig']>) => {
+    updateConfig(prev => ({ extension: { ...prev.extension, logisticsConfig: { ...prev.extension.logisticsConfig, ...updates } } }));
+  };
+
   const extPerPax = config.uiPreferences?.extPerPax ?? false;
   const extSuppPerPax = config.uiPreferences?.extSuppPerPax ?? false;
+  const extDiscountsPerPax = config.uiPreferences?.extDiscountsPerPax ?? false;
   const setExtPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extPerPax: val } }));
   const setExtSuppPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extSuppPerPax: val } }));
+  const setExtDiscountsPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extDiscountsPerPax: val } }));
   const [selectedStaffPax, setSelectedStaffPax] = useState(paxMin);
   useEffect(() => { setSelectedStaffPax(paxMin); }, [paxMin]);
 
@@ -175,6 +185,123 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
         )}
       </div>
 
+      {/* Extension Discounts */}
+      {ext.enabled && (
+        <div className={`card ${ext.discounts?.enabled === false ? 'opacity-60' : ''}`}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Extension - Discounts</h2>
+            <div className="flex gap-2">
+              {ext.discounts?.enabled !== false && (
+                <>
+                  <button onClick={() => updateExtDiscounts({ inheritFromMain: !ext.discounts.inheritFromMain })} className={`btn text-xs ${ext.discounts.inheritFromMain ? 'btn-secondary' : 'btn-primary'}`}>
+                    {ext.discounts.inheritFromMain ? 'Match Core Inputs' : 'Custom'}
+                  </button>
+                  {!ext.discounts.inheritFromMain && (
+                    <button onClick={() => setExtDiscountsPerPax(!extDiscountsPerPax)} className={`btn text-xs ${extDiscountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>
+                      {extDiscountsPerPax ? 'Per Pax Mode' : 'Simple Mode'}
+                    </button>
+                  )}
+                </>
+              )}
+              <button onClick={() => updateExtDiscounts({ enabled: ext.discounts?.enabled === false })} className={`btn text-xs ${ext.discounts?.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
+                {ext.discounts?.enabled === false ? 'Inactive' : 'Active'}
+              </button>
+            </div>
+          </div>
+          {ext.discounts?.enabled === false ? (
+            <p className="text-sm text-ag-text-muted">Section disabled — extension discounts will not be applied.</p>
+          ) : ext.discounts.inheritFromMain ? (
+            <div>
+              <p className="text-sm text-ag-text-muted mb-3">Rates from main trip. Set guest counts for extension below.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="form-label">Early Bird Discount ($)</label>
+                  <input type="number" value={config.earlyBirdDiscount} disabled className="w-full opacity-50 cursor-not-allowed" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Loyalty Discount Rate (%)</label>
+                  <input type="number" value={config.loyaltyDiscountRate * 100} disabled className="w-full opacity-50 cursor-not-allowed" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-ag-border">
+                <div className="form-group">
+                  <label className="form-label">Early Bird Count</label>
+                  <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
+                  <input type="number" min="0" value={ext.discounts.earlyBirdCountByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtDiscounts({ earlyBirdCountByPax: c }); }} className="w-full" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Loyalty Count</label>
+                  <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
+                  <input type="number" min="0" value={ext.discounts.loyaltyCountByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtDiscounts({ loyaltyCountByPax: c }); }} className="w-full" />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="form-label">Early Bird Discount ($)</label>
+                  <p className="text-xs text-ag-text-muted mb-1">Amount discounted per early bird guest</p>
+                  <input type="number" value={ext.discounts.earlyBirdDiscount} onChange={(e) => updateExtDiscounts({ earlyBirdDiscount: Number(e.target.value) })} className="w-full" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Loyalty Discount Rate (%)</label>
+                  <p className="text-xs text-ag-text-muted mb-1">% discount on extension price per loyalty guest</p>
+                  <input type="number" step="0.01" value={ext.discounts.loyaltyDiscountRate * 100} onChange={(e) => updateExtDiscounts({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
+                </div>
+              </div>
+              {!extDiscountsPerPax ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-ag-border">
+                  <div className="form-group">
+                    <label className="form-label">Early Bird Count</label>
+                    <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
+                    <input type="number" min="0" value={ext.discounts.earlyBirdCountByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtDiscounts({ earlyBirdCountByPax: c }); }} className="w-full" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Loyalty Count</label>
+                    <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
+                    <input type="number" min="0" value={ext.discounts.loyaltyCountByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtDiscounts({ loyaltyCountByPax: c }); }} className="w-full" />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-4 pt-4 border-t border-ag-border">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="form-label mb-0">Early Bird Count by Pax</label>
+                      <button onClick={() => { const c: { [k: number]: number } = {}; const b = ext.discounts.earlyBirdCountByPax?.[paxCounts[0]] ?? 0; for (const p of paxCounts) c[p] = b; updateExtDiscounts({ earlyBirdCountByPax: c }); }} className="btn btn-secondary text-xs">Apply First to All</button>
+                    </div>
+                    <p className="text-xs text-ag-text-muted mb-2">How many extension guests get the early bird discount at each group size</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                      {paxCounts.map((p) => (
+                        <div key={p} className="form-group">
+                          <label className="form-label text-center">{p} pax</label>
+                          <input type="number" min="0" value={ext.discounts.earlyBirdCountByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, discounts: { ...prev.extension.discounts, earlyBirdCountByPax: { ...prev.extension.discounts.earlyBirdCountByPax, [p]: val } } } })); }} className="w-full text-center" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-ag-border">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="form-label mb-0">Loyalty Count by Pax</label>
+                      <button onClick={() => { const c: { [k: number]: number } = {}; const b = ext.discounts.loyaltyCountByPax?.[paxCounts[0]] ?? 0; for (const p of paxCounts) c[p] = b; updateExtDiscounts({ loyaltyCountByPax: c }); }} className="btn btn-secondary text-xs">Apply First to All</button>
+                    </div>
+                    <p className="text-xs text-ag-text-muted mb-2">How many extension guests get the loyalty discount at each group size</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                      {paxCounts.map((p) => (
+                        <div key={p} className="form-group">
+                          <label className="form-label text-center">{p} pax</label>
+                          <input type="number" min="0" value={ext.discounts.loyaltyCountByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, discounts: { ...prev.extension.discounts, loyaltyCountByPax: { ...prev.extension.discounts.loyaltyCountByPax, [p]: val } } } })); }} className="w-full text-center" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
       {/* Extension Single Supplement */}
       {ext.enabled && (
         <div className={`card ${ext.singleSupplement.enabled === false ? 'opacity-60' : ''}`}>
@@ -282,18 +409,23 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
             <p className="text-sm text-ag-text-muted">Section disabled — extension hotels & meals will not be applied.</p>
           ) : ext.hotelsMeals.inheritFromMain ? (
             <div>
-              <p className="text-sm text-ag-text-muted mb-3">Using values from main trip hotels & meals.</p>
+              <p className="text-sm text-ag-text-muted mb-3">Using values from main trip hotels & meals ({(() => {
+                const mode = config.hotelsMeals.mode || 'perPaxPerNight';
+                if (mode === 'perPaxPerNight') return 'Per Pax/Night';
+                if (mode === 'perNight') return 'Per Night';
+                return 'Total';
+              })()} mode).</p>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="form-group">
-                  <label className="form-label">Hotel Cost/Night ($)</label>
+                  <label className="form-label">Hotel Cost ($)</label>
                   <input type="number" value={resolvedHotelRate} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Lunch Cost/Day ($)</label>
+                  <label className="form-label">Lunch Cost ($)</label>
                   <input type="number" value={resolvedLunchRate} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Dinner Cost/Night ($)</label>
+                  <label className="form-label">Dinner Cost ($)</label>
                   <input type="number" value={resolvedDinnerRate} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
                 <div className="form-group">
@@ -303,24 +435,51 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="form-group">
-                <label className="form-label">Hotel Cost/Night ($)</label>
-                <input type="number" value={ext.hotelsMeals.hotelCostPerNight} onChange={(e) => updateExtHotelsMeals({ hotelCostPerNight: Number(e.target.value) })} className="w-full" />
+            <>
+              <div className="mb-4">
+                <div className="flex gap-2 items-center">
+                  {(['perPaxPerNight', 'perNight', 'total'] as const).map((m) => {
+                    const extHmMode = ext.hotelsMeals.mode || 'perPaxPerNight';
+                    const labels = { perPaxPerNight: 'Rate \u00d7 Pax \u00d7 Nights', perNight: 'Rate \u00d7 Nights', total: 'Total Cost' };
+                    return (
+                      <button key={m} onClick={() => updateExtHotelsMeals({ mode: m })} className={`btn text-xs ${extHmMode === m ? 'btn-primary' : 'btn-secondary'}`}>
+                        {labels[m]}
+                      </button>
+                    );
+                  })}
+                  <span className="text-xs text-ag-text-muted ml-2">
+                    {(() => {
+                      const mode = ext.hotelsMeals.mode || 'perPaxPerNight';
+                      if (mode === 'perPaxPerNight') return '(rate \u00d7 ext pax \u00d7 ext nights)';
+                      if (mode === 'total') return '(entered value is total cost)';
+                      return '(rate \u00d7 ext nights)';
+                    })()}
+                  </span>
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Lunch Cost/Day ($)</label>
-                <input type="number" value={ext.hotelsMeals.lunchCostPerDay} onChange={(e) => updateExtHotelsMeals({ lunchCostPerDay: Number(e.target.value) })} className="w-full" />
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="form-group">
+                  <label className="form-label">Hotel Cost ($)</label>
+                  <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
+                  <input type="number" value={ext.hotelsMeals.hotelCostPerNight} onChange={(e) => updateExtHotelsMeals({ hotelCostPerNight: Number(e.target.value) })} className="w-full" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Lunch Cost ($)</label>
+                  <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per day' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per day (flat)' : 'Total'}</p>
+                  <input type="number" value={ext.hotelsMeals.lunchCostPerDay} onChange={(e) => updateExtHotelsMeals({ lunchCostPerDay: Number(e.target.value) })} className="w-full" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Dinner Cost ($)</label>
+                  <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
+                  <input type="number" value={ext.hotelsMeals.dinnerCostPerNight} onChange={(e) => updateExtHotelsMeals({ dinnerCostPerNight: Number(e.target.value) })} className="w-full" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Additional Meal Costs ($)</label>
+                  <p className="text-xs text-ag-text-muted mb-1">Flat total</p>
+                  <input type="number" value={ext.hotelsMeals.additionalMealCosts} onChange={(e) => updateExtHotelsMeals({ additionalMealCosts: Number(e.target.value) })} className="w-full" />
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Dinner Cost/Night ($)</label>
-                <input type="number" value={ext.hotelsMeals.dinnerCostPerNight} onChange={(e) => updateExtHotelsMeals({ dinnerCostPerNight: Number(e.target.value) })} className="w-full" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Additional Meal Costs ($)</label>
-                <input type="number" value={ext.hotelsMeals.additionalMealCosts} onChange={(e) => updateExtHotelsMeals({ additionalMealCosts: Number(e.target.value) })} className="w-full" />
-              </div>
-            </div>
+            </>
           )}
         </div>
       )}
@@ -431,6 +590,92 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   <label className="form-label">Travel Day Rate ($)</label>
                   <input type="number" value={ext.staffConfig.travelDayRate} onChange={(e) => updateExtStaff({ travelDayRate: Number(e.target.value) })} className="w-full" />
                 </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Extension Logistics */}
+      {ext.enabled && (
+        <div className={`card ${ext.logisticsConfig?.enabled === false ? 'opacity-60' : ''}`}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Extension - Logistics</h2>
+            <div className="flex gap-2">
+              {ext.logisticsConfig?.enabled !== false && (
+                <button onClick={() => updateExtLogistics({ inheritFromMain: !ext.logisticsConfig.inheritFromMain })} className={`btn text-xs ${ext.logisticsConfig.inheritFromMain ? 'btn-secondary' : 'btn-primary'}`}>
+                  {ext.logisticsConfig.inheritFromMain ? 'Match Core Inputs' : 'Custom'}
+                </button>
+              )}
+              <button onClick={() => updateExtLogistics({ enabled: ext.logisticsConfig?.enabled === false })} className={`btn text-xs ${ext.logisticsConfig?.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
+                {ext.logisticsConfig?.enabled === false ? 'Inactive' : 'Active'}
+              </button>
+            </div>
+          </div>
+          {ext.logisticsConfig?.enabled === false ? (
+            <p className="text-sm text-ag-text-muted">Section disabled — extension logistics will not be applied.</p>
+          ) : ext.logisticsConfig.inheritFromMain ? (
+            <div>
+              <p className="text-sm text-ag-text-muted mb-3">Using rates and mode from main trip logistics ({(() => {
+                const mode = config.logistics.mode || (config.logistics.perPax ? 'perPaxPerDay' : 'perDay');
+                if (mode === 'perPaxPerDay') return 'Rate \u00d7 Pax \u00d7 Nights';
+                if (mode === 'total') return 'Total Cost';
+                return 'Rate \u00d7 Nights';
+              })()}, applied to extension nights).</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                {paxCounts.map((p) => {
+                  const existing = config.logistics.rates.find(r => r.pax === p);
+                  const rateValue = existing ? existing.rate : 0;
+                  return (
+                    <div key={p} className="form-group">
+                      <label className="form-label text-center">{p} pax</label>
+                      <input type="number" value={rateValue} disabled className="w-full text-center opacity-50 cursor-not-allowed" />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mb-4">
+                <div className="flex gap-2 items-center">
+                  {(['perPaxPerDay', 'perDay', 'total'] as const).map((m) => {
+                    const extLogMode = ext.logisticsConfig.mode || 'perDay';
+                    const labels = { perPaxPerDay: 'Rate \u00d7 Pax \u00d7 Nights', perDay: 'Rate \u00d7 Nights', total: 'Total Cost' };
+                    return (
+                      <button key={m} onClick={() => updateExtLogistics({ mode: m })} className={`btn text-xs ${extLogMode === m ? 'btn-primary' : 'btn-secondary'}`}>
+                        {labels[m]}
+                      </button>
+                    );
+                  })}
+                  <span className="text-xs text-ag-text-muted ml-2">
+                    {(() => {
+                      const mode = ext.logisticsConfig.mode || 'perDay';
+                      if (mode === 'perPaxPerDay') return '(rate \u00d7 ext pax \u00d7 ext nights)';
+                      if (mode === 'total') return '(entered value is total cost)';
+                      return '(rate \u00d7 ext nights)';
+                    })()}
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs text-ag-text-muted mb-3">Rate per pax level — use mode buttons above to control how it&apos;s applied</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                {paxCounts.map((p) => {
+                  const existing = ext.logisticsConfig.rates?.find((r: { pax: number; rate: number }) => r.pax === p);
+                  const rateValue = existing ? existing.rate : 0;
+                  return (
+                    <div key={p} className="form-group">
+                      <label className="form-label text-center">{p} pax</label>
+                      <input type="number" value={rateValue} onChange={(e) => {
+                        updateConfig(prev => {
+                          const rates = (prev.extension.logisticsConfig.rates || []).filter((r: { pax: number; rate: number }) => r.pax !== p);
+                          rates.push({ pax: p, rate: Number(e.target.value) });
+                          return { extension: { ...prev.extension, logisticsConfig: { ...prev.extension.logisticsConfig, rates } } };
+                        });
+                      }} className="w-full text-center" />
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}

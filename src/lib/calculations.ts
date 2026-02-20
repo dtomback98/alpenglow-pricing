@@ -46,9 +46,11 @@ function calculateExtension(pax: number, config: TripConfiguration) {
   const zeros = {
     extensionRevenue: 0,
     extensionSingleSuppRevenue: 0,
+    extensionDiscountCost: 0,
     extensionHotelsCost: 0,
     extensionMealsCost: 0,
     extensionStaffCost: 0,
+    extensionLogisticsCost: 0,
     extensionSingleRoomCost: 0,
     extensionTotalCost: 0,
   };
@@ -70,6 +72,17 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     const suppCount = Math.min(ss.countByPax?.[pax] ?? 0, extPaxCount);
     extensionSingleSuppRevenue = suppPrice * suppCount;
     extensionSingleRoomCost = roomExtra * suppCount * extension.extensionNights;
+  }
+
+  // Discounts (revenue deduction — not inflated)
+  let extensionDiscountCost = 0;
+  if (extension.discounts?.enabled !== false && extPaxCount > 0) {
+    const disc = extension.discounts;
+    const ebDiscount = disc.inheritFromMain ? config.earlyBirdDiscount : disc.earlyBirdDiscount;
+    const ebCount = Math.min(disc.earlyBirdCountByPax?.[pax] ?? 0, extPaxCount);
+    const loyaltyRate = disc.inheritFromMain ? config.loyaltyDiscountRate : disc.loyaltyDiscountRate;
+    const loyaltyCount = Math.min(disc.loyaltyCountByPax?.[pax] ?? 0, extPaxCount);
+    extensionDiscountCost = (ebDiscount * ebCount) + (extension.extensionPrice * loyaltyCount * loyaltyRate);
   }
 
   // Hotels & meals (only when guests take the extension)
@@ -110,14 +123,35 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     }
   }
 
-  const extensionTotalCost = extensionHotelsCost + extensionMealsCost + extensionStaffCost + extensionSingleRoomCost;
+  // Logistics
+  let extensionLogisticsCost = 0;
+  if (extension.logisticsConfig?.enabled !== false && extPaxCount > 0) {
+    const lc = extension.logisticsConfig;
+    let rate = 0;
+    let mode = 'perDay';
+    if (lc.inheritFromMain) {
+      rate = getLogisticsRate(pax, config.logistics);
+      mode = config.logistics.mode || (config.logistics.perPax ? 'perPaxPerDay' : 'perDay');
+    } else {
+      const match = lc.rates?.find(r => r.pax === pax);
+      rate = match ? match.rate : 0;
+      mode = lc.mode || 'perDay';
+    }
+    if (mode === 'perPaxPerDay') extensionLogisticsCost = rate * extension.extensionNights * extPaxCount;
+    else if (mode === 'total') extensionLogisticsCost = rate;
+    else extensionLogisticsCost = rate * extension.extensionNights;
+  }
+
+  const extensionTotalCost = extensionHotelsCost + extensionMealsCost + extensionStaffCost + extensionLogisticsCost + extensionSingleRoomCost;
 
   return {
     extensionRevenue,
     extensionSingleSuppRevenue,
+    extensionDiscountCost,
     extensionHotelsCost,
     extensionMealsCost,
     extensionStaffCost,
+    extensionLogisticsCost,
     extensionSingleRoomCost,
     extensionTotalCost,
   };
@@ -174,7 +208,7 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   const ext = calculateExtension(pax, config);
 
   const totalRevenue = baseRevenue - earlyBirdCost - loyaltyCost + singleSupplementRevenue
-    + ext.extensionRevenue + ext.extensionSingleSuppRevenue;
+    + ext.extensionRevenue + ext.extensionSingleSuppRevenue - ext.extensionDiscountCost;
 
   // Hotels & meals (gated, with mode)
   const hotelsMealsOn = config.hotelsMeals.enabled !== false;
@@ -257,8 +291,9 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   const iExtHotelsCost = ext.extensionHotelsCost * inflationMultiplier;
   const iExtMealsCost = ext.extensionMealsCost * inflationMultiplier;
   const iExtStaffCost = ext.extensionStaffCost * inflationMultiplier;
+  const iExtLogisticsCost = ext.extensionLogisticsCost * inflationMultiplier;
   const iExtSingleRoomCost = ext.extensionSingleRoomCost * inflationMultiplier;
-  const iExtTotalCost = iExtHotelsCost + iExtMealsCost + iExtStaffCost + iExtSingleRoomCost;
+  const iExtTotalCost = iExtHotelsCost + iExtMealsCost + iExtStaffCost + iExtLogisticsCost + iExtSingleRoomCost;
 
   // Total costs (all inflated)
   const totalCosts = iHotelsCost + iMealsCost + iLogisticsCost + iStaffCost +
@@ -289,9 +324,11 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
     totalCosts,
     extensionRevenue: ext.extensionRevenue,
     extensionSingleSuppRevenue: ext.extensionSingleSuppRevenue,
+    extensionDiscountCost: ext.extensionDiscountCost,
     extensionHotelsCost: iExtHotelsCost,
     extensionMealsCost: iExtMealsCost,
     extensionStaffCost: iExtStaffCost,
+    extensionLogisticsCost: iExtLogisticsCost,
     extensionSingleRoomCost: iExtSingleRoomCost,
     extensionTotalCost: iExtTotalCost,
     grossProfit,

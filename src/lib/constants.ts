@@ -67,6 +67,25 @@ export const DEFAULT_CONFIG: TripConfiguration = {
       travelDays: 0,
       travelDayRate: 150,
     },
+    discounts: {
+      enabled: true,
+      inheritFromMain: true,
+      earlyBirdDiscount: 200,
+      earlyBirdCountByPax: Object.fromEntries(
+        Array.from({ length: 16 }, (_, i) => [i + 1, 0])
+      ),
+      loyaltyDiscountRate: 0.05,
+      loyaltyCountByPax: Object.fromEntries(
+        Array.from({ length: 16 }, (_, i) => [i + 1, 0])
+      ),
+    },
+    logisticsConfig: {
+      enabled: true,
+      inheritFromMain: true,
+      mode: 'perDay' as const,
+      rates: Array.from({ length: 16 }, (_, i) => ({ pax: i + 1, rate: 0 })),
+      baseRate: 0,
+    },
   },
 
   hotelsMeals: {

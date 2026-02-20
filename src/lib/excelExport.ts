@@ -10,11 +10,11 @@ export function exportTripSummary(config: TripConfiguration, calculations: PaxCa
 
   // Sheet 1: Gross Margin Summary
   const marginData = calculations.map((calc) => {
-    const coreRevenue = calc.totalRevenue - calc.extensionRevenue - calc.extensionSingleSuppRevenue;
+    const coreRevenue = calc.totalRevenue - calc.extensionRevenue - calc.extensionSingleSuppRevenue + calc.extensionDiscountCost;
     const coreCosts = calc.totalCosts - calc.extensionTotalCost;
     const coreProfit = coreRevenue - coreCosts;
     const coreMargin = coreRevenue > 0 ? (coreProfit / coreRevenue) * 100 : 0;
-    const extRevenue = calc.extensionRevenue + calc.extensionSingleSuppRevenue;
+    const extRevenue = calc.extensionRevenue + calc.extensionSingleSuppRevenue - calc.extensionDiscountCost;
     const extCosts = calc.extensionTotalCost;
     const extProfit = extRevenue - extCosts;
     const extMargin = extRevenue > 0 ? (extProfit / extRevenue) * 100 : 0;
@@ -41,6 +41,7 @@ export function exportTripSummary(config: TripConfiguration, calculations: PaxCa
     'Single Supplement': round2(calc.singleSupplementRevenue),
     'Extension Revenue': round2(calc.extensionRevenue),
     'Ext. Single Supp.': round2(calc.extensionSingleSuppRevenue),
+    'Ext. Discounts': round2(-calc.extensionDiscountCost),
     'Total Revenue': round2(calc.totalRevenue),
   }));
   const ws2 = XLSX.utils.json_to_sheet(revenueData);
@@ -57,8 +58,12 @@ export function exportTripSummary(config: TripConfiguration, calculations: PaxCa
     'Transport': round2(calc.transportCost),
     'Logistics': round2(calc.logisticsCost),
     'Trip Specific': round2(calc.tripSpecificCost),
-    'Extension': round2(calc.extensionTotalCost),
     'Single Room': round2(calc.singleRoomCost),
+    'Ext. Hotels': round2(calc.extensionHotelsCost),
+    'Ext. Meals': round2(calc.extensionMealsCost),
+    'Ext. Staff': round2(calc.extensionStaffCost),
+    'Ext. Logistics': round2(calc.extensionLogisticsCost),
+    'Ext. Room': round2(calc.extensionSingleRoomCost),
     'Total Costs': round2(calc.totalCosts),
   }));
   const ws3 = XLSX.utils.json_to_sheet(costData);
