@@ -8,7 +8,7 @@ const CATEGORIES = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 
 interface HeaderProps {
   config: TripConfiguration;
-  updateConfig: (updates: Partial<TripConfiguration>) => void;
+  updateConfig: (updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>)) => void;
   trips: TripConfiguration[];
   selectedTripId: string | null;
   selectTrip: (id: string | null) => void;

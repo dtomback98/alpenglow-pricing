@@ -15,7 +15,7 @@ import {
 interface UseTripDataReturn {
   config: TripConfiguration;
   setConfig: (config: TripConfiguration) => void;
-  updateConfig: (updates: Partial<TripConfiguration>) => void;
+  updateConfig: (updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>)) => void;
   trips: TripConfiguration[];
   selectedTripId: string | null;
   selectTrip: (id: string | null) => void;
@@ -72,9 +72,12 @@ export function useTripData(): UseTripDataReturn {
     loadTrips();
   }, []);
 
-  // Update config with partial updates
-  const updateConfig = useCallback((updates: Partial<TripConfiguration>) => {
-    setConfigState(prev => ({ ...prev, ...updates }));
+  // Update config with partial updates (accepts object or function for latest-state reads)
+  const updateConfig = useCallback((updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>)) => {
+    setConfigState(prev => {
+      const resolved = typeof updates === 'function' ? updates(prev) : updates;
+      return { ...prev, ...resolved };
+    });
   }, []);
 
   // Set entire config

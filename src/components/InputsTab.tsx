@@ -5,7 +5,7 @@ import { TripConfiguration, StaffMember, TripSpecificCost } from '@/lib/types';
 
 interface InputsTabProps {
   config: TripConfiguration;
-  updateConfig: (updates: Partial<TripConfiguration>) => void;
+  updateConfig: (updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>)) => void;
 }
 
 type NestedConfigKey = 'extension' | 'hotelsMeals' | 'logistics' | 'staffConfig' | 'transportConfig' | 'tripSpecific' | 'singleSupplement';
@@ -25,20 +25,18 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
     key: K,
     updates: Partial<TripConfiguration[K]>
   ) => {
-    const currentValue = config[key];
-    updateConfig({
-      [key]: { ...currentValue, ...updates },
-    } as Partial<TripConfiguration>);
+    updateConfig(prev => ({
+      [key]: { ...prev[key], ...updates },
+    } as Partial<TripConfiguration>));
   };
 
   const updateTripSpecificCost = (
     field: keyof Omit<TripConfiguration['tripSpecific'], 'enabled'>,
     updates: Partial<TripSpecificCost>
   ) => {
-    const currentCost = config.tripSpecific[field] as TripSpecificCost;
-    updateNestedConfig('tripSpecific', {
-      [field]: { ...currentCost, ...updates },
-    });
+    updateConfig(prev => ({
+      tripSpecific: { ...prev.tripSpecific, [field]: { ...(prev.tripSpecific[field] as TripSpecificCost), ...updates } },
+    }));
   };
 
   const paxMin = config.paxMin || 1;
@@ -55,26 +53,26 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
 
   // Auto-sync staff days with tripDays when not using custom days
   useEffect(() => {
-    if (!config.staffConfig.useCustomStaffDays && config.staffConfig.enabled !== false) {
+    updateConfig(prev => {
+      if (prev.staffConfig.useCustomStaffDays || prev.staffConfig.enabled === false) return {};
       const newStaffByPax: { [pax: number]: StaffMember[] } = {};
       let changed = false;
-      for (const [pax, staff] of Object.entries(config.staffConfig.staffByPax)) {
+      for (const [pax, staff] of Object.entries(prev.staffConfig.staffByPax)) {
         newStaffByPax[Number(pax)] = (staff as StaffMember[]).map(s => {
-          if (s.days !== config.tripDays) changed = true;
-          return { ...s, days: config.tripDays };
+          if (s.days !== prev.tripDays) changed = true;
+          return { ...s, days: prev.tripDays };
         });
       }
-      if (changed) {
-        updateConfig({ staffConfig: { ...config.staffConfig, staffByPax: newStaffByPax } });
-      }
-    }
-  }, [config.tripDays, config.staffConfig.useCustomStaffDays]);
+      if (!changed) return {};
+      return { staffConfig: { ...prev.staffConfig, staffByPax: newStaffByPax } };
+    });
+  }, [config.tripDays, config.staffConfig.useCustomStaffDays, updateConfig]);
   const pricingPerPax = config.uiPreferences?.pricingPerPax ?? false;
   const discountsPerPax = config.uiPreferences?.discountsPerPax ?? false;
   const singleSuppPerPax = config.uiPreferences?.singleSuppPerPax ?? false;
-  const setPricingPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, pricingPerPax: val } });
-  const setDiscountsPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, discountsPerPax: val } });
-  const setSingleSuppPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, singleSuppPerPax: val } });
+  const setPricingPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, pricingPerPax: val } }));
+  const setDiscountsPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, discountsPerPax: val } }));
+  const setSingleSuppPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, singleSuppPerPax: val } }));
 
 
   const effectiveStaffPax = paxCounts.includes(selectedStaffPax) ? selectedStaffPax : paxCounts[0] || 1;

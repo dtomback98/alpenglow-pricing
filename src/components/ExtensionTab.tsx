@@ -5,26 +5,26 @@ import { TripConfiguration, StaffMember } from '@/lib/types';
 
 interface ExtensionTabProps {
   config: TripConfiguration;
-  updateConfig: (updates: Partial<TripConfiguration>) => void;
+  updateConfig: (updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>)) => void;
 }
 
 export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps) {
   const ext = config.extension;
 
   const updateExtension = (updates: Partial<TripConfiguration['extension']>) => {
-    updateConfig({ extension: { ...ext, ...updates } });
+    updateConfig(prev => ({ extension: { ...prev.extension, ...updates } }));
   };
 
   const updateExtSingleSupplement = (updates: Partial<TripConfiguration['extension']['singleSupplement']>) => {
-    updateConfig({ extension: { ...ext, singleSupplement: { ...ext.singleSupplement, ...updates } } });
+    updateConfig(prev => ({ extension: { ...prev.extension, singleSupplement: { ...prev.extension.singleSupplement, ...updates } } }));
   };
 
   const updateExtHotelsMeals = (updates: Partial<TripConfiguration['extension']['hotelsMeals']>) => {
-    updateConfig({ extension: { ...ext, hotelsMeals: { ...ext.hotelsMeals, ...updates } } });
+    updateConfig(prev => ({ extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, ...updates } } }));
   };
 
   const updateExtStaff = (updates: Partial<TripConfiguration['extension']['staffConfig']>) => {
-    updateConfig({ extension: { ...ext, staffConfig: { ...ext.staffConfig, ...updates } } });
+    updateConfig(prev => ({ extension: { ...prev.extension, staffConfig: { ...prev.extension.staffConfig, ...updates } } }));
   };
 
   const paxMin = config.paxMin || 1;
@@ -38,8 +38,8 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
 
   const extPerPax = config.uiPreferences?.extPerPax ?? false;
   const extSuppPerPax = config.uiPreferences?.extSuppPerPax ?? false;
-  const setExtPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, extPerPax: val } });
-  const setExtSuppPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, extSuppPerPax: val } });
+  const setExtPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extPerPax: val } }));
+  const setExtSuppPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extSuppPerPax: val } }));
   const [selectedStaffPax, setSelectedStaffPax] = useState(paxMin);
   useEffect(() => { setSelectedStaffPax(paxMin); }, [paxMin]);
 
