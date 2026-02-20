@@ -129,17 +129,14 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="form-group">
             <label className="form-label">Trip Price ($)</label>
-            <p className="text-xs text-ag-text-muted mb-1">Per person for entire trip</p>
             <input type="number" value={config.tripPrice} onChange={(e) => updateConfig({ tripPrice: Number(e.target.value) })} className="w-full" />
           </div>
           <div className="form-group">
             <label className="form-label">Trip Days</label>
-            <p className="text-xs text-ag-text-muted mb-1">Total days including travel</p>
             <input type="number" value={config.tripDays} onChange={(e) => updateConfig({ tripDays: Number(e.target.value) })} className="w-full" />
           </div>
           <div className="form-group">
             <label className="form-label">Trip Nights</label>
-            <p className="text-xs text-ag-text-muted mb-1">Total nights of accommodation</p>
             <input type="number" value={config.tripNights} onChange={(e) => updateConfig({ tripNights: Number(e.target.value) })} className="w-full" />
           </div>
         </div>
