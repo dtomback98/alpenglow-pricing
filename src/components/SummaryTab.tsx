@@ -32,12 +32,11 @@ export default function SummaryTab({ config }: SummaryTabProps) {
       {/* Key metrics cards */}
       {(() => {
         const bestCalc = calculations.reduce((best, curr) => curr.margin > best.margin ? curr : best);
-        const revenuePerPax = bestCalc.pax > 0 ? bestCalc.totalRevenue / bestCalc.pax : 0;
         const revenuePerPaxPerDay = bestCalc.pax > 0 && config.tripDays > 0 ? bestCalc.totalRevenue / bestCalc.pax / config.tripDays : 0;
         return (
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <div className="card">
-              <div className="text-sm text-ag-text-muted mb-1">Base Price</div>
+              <div className="text-sm text-ag-text-muted mb-1">Base Price per Pax</div>
               <div className="text-2xl font-bold text-ag-text">
                 {formatCurrency(config.tripPrice)}
               </div>
@@ -67,15 +66,6 @@ export default function SummaryTab({ config }: SummaryTabProps) {
               </div>
               <div className="text-sm text-ag-text-muted">
                 Minimum for profit
-              </div>
-            </div>
-            <div className="card">
-              <div className="text-sm text-ag-text-muted mb-1">Revenue/Pax ({bestCalc.pax} pax)</div>
-              <div className="text-2xl font-bold text-ag-text">
-                {formatCurrency(revenuePerPax)}
-              </div>
-              <div className="text-sm text-ag-text-muted">
-                At best margin pax level
               </div>
             </div>
             <div className="card">
@@ -136,7 +126,7 @@ export default function SummaryTab({ config }: SummaryTabProps) {
 
       {/* Revenue Breakdown by Pax */}
       <div className="card overflow-x-auto">
-        <h2 className="text-lg font-semibold mb-4">Revenue Breakdown by Pax</h2>
+        <h2 className="text-lg font-semibold mb-4">Revenue Breakdown</h2>
         <table className="pricing-table">
           <thead>
             <tr>
@@ -169,7 +159,7 @@ export default function SummaryTab({ config }: SummaryTabProps) {
 
       {/* Cost Breakdown by Pax */}
       <div className="card overflow-x-auto">
-        <h2 className="text-lg font-semibold mb-4">Cost Breakdown by Pax</h2>
+        <h2 className="text-lg font-semibold mb-4">Cost Breakdown</h2>
         <table className="pricing-table">
           <thead>
             <tr>
