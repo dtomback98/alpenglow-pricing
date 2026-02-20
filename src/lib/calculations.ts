@@ -151,7 +151,7 @@ function calculateTripSpecificCost(pax: number, config: TripConfiguration, total
 
 // Calculate all values for a specific pax count
 export function calculateForPax(pax: number, config: TripConfiguration): PaxCalculation {
-  const effectivePrice = config.tripPrice;
+  const effectivePrice = config.tripPriceByPax?.[pax] ?? config.tripPrice;
 
   // Revenue calculations
   const baseRevenue = effectivePrice * pax;

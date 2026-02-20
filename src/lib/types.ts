@@ -117,6 +117,7 @@ export interface SingleSupplementConfig {
 }
 
 export interface UiPreferences {
+  pricingPerPax?: boolean;
   discountsPerPax?: boolean;
   singleSuppPerPax?: boolean;
   transportPerPax?: boolean;
@@ -135,6 +136,7 @@ export interface TripConfiguration {
 
   // Core trip data
   tripPrice: number;
+  tripPriceByPax?: { [pax: number]: number };
   tripDays: number;
   tripNights: number;
   paxMin: number;

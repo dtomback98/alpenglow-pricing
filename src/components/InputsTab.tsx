@@ -69,8 +69,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
       }
     }
   }, [config.tripDays, config.staffConfig.useCustomStaffDays]);
+  const pricingPerPax = config.uiPreferences?.pricingPerPax ?? false;
   const discountsPerPax = config.uiPreferences?.discountsPerPax ?? false;
   const singleSuppPerPax = config.uiPreferences?.singleSuppPerPax ?? false;
+  const setPricingPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, pricingPerPax: val } });
   const setDiscountsPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, discountsPerPax: val } });
   const setSingleSuppPerPax = (val: boolean) => updateConfig({ uiPreferences: { ...config.uiPreferences, singleSuppPerPax: val } });
 
@@ -125,21 +127,58 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
     <div className="space-y-6">
       {/* Core Trip Details */}
       <div className="card">
-        <h2 className="text-lg font-semibold mb-4">Core Trip Details</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Core Trip Details</h2>
+          <button onClick={() => setPricingPerPax(!pricingPerPax)} className={`btn text-xs ${pricingPerPax ? 'btn-primary' : 'btn-secondary'}`}>
+            {pricingPerPax ? 'Per Pax Pricing' : 'Simple Pricing'}
+          </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="form-group">
             <label className="form-label">Trip Price ($)</label>
-            <input type="number" value={config.tripPrice} onChange={(e) => updateConfig({ tripPrice: Number(e.target.value) })} className="w-full" />
+            <p className="text-xs text-ag-text-muted mb-1">Per person for entire trip</p>
+            <input type="number" value={config.tripPrice} onChange={(e) => {
+              const val = Number(e.target.value);
+              if (!pricingPerPax) {
+                updateConfig({ tripPrice: val, tripPriceByPax: undefined });
+              } else {
+                updateConfig({ tripPrice: val });
+              }
+            }} className="w-full" />
           </div>
           <div className="form-group">
             <label className="form-label">Trip Days</label>
+            <p className="text-xs text-ag-text-muted mb-1">&nbsp;</p>
             <input type="number" value={config.tripDays} onChange={(e) => updateConfig({ tripDays: Number(e.target.value) })} className="w-full" />
           </div>
           <div className="form-group">
             <label className="form-label">Trip Nights</label>
+            <p className="text-xs text-ag-text-muted mb-1">&nbsp;</p>
             <input type="number" value={config.tripNights} onChange={(e) => updateConfig({ tripNights: Number(e.target.value) })} className="w-full" />
           </div>
         </div>
+        {pricingPerPax && (
+          <div className="mt-4 pt-4 border-t border-ag-border">
+            <div className="flex items-center justify-between mb-2">
+              <label className="form-label mb-0">Price by Pax Level ($)</label>
+              <button onClick={() => {
+                const baseVal = config.tripPriceByPax?.[paxCounts[0]] ?? config.tripPrice;
+                const newPrices: { [pax: number]: number } = {};
+                for (const p of paxCounts) newPrices[p] = baseVal;
+                updateConfig({ tripPriceByPax: newPrices });
+              }} className="btn btn-secondary text-xs">Apply First to All</button>
+            </div>
+            <p className="text-xs text-ag-text-muted mb-2">Set a different price per person at each group size</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+              {paxCounts.map((p) => (
+                <div key={p} className="form-group">
+                  <label className="form-label text-center">{p} pax</label>
+                  <input type="number" value={config.tripPriceByPax?.[p] ?? config.tripPrice} onChange={(e) => updateConfig({ tripPriceByPax: { ...config.tripPriceByPax, [p]: Number(e.target.value) } })} className="w-full text-center" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-ag-border">
           <div className="form-group">
             <label className="form-label">Min Pax</label>
