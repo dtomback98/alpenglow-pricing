@@ -59,39 +59,37 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
   const currentExtStaff = getExtStaff();
 
   const updateExtStaffMember = (index: number, updates: Partial<StaffMember>) => {
-    const newStaff = [...currentExtStaff];
-    newStaff[index] = { ...newStaff[index], ...updates };
-    updateExtStaff({
-      staffByPax: { ...ext.staffConfig.staffByPax, [effectiveStaffPax]: newStaff },
+    updateConfig(prev => {
+      const staff = prev.extension.staffConfig.staffByPax[effectiveStaffPax] || [{ role: 'Lead Guide', dailyRate: 400, days: prev.extension.extensionNights, quantity: 1 }];
+      const newStaff = [...staff];
+      newStaff[index] = { ...newStaff[index], ...updates };
+      return { extension: { ...prev.extension, staffConfig: { ...prev.extension.staffConfig, staffByPax: { ...prev.extension.staffConfig.staffByPax, [effectiveStaffPax]: newStaff } } } };
     });
   };
 
   const addExtStaffMember = () => {
-    const current = ext.staffConfig.staffByPax[effectiveStaffPax] || [];
-    const newStaff = [
-      ...current,
-      { role: 'New Role', dailyRate: 200, days: ext.extensionNights, quantity: 1 },
-    ];
-    updateExtStaff({
-      staffByPax: { ...ext.staffConfig.staffByPax, [effectiveStaffPax]: newStaff },
+    updateConfig(prev => {
+      const staff = prev.extension.staffConfig.staffByPax[effectiveStaffPax] || [];
+      const newStaff = [...staff, { role: 'New Role', dailyRate: 200, days: prev.extension.extensionNights, quantity: 1 }];
+      return { extension: { ...prev.extension, staffConfig: { ...prev.extension.staffConfig, staffByPax: { ...prev.extension.staffConfig.staffByPax, [effectiveStaffPax]: newStaff } } } };
     });
   };
 
   const removeExtStaffMember = (index: number) => {
-    const current = ext.staffConfig.staffByPax[effectiveStaffPax] || [];
-    const newStaff = current.filter((_, i) => i !== index);
-    updateExtStaff({
-      staffByPax: { ...ext.staffConfig.staffByPax, [effectiveStaffPax]: newStaff },
+    updateConfig(prev => {
+      const staff = prev.extension.staffConfig.staffByPax[effectiveStaffPax] || [];
+      const newStaff = staff.filter((_: StaffMember, i: number) => i !== index);
+      return { extension: { ...prev.extension, staffConfig: { ...prev.extension.staffConfig, staffByPax: { ...prev.extension.staffConfig.staffByPax, [effectiveStaffPax]: newStaff } } } };
     });
   };
 
   const copyExtStaffToAll = () => {
-    const current = ext.staffConfig.staffByPax[effectiveStaffPax] || [];
-    const newStaffByPax: { [pax: number]: StaffMember[] } = {};
-    for (const p of paxCounts) {
-      newStaffByPax[p] = current.map(s => ({ ...s }));
-    }
-    updateExtStaff({ staffByPax: newStaffByPax });
+    updateConfig(prev => {
+      const staff = prev.extension.staffConfig.staffByPax[effectiveStaffPax] || [{ role: 'Lead Guide', dailyRate: 400, days: prev.extension.extensionNights, quantity: 1 }];
+      const newStaffByPax: { [pax: number]: StaffMember[] } = {};
+      for (const p of paxCounts) newStaffByPax[p] = staff.map((s: StaffMember) => ({ ...s }));
+      return { extension: { ...prev.extension, staffConfig: { ...prev.extension.staffConfig, staffByPax: newStaffByPax } } };
+    });
   };
 
   // Resolve values for display (inherit vs custom)
@@ -167,7 +165,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   {paxCounts.map((p) => (
                     <div key={p} className="form-group">
                       <label className="form-label text-center">{p} pax</label>
-                      <input type="number" min="0" value={ext.countByPax?.[p] ?? 0} onChange={(e) => updateExtension({ countByPax: { ...ext.countByPax, [p]: Number(e.target.value) } })} className="w-full text-center" />
+                      <input type="number" min="0" value={ext.countByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, countByPax: { ...prev.extension.countByPax, [p]: val } } })); }} className="w-full text-center" />
                     </div>
                   ))}
                 </div>
@@ -253,7 +251,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                     {paxCounts.map((p) => (
                       <div key={p} className="form-group">
                         <label className="form-label text-center">{p} pax</label>
-                        <input type="number" min="0" value={ext.singleSupplement.countByPax?.[p] ?? 0} onChange={(e) => updateExtSingleSupplement({ countByPax: { ...ext.singleSupplement.countByPax, [p]: Number(e.target.value) } })} className="w-full text-center" />
+                        <input type="number" min="0" value={ext.singleSupplement.countByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, singleSupplement: { ...prev.extension.singleSupplement, countByPax: { ...prev.extension.singleSupplement.countByPax, [p]: val } } } })); }} className="w-full text-center" />
                       </div>
                     ))}
                   </div>

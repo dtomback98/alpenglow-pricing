@@ -82,36 +82,37 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   ];
 
   const updateStaffMember = (index: number, updates: Partial<StaffMember>) => {
-    const newStaff = [...currentStaff];
-    newStaff[index] = { ...newStaff[index], ...updates };
-    updateNestedConfig('staffConfig', {
-      staffByPax: { ...config.staffConfig.staffByPax, [effectiveStaffPax]: newStaff },
+    updateConfig(prev => {
+      const staff = prev.staffConfig.staffByPax[effectiveStaffPax] || [{ role: 'Lead Guide', dailyRate: 400, days: prev.tripDays, quantity: 1 }];
+      const newStaff = [...staff];
+      newStaff[index] = { ...newStaff[index], ...updates };
+      return { staffConfig: { ...prev.staffConfig, staffByPax: { ...prev.staffConfig.staffByPax, [effectiveStaffPax]: newStaff } } };
     });
   };
 
   const addStaffMember = () => {
-    const newStaff = [
-      ...currentStaff,
-      { role: 'New Role', dailyRate: 200, days: config.tripDays, quantity: 1 },
-    ];
-    updateNestedConfig('staffConfig', {
-      staffByPax: { ...config.staffConfig.staffByPax, [effectiveStaffPax]: newStaff },
+    updateConfig(prev => {
+      const staff = prev.staffConfig.staffByPax[effectiveStaffPax] || [{ role: 'Lead Guide', dailyRate: 400, days: prev.tripDays, quantity: 1 }];
+      const newStaff = [...staff, { role: 'New Role', dailyRate: 200, days: prev.tripDays, quantity: 1 }];
+      return { staffConfig: { ...prev.staffConfig, staffByPax: { ...prev.staffConfig.staffByPax, [effectiveStaffPax]: newStaff } } };
     });
   };
 
   const removeStaffMember = (index: number) => {
-    const newStaff = currentStaff.filter((_, i) => i !== index);
-    updateNestedConfig('staffConfig', {
-      staffByPax: { ...config.staffConfig.staffByPax, [effectiveStaffPax]: newStaff },
+    updateConfig(prev => {
+      const staff = prev.staffConfig.staffByPax[effectiveStaffPax] || [];
+      const newStaff = staff.filter((_: StaffMember, i: number) => i !== index);
+      return { staffConfig: { ...prev.staffConfig, staffByPax: { ...prev.staffConfig.staffByPax, [effectiveStaffPax]: newStaff } } };
     });
   };
 
   const copyStaffToAll = () => {
-    const newStaffByPax: { [pax: number]: StaffMember[] } = {};
-    for (const p of paxCounts) {
-      newStaffByPax[p] = currentStaff.map(s => ({ ...s }));
-    }
-    updateNestedConfig('staffConfig', { staffByPax: newStaffByPax });
+    updateConfig(prev => {
+      const staff = prev.staffConfig.staffByPax[effectiveStaffPax] || [{ role: 'Lead Guide', dailyRate: 400, days: prev.tripDays, quantity: 1 }];
+      const newStaffByPax: { [pax: number]: StaffMember[] } = {};
+      for (const p of paxCounts) newStaffByPax[p] = staff.map((s: StaffMember) => ({ ...s }));
+      return { staffConfig: { ...prev.staffConfig, staffByPax: newStaffByPax } };
+    });
   };
 
   const applyToAllPax = (current: { [pax: number]: number } | undefined, fallback: number) => {
@@ -127,7 +128,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Core Trip Details</h2>
-          <button onClick={() => setPricingPerPax(!pricingPerPax)} className={`btn text-xs ${pricingPerPax ? 'btn-primary' : 'btn-secondary'}`}>
+          <button onClick={() => { if (pricingPerPax) { updateConfig({ tripPriceByPax: undefined }); } setPricingPerPax(!pricingPerPax); }} className={`btn text-xs ${pricingPerPax ? 'btn-primary' : 'btn-secondary'}`}>
             {pricingPerPax ? 'Per Pax Pricing' : 'Simple Pricing'}
           </button>
         </div>
@@ -179,7 +180,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               {paxCounts.map((p) => (
                 <div key={p} className="form-group">
                   <label className="form-label text-center">{p} pax</label>
-                  <input type="number" value={config.tripPriceByPax?.[p] ?? config.tripPrice} onChange={(e) => updateConfig({ tripPriceByPax: { ...config.tripPriceByPax, [p]: Number(e.target.value) } })} className="w-full text-center" />
+                  <input type="number" value={config.tripPriceByPax?.[p] ?? config.tripPrice} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ tripPriceByPax: { ...prev.tripPriceByPax, [p]: val } })); }} className="w-full text-center" />
                 </div>
               ))}
             </div>
@@ -264,7 +265,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     {paxCounts.map((p) => (
                       <div key={p} className="form-group">
                         <label className="form-label text-center">{p} pax</label>
-                        <input type="number" min="0" value={config.earlyBirdCountByPax?.[p] || 0} onChange={(e) => updateConfig({ earlyBirdCountByPax: { ...config.earlyBirdCountByPax, [p]: Number(e.target.value) } })} className="w-full text-center" />
+                        <input type="number" min="0" value={config.earlyBirdCountByPax?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ earlyBirdCountByPax: { ...prev.earlyBirdCountByPax, [p]: val } })); }} className="w-full text-center" />
                       </div>
                     ))}
                   </div>
@@ -279,7 +280,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     {paxCounts.map((p) => (
                       <div key={p} className="form-group">
                         <label className="form-label text-center">{p} pax</label>
-                        <input type="number" min="0" value={config.loyaltyCountByPax?.[p] || 0} onChange={(e) => updateConfig({ loyaltyCountByPax: { ...config.loyaltyCountByPax, [p]: Number(e.target.value) } })} className="w-full text-center" />
+                        <input type="number" min="0" value={config.loyaltyCountByPax?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ loyaltyCountByPax: { ...prev.loyaltyCountByPax, [p]: val } })); }} className="w-full text-center" />
                       </div>
                     ))}
                   </div>
@@ -340,7 +341,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   {paxCounts.map((p) => (
                     <div key={p} className="form-group">
                       <label className="form-label text-center">{p} pax</label>
-                      <input type="number" min="0" value={config.singleSupplement.countByPax?.[p] ?? 0} onChange={(e) => updateNestedConfig('singleSupplement', { countByPax: { ...config.singleSupplement.countByPax, [p]: Number(e.target.value) } })} className="w-full text-center" />
+                      <input type="number" min="0" value={config.singleSupplement.countByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ singleSupplement: { ...prev.singleSupplement, countByPax: { ...prev.singleSupplement.countByPax, [p]: val } } })); }} className="w-full text-center" />
                     </div>
                   ))}
                 </div>
@@ -476,7 +477,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 <div className="form-group w-48">
                   <label className="form-label">Guide Flights Needed</label>
                   <p className="text-xs text-ag-text-muted mb-1">Number of flights at {effectiveStaffPax} pax</p>
-                  <input type="number" min="0" value={config.staffConfig.guideFlightCountByPax?.[effectiveStaffPax] ?? 0} onChange={(e) => updateNestedConfig('staffConfig', { guideFlightCountByPax: { ...config.staffConfig.guideFlightCountByPax, [effectiveStaffPax]: Number(e.target.value) } })} className="w-full" />
+                  <input type="number" min="0" value={config.staffConfig.guideFlightCountByPax?.[effectiveStaffPax] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ staffConfig: { ...prev.staffConfig, guideFlightCountByPax: { ...prev.staffConfig.guideFlightCountByPax, [effectiveStaffPax]: val } } })); }} className="w-full" />
                 </div>
               </div>
             </div>
