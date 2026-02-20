@@ -504,17 +504,21 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <div className="flex items-center gap-3 mb-3">
                 <label className="form-label mb-0">Staff Guide Meals Cost ($)</label>
                 <div className="flex gap-1">
-                  {(['perDay', 'total'] as const).map((m) => {
+                  {(['perDayPerGuide', 'perDay', 'total'] as const).map((m) => {
                     const mode = config.staffConfig.staffMealsMode || 'perDay';
                     return (
                       <button key={m} onClick={() => updateNestedConfig('staffConfig', { staffMealsMode: m })} className={`btn text-xs ${mode === m ? 'btn-primary' : 'btn-secondary'}`}>
-                        {m === 'perDay' ? 'Per Day' : 'Total'}
+                        {m === 'perDayPerGuide' ? 'Per Day/Guide' : m === 'perDay' ? 'Per Day' : 'Total'}
                       </button>
                     );
                   })}
                 </div>
                 <span className="text-xs text-ag-text-muted">
-                  {(config.staffConfig.staffMealsMode || 'perDay') === 'perDay' ? `(cost \u00d7 ${config.tripDays} trip days)` : '(entered value is total cost)'}
+                  {(config.staffConfig.staffMealsMode || 'perDay') === 'perDayPerGuide'
+                    ? `(cost \u00d7 ${config.tripDays} days \u00d7 guides)`
+                    : (config.staffConfig.staffMealsMode || 'perDay') === 'perDay'
+                    ? `(cost \u00d7 ${config.tripDays} trip days)`
+                    : '(entered value is total cost)'}
                 </span>
               </div>
               <input type="number" value={config.staffConfig.staffMealsCost || 0} onChange={(e) => updateNestedConfig('staffConfig', { staffMealsCost: Number(e.target.value) })} className="w-48" />

@@ -79,7 +79,7 @@ export interface StaffConfig {
   guideFlightCost?: number;
   guideFlightCountByPax?: { [pax: number]: number };
   staffMealsCost?: number;
-  staffMealsMode?: 'perDay' | 'total';
+  staffMealsMode?: 'perDayPerGuide' | 'perDay' | 'total';
 }
 
 export interface TransportConfig {

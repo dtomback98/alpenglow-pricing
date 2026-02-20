@@ -221,9 +221,14 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   // Staff guide meals (gated with staff)
   const staffMealsAmount = config.staffConfig.staffMealsCost || 0;
   const staffMealsMode = config.staffConfig.staffMealsMode || 'perDay';
-  const staffMealsCost = staffOn
-    ? (staffMealsMode === 'perDay' ? staffMealsAmount * config.tripDays : staffMealsAmount)
-    : 0;
+  let staffMealsCost = 0;
+  if (staffOn) {
+    const staff = config.staffConfig.staffByPax[pax] || [];
+    const totalStaffCount = staff.reduce((sum, s) => sum + s.quantity, 0);
+    if (staffMealsMode === 'perDayPerGuide') staffMealsCost = staffMealsAmount * config.tripDays * totalStaffCount;
+    else if (staffMealsMode === 'perDay') staffMealsCost = staffMealsAmount * config.tripDays;
+    else staffMealsCost = staffMealsAmount;
+  }
 
   // Transport (gated — flights removed, now in staff section)
   const transportOn = config.transportConfig.enabled !== false;
