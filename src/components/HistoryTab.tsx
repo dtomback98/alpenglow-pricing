@@ -334,7 +334,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
 
       {/* Next Year Trip Performance */}
       {tripsNextYear.length > 0 && (
-        <TripTable trips={tripsNextYear} title={`${nextYear} Trip Performance`} onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} onUpdateTrip={updateTrip} />
+        <TripTable trips={tripsNextYear} title={`${nextYear} Budgeted Trips`} onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} onUpdateTrip={updateTrip} />
       )}
 
       {/* Current Year Trips Run */}
