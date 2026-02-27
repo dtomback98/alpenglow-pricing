@@ -1,12 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TripConfiguration, StaffMember } from '@/lib/types';
 
 interface ExtensionTabProps {
   config: TripConfiguration;
   updateConfig: (updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>)) => void;
 }
+
+// Shows empty string instead of "0" so users don't get a leading zero when they clear and retype a value
+const NumInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+  <input {...props} type="number" value={(props.value as number) || ''} />
+);
 
 export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps) {
   const ext = config.extension;
@@ -204,12 +209,12 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               <div className="form-group">
                 <label className="form-label">Extension Price / Person ($)</label>
                 <p className="text-xs text-ag-text-muted mb-1">Amount charged per guest for the extension</p>
-                <input type="number" value={ext.extensionPrice} onChange={(e) => updateExtension({ extensionPrice: Number(e.target.value) })} className="w-full" />
+                <NumInput type="number" value={ext.extensionPrice} onChange={(e) => updateExtension({ extensionPrice: Number(e.target.value) })} className="w-full" />
               </div>
               <div className="form-group">
                 <label className="form-label">Extension Nights</label>
                 <p className="text-xs text-ag-text-muted mb-1">Number of nights for the extension</p>
-                <input type="number" min="1" value={ext.extensionNights} onChange={(e) => updateExtension({ extensionNights: Number(e.target.value) })} className="w-full" />
+                <NumInput type="number" min="1" value={ext.extensionNights} onChange={(e) => updateExtension({ extensionNights: Number(e.target.value) })} className="w-full" />
               </div>
             </div>
             {!extPerPax ? (
@@ -217,7 +222,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 <div className="form-group w-48">
                   <label className="form-label">Guest Count</label>
                   <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                  <input type="number" min="0" value={ext.countByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtension({ countByPax: c }); }} className="w-full" />
+                  <NumInput type="number" min="0" value={ext.countByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtension({ countByPax: c }); }} className="w-full" />
                 </div>
               </div>
             ) : (
@@ -231,7 +236,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   {paxCounts.map((p) => (
                     <div key={p} className="form-group">
                       <label className="form-label text-center">{p} pax</label>
-                      <input type="number" min="0" value={ext.countByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, countByPax: { ...prev.extension.countByPax, [p]: val } } })); }} className="w-full text-center" />
+                      <NumInput type="number" min="0" value={ext.countByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, countByPax: { ...prev.extension.countByPax, [p]: val } } })); }} className="w-full text-center" />
                     </div>
                   ))}
                 </div>
@@ -272,23 +277,23 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
                   <label className="form-label">Early Bird Discount ($)</label>
-                  <input type="number" value={config.earlyBirdDiscount} disabled className="w-full opacity-50 cursor-not-allowed" />
+                  <NumInput type="number" value={config.earlyBirdDiscount} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Loyalty Discount Rate (%)</label>
-                  <input type="number" value={config.loyaltyDiscountRate * 100} disabled className="w-full opacity-50 cursor-not-allowed" />
+                  <NumInput type="number" value={config.loyaltyDiscountRate * 100} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-ag-border">
                 <div className="form-group">
                   <label className="form-label">Early Bird Count</label>
                   <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                  <input type="number" min="0" value={ext.discounts.earlyBirdCountByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtDiscounts({ earlyBirdCountByPax: c }); }} className="w-full" />
+                  <NumInput type="number" min="0" value={ext.discounts.earlyBirdCountByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtDiscounts({ earlyBirdCountByPax: c }); }} className="w-full" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Loyalty Count</label>
                   <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                  <input type="number" min="0" value={ext.discounts.loyaltyCountByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtDiscounts({ loyaltyCountByPax: c }); }} className="w-full" />
+                  <NumInput type="number" min="0" value={ext.discounts.loyaltyCountByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtDiscounts({ loyaltyCountByPax: c }); }} className="w-full" />
                 </div>
               </div>
             </div>
@@ -298,12 +303,12 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 <div className="form-group">
                   <label className="form-label">Early Bird Discount ($)</label>
                   <p className="text-xs text-ag-text-muted mb-1">Amount discounted per early bird guest</p>
-                  <input type="number" value={ext.discounts.earlyBirdDiscount} onChange={(e) => updateExtDiscounts({ earlyBirdDiscount: Number(e.target.value) })} className="w-full" />
+                  <NumInput type="number" value={ext.discounts.earlyBirdDiscount} onChange={(e) => updateExtDiscounts({ earlyBirdDiscount: Number(e.target.value) })} className="w-full" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Loyalty Discount Rate (%)</label>
                   <p className="text-xs text-ag-text-muted mb-1">% discount on extension price per loyalty guest</p>
-                  <input type="number" step="0.01" value={ext.discounts.loyaltyDiscountRate * 100} onChange={(e) => updateExtDiscounts({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
+                  <NumInput type="number" step="0.01" value={ext.discounts.loyaltyDiscountRate * 100} onChange={(e) => updateExtDiscounts({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
                 </div>
               </div>
               {!extDiscountsPerPax ? (
@@ -311,12 +316,12 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   <div className="form-group">
                     <label className="form-label">Early Bird Count</label>
                     <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                    <input type="number" min="0" value={ext.discounts.earlyBirdCountByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtDiscounts({ earlyBirdCountByPax: c }); }} className="w-full" />
+                    <NumInput type="number" min="0" value={ext.discounts.earlyBirdCountByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtDiscounts({ earlyBirdCountByPax: c }); }} className="w-full" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Loyalty Count</label>
                     <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                    <input type="number" min="0" value={ext.discounts.loyaltyCountByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtDiscounts({ loyaltyCountByPax: c }); }} className="w-full" />
+                    <NumInput type="number" min="0" value={ext.discounts.loyaltyCountByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtDiscounts({ loyaltyCountByPax: c }); }} className="w-full" />
                   </div>
                 </div>
               ) : (
@@ -331,7 +336,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                       {paxCounts.map((p) => (
                         <div key={p} className="form-group">
                           <label className="form-label text-center">{p} pax</label>
-                          <input type="number" min="0" value={ext.discounts.earlyBirdCountByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, discounts: { ...prev.extension.discounts, earlyBirdCountByPax: { ...prev.extension.discounts.earlyBirdCountByPax, [p]: val } } } })); }} className="w-full text-center" />
+                          <NumInput type="number" min="0" value={ext.discounts.earlyBirdCountByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, discounts: { ...prev.extension.discounts, earlyBirdCountByPax: { ...prev.extension.discounts.earlyBirdCountByPax, [p]: val } } } })); }} className="w-full text-center" />
                         </div>
                       ))}
                     </div>
@@ -346,7 +351,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                       {paxCounts.map((p) => (
                         <div key={p} className="form-group">
                           <label className="form-label text-center">{p} pax</label>
-                          <input type="number" min="0" value={ext.discounts.loyaltyCountByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, discounts: { ...prev.extension.discounts, loyaltyCountByPax: { ...prev.extension.discounts.loyaltyCountByPax, [p]: val } } } })); }} className="w-full text-center" />
+                          <NumInput type="number" min="0" value={ext.discounts.loyaltyCountByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, discounts: { ...prev.extension.discounts, loyaltyCountByPax: { ...prev.extension.discounts.loyaltyCountByPax, [p]: val } } } })); }} className="w-full text-center" />
                         </div>
                       ))}
                     </div>
@@ -389,18 +394,18 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
                   <label className="form-label">Single Supplement Price ($)</label>
-                  <input type="number" value={resolvedSingleSuppPrice} disabled className="w-full opacity-50 cursor-not-allowed" />
+                  <NumInput type="number" value={resolvedSingleSuppPrice} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Single Room Extra Cost ($)</label>
-                  <input type="number" value={resolvedSingleRoomExtra} disabled className="w-full opacity-50 cursor-not-allowed" />
+                  <NumInput type="number" value={resolvedSingleRoomExtra} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-ag-border">
                 <div className="form-group w-48">
                   <label className="form-label">Number of Extension Guests</label>
                   <p className="text-xs text-ag-text-muted mb-1">How many extension guests take single supplement</p>
-                  <input type="number" min="0" value={ext.singleSupplement.countByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtSingleSupplement({ countByPax: c }); }} className="w-full" />
+                  <NumInput type="number" min="0" value={ext.singleSupplement.countByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtSingleSupplement({ countByPax: c }); }} className="w-full" />
                 </div>
               </div>
             </div>
@@ -409,11 +414,11 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
                   <label className="form-label">Single Supplement Price ($)</label>
-                  <input type="number" value={ext.singleSupplement.singleSupplement} onChange={(e) => updateExtSingleSupplement({ singleSupplement: Number(e.target.value) })} className="w-full" />
+                  <NumInput type="number" value={ext.singleSupplement.singleSupplement} onChange={(e) => updateExtSingleSupplement({ singleSupplement: Number(e.target.value) })} className="w-full" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Single Room Extra Cost ($)</label>
-                  <input type="number" value={ext.singleSupplement.singleRoomExtra} onChange={(e) => updateExtSingleSupplement({ singleRoomExtra: Number(e.target.value) })} className="w-full" />
+                  <NumInput type="number" value={ext.singleSupplement.singleRoomExtra} onChange={(e) => updateExtSingleSupplement({ singleRoomExtra: Number(e.target.value) })} className="w-full" />
                 </div>
               </div>
               {!extSuppPerPax ? (
@@ -421,7 +426,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   <div className="form-group w-48">
                     <label className="form-label">Number of Guests</label>
                     <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                    <input type="number" min="0" value={ext.singleSupplement.countByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtSingleSupplement({ countByPax: c }); }} className="w-full" />
+                    <NumInput type="number" min="0" value={ext.singleSupplement.countByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtSingleSupplement({ countByPax: c }); }} className="w-full" />
                   </div>
                 </div>
               ) : (
@@ -434,7 +439,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                     {paxCounts.map((p) => (
                       <div key={p} className="form-group">
                         <label className="form-label text-center">{p} pax</label>
-                        <input type="number" min="0" value={ext.singleSupplement.countByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, singleSupplement: { ...prev.extension.singleSupplement, countByPax: { ...prev.extension.singleSupplement.countByPax, [p]: val } } } })); }} className="w-full text-center" />
+                        <NumInput type="number" min="0" value={ext.singleSupplement.countByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, singleSupplement: { ...prev.extension.singleSupplement, countByPax: { ...prev.extension.singleSupplement.countByPax, [p]: val } } } })); }} className="w-full text-center" />
                       </div>
                     ))}
                   </div>
@@ -481,19 +486,19 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="form-group">
                   <label className="form-label">Hotel Cost ($)</label>
-                  <input type="number" value={resolvedHotelRate} disabled className="w-full opacity-50 cursor-not-allowed" />
+                  <NumInput type="number" value={resolvedHotelRate} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Lunch Cost ($)</label>
-                  <input type="number" value={resolvedLunchRate} disabled className="w-full opacity-50 cursor-not-allowed" />
+                  <NumInput type="number" value={resolvedLunchRate} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Dinner Cost ($)</label>
-                  <input type="number" value={resolvedDinnerRate} disabled className="w-full opacity-50 cursor-not-allowed" />
+                  <NumInput type="number" value={resolvedDinnerRate} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Additional Meal Costs ($)</label>
-                  <input type="number" value={resolvedAdditionalMeals} disabled className="w-full opacity-50 cursor-not-allowed" />
+                  <NumInput type="number" value={resolvedAdditionalMeals} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
               </div>
             </div>
@@ -525,22 +530,22 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   <div className="form-group">
                     <label className="form-label">Hotel Cost ($)</label>
                     <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
-                    <input type="number" value={ext.hotelsMeals.hotelCostPerNight} onChange={(e) => updateExtHotelsMeals({ hotelCostPerNight: Number(e.target.value) })} className="w-full" />
+                    <NumInput type="number" value={ext.hotelsMeals.hotelCostPerNight} onChange={(e) => updateExtHotelsMeals({ hotelCostPerNight: Number(e.target.value) })} className="w-full" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Lunch Cost ($)</label>
                     <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per day' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per day (flat)' : 'Total'}</p>
-                    <input type="number" value={ext.hotelsMeals.lunchCostPerDay} onChange={(e) => updateExtHotelsMeals({ lunchCostPerDay: Number(e.target.value) })} className="w-full" />
+                    <NumInput type="number" value={ext.hotelsMeals.lunchCostPerDay} onChange={(e) => updateExtHotelsMeals({ lunchCostPerDay: Number(e.target.value) })} className="w-full" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Dinner Cost ($)</label>
                     <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
-                    <input type="number" value={ext.hotelsMeals.dinnerCostPerNight} onChange={(e) => updateExtHotelsMeals({ dinnerCostPerNight: Number(e.target.value) })} className="w-full" />
+                    <NumInput type="number" value={ext.hotelsMeals.dinnerCostPerNight} onChange={(e) => updateExtHotelsMeals({ dinnerCostPerNight: Number(e.target.value) })} className="w-full" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Additional Meal Costs ($)</label>
                     <p className="text-xs text-ag-text-muted mb-1">Flat total</p>
-                    <input type="number" value={ext.hotelsMeals.additionalMealCosts} onChange={(e) => updateExtHotelsMeals({ additionalMealCosts: Number(e.target.value) })} className="w-full" />
+                    <NumInput type="number" value={ext.hotelsMeals.additionalMealCosts} onChange={(e) => updateExtHotelsMeals({ additionalMealCosts: Number(e.target.value) })} className="w-full" />
                   </div>
                 </div>
               ) : (
@@ -559,22 +564,22 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                     <div className="form-group">
                       <label className="form-label">Hotel Cost ($)</label>
                       <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
-                      <input type="number" value={ext.hotelsMeals.hotelCostByPax?.[effectiveExtHMPax] ?? ext.hotelsMeals.hotelCostPerNight} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, hotelCostByPax: { ...prev.extension.hotelsMeals.hotelCostByPax, [effectiveExtHMPax]: val } } } })); }} className="w-full" />
+                      <NumInput type="number" value={ext.hotelsMeals.hotelCostByPax?.[effectiveExtHMPax] ?? ext.hotelsMeals.hotelCostPerNight} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, hotelCostByPax: { ...prev.extension.hotelsMeals.hotelCostByPax, [effectiveExtHMPax]: val } } } })); }} className="w-full" />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Lunch Cost ($)</label>
                       <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per day' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per day (flat)' : 'Total'}</p>
-                      <input type="number" value={ext.hotelsMeals.lunchCostByPax?.[effectiveExtHMPax] ?? ext.hotelsMeals.lunchCostPerDay} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, lunchCostByPax: { ...prev.extension.hotelsMeals.lunchCostByPax, [effectiveExtHMPax]: val } } } })); }} className="w-full" />
+                      <NumInput type="number" value={ext.hotelsMeals.lunchCostByPax?.[effectiveExtHMPax] ?? ext.hotelsMeals.lunchCostPerDay} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, lunchCostByPax: { ...prev.extension.hotelsMeals.lunchCostByPax, [effectiveExtHMPax]: val } } } })); }} className="w-full" />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Dinner Cost ($)</label>
                       <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
-                      <input type="number" value={ext.hotelsMeals.dinnerCostByPax?.[effectiveExtHMPax] ?? ext.hotelsMeals.dinnerCostPerNight} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, dinnerCostByPax: { ...prev.extension.hotelsMeals.dinnerCostByPax, [effectiveExtHMPax]: val } } } })); }} className="w-full" />
+                      <NumInput type="number" value={ext.hotelsMeals.dinnerCostByPax?.[effectiveExtHMPax] ?? ext.hotelsMeals.dinnerCostPerNight} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, dinnerCostByPax: { ...prev.extension.hotelsMeals.dinnerCostByPax, [effectiveExtHMPax]: val } } } })); }} className="w-full" />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Additional Meal Costs ($)</label>
                       <p className="text-xs text-ag-text-muted mb-1">Flat total</p>
-                      <input type="number" value={ext.hotelsMeals.additionalMealCostsByPax?.[effectiveExtHMPax] ?? ext.hotelsMeals.additionalMealCosts} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, additionalMealCostsByPax: { ...prev.extension.hotelsMeals.additionalMealCostsByPax, [effectiveExtHMPax]: val } } } })); }} className="w-full" />
+                      <NumInput type="number" value={ext.hotelsMeals.additionalMealCostsByPax?.[effectiveExtHMPax] ?? ext.hotelsMeals.additionalMealCosts} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, additionalMealCostsByPax: { ...prev.extension.hotelsMeals.additionalMealCostsByPax, [effectiveExtHMPax]: val } } } })); }} className="w-full" />
                     </div>
                   </div>
                 </>
@@ -621,15 +626,15 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                     </div>
                     <div className="form-group w-32">
                       <label className="form-label">Daily Rate ($)</label>
-                      <input type="number" value={staff.dailyRate} disabled className="w-full opacity-50 cursor-not-allowed" />
+                      <NumInput type="number" value={staff.dailyRate} disabled className="w-full opacity-50 cursor-not-allowed" />
                     </div>
                     <div className="form-group w-24">
                       <label className="form-label">Days</label>
-                      <input type="number" value={staff.days} disabled className="w-full opacity-50 cursor-not-allowed" />
+                      <NumInput type="number" value={staff.days} disabled className="w-full opacity-50 cursor-not-allowed" />
                     </div>
                     <div className="form-group w-24">
                       <label className="form-label">Quantity</label>
-                      <input type="number" value={staff.quantity} disabled className="w-full opacity-50 cursor-not-allowed" />
+                      <NumInput type="number" value={staff.quantity} disabled className="w-full opacity-50 cursor-not-allowed" />
                     </div>
                   </div>
                 ))}
@@ -637,11 +642,11 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-ag-border">
                 <div className="form-group">
                   <label className="form-label">Travel Days</label>
-                  <input type="number" value={ext.staffConfig.travelDays} onChange={(e) => updateExtStaff({ travelDays: Number(e.target.value) })} className="w-full" />
+                  <NumInput type="number" value={ext.staffConfig.travelDays} onChange={(e) => updateExtStaff({ travelDays: Number(e.target.value) })} className="w-full" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Travel Day Rate ($)</label>
-                  <input type="number" value={config.staffConfig.travelDayRate} disabled className="w-full opacity-50 cursor-not-allowed" />
+                  <NumInput type="number" value={config.staffConfig.travelDayRate} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
               </div>
             </div>
@@ -663,15 +668,15 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                     </div>
                     <div className="form-group w-32">
                       <label className="form-label">Daily Rate ($)</label>
-                      <input type="number" value={staff.dailyRate} onChange={(e) => updateExtStaffMember(index, { dailyRate: Number(e.target.value) })} className="w-full" />
+                      <NumInput type="number" value={staff.dailyRate} onChange={(e) => updateExtStaffMember(index, { dailyRate: Number(e.target.value) })} className="w-full" />
                     </div>
                     <div className="form-group w-24">
                       <label className="form-label">Days</label>
-                      <input type="number" value={staff.days} onChange={(e) => updateExtStaffMember(index, { days: Number(e.target.value) })} className="w-full" />
+                      <NumInput type="number" value={staff.days} onChange={(e) => updateExtStaffMember(index, { days: Number(e.target.value) })} className="w-full" />
                     </div>
                     <div className="form-group w-24">
                       <label className="form-label">Quantity</label>
-                      <input type="number" value={staff.quantity} onChange={(e) => updateExtStaffMember(index, { quantity: Number(e.target.value) })} className="w-full" />
+                      <NumInput type="number" value={staff.quantity} onChange={(e) => updateExtStaffMember(index, { quantity: Number(e.target.value) })} className="w-full" />
                     </div>
                     <button onClick={() => removeExtStaffMember(index)} className="btn btn-danger mb-4" disabled={currentExtStaff.length <= 1}>Remove</button>
                   </div>
@@ -684,11 +689,11 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-ag-border">
                 <div className="form-group">
                   <label className="form-label">Travel Days</label>
-                  <input type="number" value={ext.staffConfig.travelDays} onChange={(e) => updateExtStaff({ travelDays: Number(e.target.value) })} className="w-full" />
+                  <NumInput type="number" value={ext.staffConfig.travelDays} onChange={(e) => updateExtStaff({ travelDays: Number(e.target.value) })} className="w-full" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Travel Day Rate ($)</label>
-                  <input type="number" value={ext.staffConfig.travelDayRate} onChange={(e) => updateExtStaff({ travelDayRate: Number(e.target.value) })} className="w-full" />
+                  <NumInput type="number" value={ext.staffConfig.travelDayRate} onChange={(e) => updateExtStaff({ travelDayRate: Number(e.target.value) })} className="w-full" />
                 </div>
               </div>
             </>
@@ -725,7 +730,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               {config.logistics.simpleMode !== false ? (
                 <div className="max-w-xs">
                   <label className="form-label">Rate (all pax)</label>
-                  <input type="number" value={config.logistics.rates[0]?.rate ?? 0} disabled className="w-full opacity-50 cursor-not-allowed" />
+                  <NumInput type="number" value={config.logistics.rates[0]?.rate ?? 0} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
@@ -735,7 +740,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                     return (
                       <div key={p} className="form-group">
                         <label className="form-label text-center">{p} pax</label>
-                        <input type="number" value={rateValue} disabled className="w-full text-center opacity-50 cursor-not-allowed" />
+                        <NumInput type="number" value={rateValue} disabled className="w-full text-center opacity-50 cursor-not-allowed" />
                       </div>
                     );
                   })}
@@ -774,7 +779,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               {ext.logisticsConfig.simpleMode !== false ? (
                 <div className="max-w-xs">
                   <label className="form-label">Rate (all pax)</label>
-                  <input
+                  <NumInput
                     type="number"
                     value={ext.logisticsConfig.rates?.[0]?.rate ?? 0}
                     onChange={(e) => {
@@ -794,7 +799,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                       return (
                         <div key={p} className="form-group">
                           <label className="form-label text-center">{p} pax</label>
-                          <input type="number" value={rateValue} onChange={(e) => {
+                          <NumInput type="number" value={rateValue} onChange={(e) => {
                             updateConfig(prev => {
                               const rates = (prev.extension.logisticsConfig.rates || []).filter((r: { pax: number; rate: number }) => r.pax !== p);
                               rates.push({ pax: p, rate: Number(e.target.value) });

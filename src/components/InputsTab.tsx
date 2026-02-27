@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TripConfiguration, StaffMember, TripSpecificCost } from '@/lib/types';
 
 interface InputsTabProps {
@@ -9,6 +9,11 @@ interface InputsTabProps {
 }
 
 type NestedConfigKey = 'extension' | 'hotelsMeals' | 'logistics' | 'staffConfig' | 'transportConfig' | 'tripSpecific' | 'singleSupplement';
+
+// Shows empty string instead of "0" so users don't get a leading zero when they clear and retype a value
+const NumInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+  <input {...props} type="number" value={(props.value as number) || ''} />
+);
 
 const TRIP_SPECIFIC_FIELDS: { key: keyof Omit<TripConfiguration['tripSpecific'], 'enabled'>; label: string }[] = [
   { key: 'permits', label: 'Permits' },
@@ -196,7 +201,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             <p className="text-xs text-ag-text-muted mb-1">
               {pricingPerPax ? 'Per person at each pax level' : config.tripPriceMode === 'total' ? 'Total revenue for entire trip' : 'Per person for entire trip'}
             </p>
-            <input type="number" value={config.tripPrice} onChange={(e) => {
+            <NumInput type="number" value={config.tripPrice} onChange={(e) => {
               const val = Number(e.target.value);
               if (!pricingPerPax) {
                 updateConfig({ tripPrice: val, tripPriceByPax: undefined });
@@ -214,12 +219,12 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <div className="form-group">
             <label className="form-label">Trip Days</label>
             <p className="text-xs text-ag-text-muted mb-1">&nbsp;</p>
-            <input type="number" value={config.tripDays} onChange={(e) => updateConfig({ tripDays: Number(e.target.value) })} className="w-full" />
+            <NumInput type="number" value={config.tripDays} onChange={(e) => updateConfig({ tripDays: Number(e.target.value) })} className="w-full" />
           </div>
           <div className="form-group">
             <label className="form-label">Trip Nights</label>
             <p className="text-xs text-ag-text-muted mb-1">&nbsp;</p>
-            <input type="number" value={config.tripNights} onChange={(e) => updateConfig({ tripNights: Number(e.target.value) })} className="w-full" />
+            <NumInput type="number" value={config.tripNights} onChange={(e) => updateConfig({ tripNights: Number(e.target.value) })} className="w-full" />
           </div>
         </div>
         {pricingPerPax && (
@@ -238,7 +243,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               {paxCounts.map((p) => (
                 <div key={p} className="form-group">
                   <label className="form-label text-center">{p} pax</label>
-                  <input type="number" value={config.tripPriceByPax?.[p] ?? config.tripPrice} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ tripPriceByPax: { ...prev.tripPriceByPax, [p]: val } })); }} className="w-full text-center" />
+                  <NumInput type="number" value={config.tripPriceByPax?.[p] ?? config.tripPrice} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ tripPriceByPax: { ...prev.tripPriceByPax, [p]: val } })); }} className="w-full text-center" />
                 </div>
               ))}
             </div>
@@ -247,22 +252,22 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-ag-border">
           <div className="form-group">
             <label className="form-label">Min Pax</label>
-            <input type="number" min="1" value={paxMin} onChange={(e) => updateConfig({ paxMin: Math.max(1, Number(e.target.value)) })} className="w-full" />
+            <NumInput type="number" min="1" value={paxMin} onChange={(e) => updateConfig({ paxMin: Math.max(1, Number(e.target.value)) })} className="w-full" />
           </div>
           <div className="form-group">
             <label className="form-label">Max Pax</label>
-            <input type="number" min="1" value={paxMax} onChange={(e) => updateConfig({ paxMax: Math.max(paxMin, Number(e.target.value)) })} className="w-full" />
+            <NumInput type="number" min="1" value={paxMax} onChange={(e) => updateConfig({ paxMax: Math.max(paxMin, Number(e.target.value)) })} className="w-full" />
           </div>
           <div className="form-group">
             <label className="form-label">Pax Step</label>
-            <input type="number" min="1" value={paxStep} onChange={(e) => updateConfig({ paxStep: Math.max(1, Number(e.target.value)) })} className="w-full" />
+            <NumInput type="number" min="1" value={paxStep} onChange={(e) => updateConfig({ paxStep: Math.max(1, Number(e.target.value)) })} className="w-full" />
           </div>
         </div>
         <div className="mt-4 pt-4 border-t border-ag-border">
           <div className="form-group w-48">
             <label className="form-label">Inflation Rate (%)</label>
             <p className="text-xs text-ag-text-muted mb-1">Applied to all cost items</p>
-            <input type="number" step="0.1" value={((config.inflationRate || 0) * 100)} onChange={(e) => updateConfig({ inflationRate: Number(e.target.value) / 100 })} className="w-full" />
+            <NumInput type="number" step="0.1" value={((config.inflationRate || 0) * 100)} onChange={(e) => updateConfig({ inflationRate: Number(e.target.value) / 100 })} className="w-full" />
           </div>
         </div>
       </div>
@@ -290,12 +295,12 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <div className="form-group">
                 <label className="form-label">Early Bird Discount ($)</label>
                 <p className="text-xs text-ag-text-muted mb-1">Amount discounted per early bird guest</p>
-                <input type="number" value={config.earlyBirdDiscount} onChange={(e) => updateConfig({ earlyBirdDiscount: Number(e.target.value) })} className="w-full" />
+                <NumInput type="number" value={config.earlyBirdDiscount} onChange={(e) => updateConfig({ earlyBirdDiscount: Number(e.target.value) })} className="w-full" />
               </div>
               <div className="form-group">
                 <label className="form-label">Loyalty Discount Rate (%)</label>
                 <p className="text-xs text-ag-text-muted mb-1">% discount on trip price per loyalty guest</p>
-                <input type="number" step="0.01" value={config.loyaltyDiscountRate * 100} onChange={(e) => updateConfig({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
+                <NumInput type="number" step="0.01" value={config.loyaltyDiscountRate * 100} onChange={(e) => updateConfig({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
               </div>
             </div>
             {!discountsPerPax ? (
@@ -303,12 +308,12 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 <div className="form-group">
                   <label className="form-label">Early Bird Count</label>
                   <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                  <input type="number" min="0" value={config.earlyBirdCountByPax?.[paxCounts[0]] || 0} onChange={(e) => { updateConfig({ earlyBirdCountByPax: applyToAllPax(undefined, Number(e.target.value)) }); }} className="w-full" />
+                  <NumInput type="number" min="0" value={config.earlyBirdCountByPax?.[paxCounts[0]] || 0} onChange={(e) => { updateConfig({ earlyBirdCountByPax: applyToAllPax(undefined, Number(e.target.value)) }); }} className="w-full" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Loyalty Count</label>
                   <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                  <input type="number" min="0" value={config.loyaltyCountByPax?.[paxCounts[0]] || 0} onChange={(e) => { updateConfig({ loyaltyCountByPax: applyToAllPax(undefined, Number(e.target.value)) }); }} className="w-full" />
+                  <NumInput type="number" min="0" value={config.loyaltyCountByPax?.[paxCounts[0]] || 0} onChange={(e) => { updateConfig({ loyaltyCountByPax: applyToAllPax(undefined, Number(e.target.value)) }); }} className="w-full" />
                 </div>
               </div>
             ) : (
@@ -323,7 +328,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     {paxCounts.map((p) => (
                       <div key={p} className="form-group">
                         <label className="form-label text-center">{p} pax</label>
-                        <input type="number" min="0" value={config.earlyBirdCountByPax?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ earlyBirdCountByPax: { ...prev.earlyBirdCountByPax, [p]: val } })); }} className="w-full text-center" />
+                        <NumInput type="number" min="0" value={config.earlyBirdCountByPax?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ earlyBirdCountByPax: { ...prev.earlyBirdCountByPax, [p]: val } })); }} className="w-full text-center" />
                       </div>
                     ))}
                   </div>
@@ -338,7 +343,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     {paxCounts.map((p) => (
                       <div key={p} className="form-group">
                         <label className="form-label text-center">{p} pax</label>
-                        <input type="number" min="0" value={config.loyaltyCountByPax?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ loyaltyCountByPax: { ...prev.loyaltyCountByPax, [p]: val } })); }} className="w-full text-center" />
+                        <NumInput type="number" min="0" value={config.loyaltyCountByPax?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ loyaltyCountByPax: { ...prev.loyaltyCountByPax, [p]: val } })); }} className="w-full text-center" />
                       </div>
                     ))}
                   </div>
@@ -372,12 +377,12 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <div className="form-group">
                 <label className="form-label">Single Supplement Price ($)</label>
                 <p className="text-xs text-ag-text-muted mb-1">Amount charged to guest</p>
-                <input type="number" value={config.singleSupplement.singleSupplement} onChange={(e) => updateNestedConfig('singleSupplement', { singleSupplement: Number(e.target.value) })} className="w-full" />
+                <NumInput type="number" value={config.singleSupplement.singleSupplement} onChange={(e) => updateNestedConfig('singleSupplement', { singleSupplement: Number(e.target.value) })} className="w-full" />
               </div>
               <div className="form-group">
                 <label className="form-label">Single Room Extra Cost ($)</label>
                 <p className="text-xs text-ag-text-muted mb-1">Extra cost per night for single room</p>
-                <input type="number" value={config.singleSupplement.singleRoomExtra} onChange={(e) => updateNestedConfig('singleSupplement', { singleRoomExtra: Number(e.target.value) })} className="w-full" />
+                <NumInput type="number" value={config.singleSupplement.singleRoomExtra} onChange={(e) => updateNestedConfig('singleSupplement', { singleRoomExtra: Number(e.target.value) })} className="w-full" />
               </div>
             </div>
             {!singleSuppPerPax ? (
@@ -385,7 +390,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 <div className="form-group w-48">
                   <label className="form-label">Number of Guests</label>
                   <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                  <input type="number" min="0" value={config.singleSupplement.countByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateNestedConfig('singleSupplement', { countByPax: c }); }} className="w-full" />
+                  <NumInput type="number" min="0" value={config.singleSupplement.countByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateNestedConfig('singleSupplement', { countByPax: c }); }} className="w-full" />
                 </div>
               </div>
             ) : (
@@ -399,7 +404,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   {paxCounts.map((p) => (
                     <div key={p} className="form-group">
                       <label className="form-label text-center">{p} pax</label>
-                      <input type="number" min="0" value={config.singleSupplement.countByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ singleSupplement: { ...prev.singleSupplement, countByPax: { ...prev.singleSupplement.countByPax, [p]: val } } })); }} className="w-full text-center" />
+                      <NumInput type="number" min="0" value={config.singleSupplement.countByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ singleSupplement: { ...prev.singleSupplement, countByPax: { ...prev.singleSupplement.countByPax, [p]: val } } })); }} className="w-full text-center" />
                     </div>
                   ))}
                 </div>
@@ -454,22 +459,22 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 <div className="form-group">
                   <label className="form-label">Hotel Cost ($)</label>
                   <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total for entire trip'}</p>
-                  <input type="number" value={config.hotelsMeals.hotelCostPerNight} onChange={(e) => updateNestedConfig('hotelsMeals', { hotelCostPerNight: Number(e.target.value) })} className="w-full" />
+                  <NumInput type="number" value={config.hotelsMeals.hotelCostPerNight} onChange={(e) => updateNestedConfig('hotelsMeals', { hotelCostPerNight: Number(e.target.value) })} className="w-full" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Lunch Cost ($)</label>
                   <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per day' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per day (flat)' : 'Total for entire trip'}</p>
-                  <input type="number" value={config.hotelsMeals.lunchCostPerDay} onChange={(e) => updateNestedConfig('hotelsMeals', { lunchCostPerDay: Number(e.target.value) })} className="w-full" />
+                  <NumInput type="number" value={config.hotelsMeals.lunchCostPerDay} onChange={(e) => updateNestedConfig('hotelsMeals', { lunchCostPerDay: Number(e.target.value) })} className="w-full" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Dinner Cost ($)</label>
                   <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total for entire trip'}</p>
-                  <input type="number" value={config.hotelsMeals.dinnerCostPerNight} onChange={(e) => updateNestedConfig('hotelsMeals', { dinnerCostPerNight: Number(e.target.value) })} className="w-full" />
+                  <NumInput type="number" value={config.hotelsMeals.dinnerCostPerNight} onChange={(e) => updateNestedConfig('hotelsMeals', { dinnerCostPerNight: Number(e.target.value) })} className="w-full" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Additional Meal Costs ($)</label>
                   <p className="text-xs text-ag-text-muted mb-1">Flat total for entire trip</p>
-                  <input type="number" value={config.hotelsMeals.additionalMealCosts} onChange={(e) => updateNestedConfig('hotelsMeals', { additionalMealCosts: Number(e.target.value) })} className="w-full" />
+                  <NumInput type="number" value={config.hotelsMeals.additionalMealCosts} onChange={(e) => updateNestedConfig('hotelsMeals', { additionalMealCosts: Number(e.target.value) })} className="w-full" />
                 </div>
               </div>
             ) : (
@@ -488,22 +493,22 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   <div className="form-group">
                     <label className="form-label">Hotel Cost ($)</label>
                     <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total for entire trip'}</p>
-                    <input type="number" value={config.hotelsMeals.hotelCostByPax?.[effectiveHMPax] ?? config.hotelsMeals.hotelCostPerNight} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, hotelCostByPax: { ...prev.hotelsMeals.hotelCostByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
+                    <NumInput type="number" value={config.hotelsMeals.hotelCostByPax?.[effectiveHMPax] ?? config.hotelsMeals.hotelCostPerNight} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, hotelCostByPax: { ...prev.hotelsMeals.hotelCostByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Lunch Cost ($)</label>
                     <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per day' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per day (flat)' : 'Total for entire trip'}</p>
-                    <input type="number" value={config.hotelsMeals.lunchCostByPax?.[effectiveHMPax] ?? config.hotelsMeals.lunchCostPerDay} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, lunchCostByPax: { ...prev.hotelsMeals.lunchCostByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
+                    <NumInput type="number" value={config.hotelsMeals.lunchCostByPax?.[effectiveHMPax] ?? config.hotelsMeals.lunchCostPerDay} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, lunchCostByPax: { ...prev.hotelsMeals.lunchCostByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Dinner Cost ($)</label>
                     <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total for entire trip'}</p>
-                    <input type="number" value={config.hotelsMeals.dinnerCostByPax?.[effectiveHMPax] ?? config.hotelsMeals.dinnerCostPerNight} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, dinnerCostByPax: { ...prev.hotelsMeals.dinnerCostByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
+                    <NumInput type="number" value={config.hotelsMeals.dinnerCostByPax?.[effectiveHMPax] ?? config.hotelsMeals.dinnerCostPerNight} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, dinnerCostByPax: { ...prev.hotelsMeals.dinnerCostByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Additional Meal Costs ($)</label>
                     <p className="text-xs text-ag-text-muted mb-1">Flat total for entire trip</p>
-                    <input type="number" value={config.hotelsMeals.additionalMealCostsByPax?.[effectiveHMPax] ?? config.hotelsMeals.additionalMealCosts} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, additionalMealCostsByPax: { ...prev.hotelsMeals.additionalMealCostsByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
+                    <NumInput type="number" value={config.hotelsMeals.additionalMealCostsByPax?.[effectiveHMPax] ?? config.hotelsMeals.additionalMealCosts} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, additionalMealCostsByPax: { ...prev.hotelsMeals.additionalMealCostsByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
                   </div>
                 </div>
               </>
@@ -551,11 +556,11 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   <div className="form-group w-32">
                     <label className="form-label">Daily Rate ($)</label>
                     <p className="text-xs text-ag-text-muted mb-1">Per staff, per day</p>
-                    <input type="number" value={staff.dailyRate} onChange={(e) => updateStaffMember(index, { dailyRate: Number(e.target.value) })} className="w-full" />
+                    <NumInput type="number" value={staff.dailyRate} onChange={(e) => updateStaffMember(index, { dailyRate: Number(e.target.value) })} className="w-full" />
                   </div>
                   <div className="form-group w-24">
                     <label className="form-label">Days</label>
-                    <input
+                    <NumInput
                       type="number"
                       value={config.staffConfig.useCustomStaffDays ? staff.days : config.tripDays}
                       onChange={(e) => updateStaffMember(index, { days: Number(e.target.value) })}
@@ -565,7 +570,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   </div>
                   <div className="form-group w-24">
                     <label className="form-label">Quantity</label>
-                    <input type="number" value={staff.quantity} onChange={(e) => updateStaffMember(index, { quantity: Number(e.target.value) })} className="w-full" />
+                    <NumInput type="number" value={staff.quantity} onChange={(e) => updateStaffMember(index, { quantity: Number(e.target.value) })} className="w-full" />
                   </div>
                   <button onClick={() => removeStaffMember(index)} className="btn btn-danger mb-4" disabled={currentStaff.length <= 1}>Remove</button>
                 </div>
@@ -579,7 +584,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 <div className="form-group w-48">
                   <label className="form-label">Guide Flights Needed</label>
                   <p className="text-xs text-ag-text-muted mb-1">Number of flights at {effectiveStaffPax} pax</p>
-                  <input type="number" min="0" value={config.staffConfig.guideFlightCountByPax?.[effectiveStaffPax] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ staffConfig: { ...prev.staffConfig, guideFlightCountByPax: { ...prev.staffConfig.guideFlightCountByPax, [effectiveStaffPax]: val } } })); }} className="w-full" />
+                  <NumInput type="number" min="0" value={config.staffConfig.guideFlightCountByPax?.[effectiveStaffPax] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ staffConfig: { ...prev.staffConfig, guideFlightCountByPax: { ...prev.staffConfig.guideFlightCountByPax, [effectiveStaffPax]: val } } })); }} className="w-full" />
                 </div>
               </div>
             </div>
@@ -587,17 +592,17 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <div className="form-group">
                 <label className="form-label">Travel Days</label>
                 <p className="text-xs text-ag-text-muted mb-1">Extra travel days — applied to all staff</p>
-                <input type="number" value={config.staffConfig.travelDays} onChange={(e) => updateNestedConfig('staffConfig', { travelDays: Number(e.target.value) })} className="w-full" />
+                <NumInput type="number" value={config.staffConfig.travelDays} onChange={(e) => updateNestedConfig('staffConfig', { travelDays: Number(e.target.value) })} className="w-full" />
               </div>
               <div className="form-group">
                 <label className="form-label">Travel Day Rate ($)</label>
                 <p className="text-xs text-ag-text-muted mb-1">Per staff member, per travel day</p>
-                <input type="number" value={config.staffConfig.travelDayRate} onChange={(e) => updateNestedConfig('staffConfig', { travelDayRate: Number(e.target.value) })} className="w-full" />
+                <NumInput type="number" value={config.staffConfig.travelDayRate} onChange={(e) => updateNestedConfig('staffConfig', { travelDayRate: Number(e.target.value) })} className="w-full" />
               </div>
               <div className="form-group">
                 <label className="form-label">Guide Flight Cost ($)</label>
                 <p className="text-xs text-ag-text-muted mb-1">Flat cost per guide flight</p>
-                <input type="number" value={config.staffConfig.guideFlightCost || 0} onChange={(e) => updateNestedConfig('staffConfig', { guideFlightCost: Number(e.target.value) })} className="w-full" />
+                <NumInput type="number" value={config.staffConfig.guideFlightCost || 0} onChange={(e) => updateNestedConfig('staffConfig', { guideFlightCost: Number(e.target.value) })} className="w-full" />
               </div>
             </div>
             {/* Staff Guide Meals */}
@@ -622,7 +627,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     : '(entered value is total cost)'}
                 </span>
               </div>
-              <input type="number" value={config.staffConfig.staffMealsCost || 0} onChange={(e) => updateNestedConfig('staffConfig', { staffMealsCost: Number(e.target.value) })} className="w-48" />
+              <NumInput type="number" value={config.staffConfig.staffMealsCost || 0} onChange={(e) => updateNestedConfig('staffConfig', { staffMealsCost: Number(e.target.value) })} className="w-48" />
             </div>
           </>
         )}
@@ -644,7 +649,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <label className="form-label">Ground Transport ($)</label>
               <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.groundTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
               <div className="flex gap-3 items-center">
-                <input type="number" value={config.transportConfig.groundTransportTotal} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportTotal: Number(e.target.value) })} className="flex-1 min-w-0" />
+                <NumInput type="number" value={config.transportConfig.groundTransportTotal} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportTotal: Number(e.target.value) })} className="flex-1 min-w-0" />
                 <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
                   <input type="checkbox" checked={config.transportConfig.groundTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
                   <span>Per Pax</span>
@@ -655,7 +660,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <label className="form-label">Airport Transfers ($)</label>
               <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.airportTransfersPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
               <div className="flex gap-3 items-center">
-                <input type="number" value={config.transportConfig.airportTransfers} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfers: Number(e.target.value) })} className="flex-1 min-w-0" />
+                <NumInput type="number" value={config.transportConfig.airportTransfers} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfers: Number(e.target.value) })} className="flex-1 min-w-0" />
                 <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
                   <input type="checkbox" checked={config.transportConfig.airportTransfersPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfersPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
                   <span>Per Pax</span>
@@ -666,7 +671,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <label className="form-label">Local Transport ($)</label>
               <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.localTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
               <div className="flex gap-3 items-center">
-                <input type="number" value={config.transportConfig.localTransport} onChange={(e) => updateNestedConfig('transportConfig', { localTransport: Number(e.target.value) })} className="flex-1 min-w-0" />
+                <NumInput type="number" value={config.transportConfig.localTransport} onChange={(e) => updateNestedConfig('transportConfig', { localTransport: Number(e.target.value) })} className="flex-1 min-w-0" />
                 <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
                   <input type="checkbox" checked={config.transportConfig.localTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { localTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
                   <span>Per Pax</span>
@@ -727,7 +732,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                       )}
                     </div>
                     <div className="flex gap-3 items-center">
-                      <input
+                      <NumInput
                         type="number"
                         step={isPercentMode ? '0.01' : undefined}
                         value={isPercentMode ? parseFloat((ins.amount * 100).toFixed(2)) : config.tripSpecific[key].amount}
@@ -799,7 +804,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             {config.logistics.simpleMode !== false ? (
               <div className="max-w-xs">
                 <label className="form-label">Rate (all pax)</label>
-                <input
+                <NumInput
                   type="number"
                   value={config.logistics.rates[0]?.rate ?? 0}
                   onChange={(e) => {
@@ -819,7 +824,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     return (
                       <div key={p} className="form-group">
                         <label className="form-label text-center">{p} pax</label>
-                        <input type="number" value={rateValue} onChange={(e) => { const newRates = config.logistics.rates.filter(r => r.pax !== p); newRates.push({ pax: p, rate: Number(e.target.value) }); updateNestedConfig('logistics', { rates: newRates }); }} className="w-full text-center" />
+                        <NumInput type="number" value={rateValue} onChange={(e) => { const newRates = config.logistics.rates.filter(r => r.pax !== p); newRates.push({ pax: p, rate: Number(e.target.value) }); updateNestedConfig('logistics', { rates: newRates }); }} className="w-full text-center" />
                       </div>
                     );
                   })}
