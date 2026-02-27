@@ -124,6 +124,7 @@ export interface TripSpecificCost {
   amount: number;
   perPax: boolean;
   percentOfRevenue?: boolean;
+  active?: boolean; // undefined = active (backward-compat); false = inactive
 }
 
 export interface TripSpecificConfig {

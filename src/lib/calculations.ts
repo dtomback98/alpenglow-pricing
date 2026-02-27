@@ -181,6 +181,7 @@ function calculateTripSpecificCost(pax: number, config: TripConfiguration, total
   ];
 
   for (const cost of costs) {
+    if (cost.active === false) continue;
     if (cost.percentOfRevenue) {
       total += cost.amount * totalRevenue;
     } else {

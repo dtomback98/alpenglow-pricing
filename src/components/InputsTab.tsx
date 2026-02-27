@@ -695,33 +695,45 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {TRIP_SPECIFIC_FIELDS.map(({ key, label }) => {
                 const isInsurance = key === 'insurance';
-                const isPercentMode = isInsurance && config.tripSpecific.insurance.percentOfRevenue;
+                const ins = config.tripSpecific.insurance;
+                const isPercentMode = isInsurance && ins.percentOfRevenue;
+                const isActive = !isInsurance || ins.active !== false;
                 return (
-                  <div key={key} className="form-group">
-                    <label className="form-label">{label} {isPercentMode ? '(%)' : '($)'}</label>
-                    {isInsurance && (
-                      <div className="flex gap-1 mb-1">
-                        <button
-                          onClick={() => updateTripSpecificCost('insurance', { percentOfRevenue: false, perPax: false })}
-                          className={`btn text-xs ${!isPercentMode ? 'btn-primary' : 'btn-secondary'}`}
-                        >
-                          Flat $
-                        </button>
-                        <button
-                          onClick={() => updateTripSpecificCost('insurance', { percentOfRevenue: true, perPax: false })}
-                          className={`btn text-xs ${isPercentMode ? 'btn-primary' : 'btn-secondary'}`}
-                        >
-                          % of Revenue
-                        </button>
-                      </div>
-                    )}
+                  <div key={key} className="form-group flex flex-col">
+                    {/* Label row — buttons inline for insurance to keep row heights consistent */}
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <label className="form-label mb-0">{label} {isPercentMode ? '(%)' : '($)'}</label>
+                      {isInsurance && (
+                        <div className="flex gap-1 shrink-0">
+                          <button
+                            onClick={() => updateTripSpecificCost('insurance', { percentOfRevenue: false, perPax: false })}
+                            className={`btn text-xs ${!isPercentMode ? 'btn-primary' : 'btn-secondary'}`}
+                          >
+                            Flat $
+                          </button>
+                          <button
+                            onClick={() => updateTripSpecificCost('insurance', { percentOfRevenue: true, perPax: false })}
+                            className={`btn text-xs ${isPercentMode ? 'btn-primary' : 'btn-secondary'}`}
+                          >
+                            % of Rev
+                          </button>
+                          <button
+                            onClick={() => updateTripSpecificCost('insurance', { active: ins.active === false ? true : false })}
+                            className={`btn text-xs ${isActive ? 'btn-primary' : 'btn-secondary'}`}
+                          >
+                            {isActive ? 'Active' : 'Inactive'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <div className="flex gap-3 items-center">
                       <input
                         type="number"
                         step={isPercentMode ? '0.01' : undefined}
-                        value={isPercentMode ? config.tripSpecific.insurance.amount * 100 : config.tripSpecific[key].amount}
+                        value={isPercentMode ? parseFloat((ins.amount * 100).toFixed(2)) : config.tripSpecific[key].amount}
                         onChange={(e) => updateTripSpecificCost(key, { amount: isPercentMode ? Number(e.target.value) / 100 : Number(e.target.value) })}
                         className="flex-1 min-w-0"
+                        disabled={isInsurance && !isActive}
                       />
                       {!isPercentMode && (
                         <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
