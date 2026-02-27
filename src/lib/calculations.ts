@@ -380,8 +380,8 @@ export function formatPercent(value: number): string {
 
 // Get margin color class based on value
 export function getMarginColor(margin: number): string {
-  if (margin >= 30) return 'text-ag-success';
-  if (margin >= 20) return 'text-ag-warning';
+  if (margin >= 40) return 'text-ag-success';
+  if (margin >= 30) return 'text-ag-warning';
   return 'text-ag-danger';
 }
 
