@@ -83,6 +83,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
       enabled: true,
       inheritFromMain: true,
       mode: 'perDay' as const,
+      simpleMode: true,
       rates: Array.from({ length: 16 }, (_, i) => ({ pax: i + 1, rate: 0 })),
       baseRate: 0,
     },
@@ -120,6 +121,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
     ],
     perPax: false,
     mode: 'perDay' as const,
+    simpleMode: true,
     includesGuide: false,
   },
 

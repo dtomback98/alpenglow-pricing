@@ -766,7 +766,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
         ) : (
           <>
             <div className="mb-4">
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-2 items-center flex-wrap">
                 {(['perPaxPerDay', 'perDay', 'total'] as const).map((m) => {
                   const logisticsMode = config.logistics.mode || (config.logistics.perPax ? 'perPaxPerDay' : 'perDay');
                   const labels = { perPaxPerDay: 'Rate × Pax × Days', perDay: 'Rate × Days', total: 'Total Cost' };
@@ -780,29 +780,52 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     </button>
                   );
                 })}
-                <span className="text-xs text-ag-text-muted ml-2">
-                  {(() => {
-                    const mode = config.logistics.mode || (config.logistics.perPax ? 'perPaxPerDay' : 'perDay');
-                    if (mode === 'perPaxPerDay') return '(rate × pax × trip days)';
-                    if (mode === 'total') return '(entered value is total cost)';
-                    return '(rate × trip days)';
-                  })()}
-                </span>
+                <div className="flex gap-1 ml-2">
+                  <button
+                    onClick={() => updateNestedConfig('logistics', { simpleMode: true })}
+                    className={`btn text-xs ${config.logistics.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}
+                  >
+                    Simple
+                  </button>
+                  <button
+                    onClick={() => updateNestedConfig('logistics', { simpleMode: false })}
+                    className={`btn text-xs ${config.logistics.simpleMode === false ? 'btn-primary' : 'btn-secondary'}`}
+                  >
+                    Per Pax
+                  </button>
+                </div>
               </div>
             </div>
-            <p className="text-xs text-ag-text-muted mb-3">Rate per pax level — use mode buttons above to control how it&apos;s applied</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-              {paxCounts.map((p) => {
-                const existing = config.logistics.rates.find(r => r.pax === p);
-                const rateValue = existing ? existing.rate : 0;
-                return (
-                  <div key={p} className="form-group">
-                    <label className="form-label text-center">{p} pax</label>
-                    <input type="number" value={rateValue} onChange={(e) => { const newRates = config.logistics.rates.filter(r => r.pax !== p); newRates.push({ pax: p, rate: Number(e.target.value) }); updateNestedConfig('logistics', { rates: newRates }); }} className="w-full text-center" />
-                  </div>
-                );
-              })}
-            </div>
+            {config.logistics.simpleMode !== false ? (
+              <div className="max-w-xs">
+                <label className="form-label">Rate (all pax)</label>
+                <input
+                  type="number"
+                  value={config.logistics.rates[0]?.rate ?? 0}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    updateNestedConfig('logistics', { rates: paxCounts.map(p => ({ pax: p, rate: val })) });
+                  }}
+                  className="w-full"
+                />
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-ag-text-muted mb-3">Rate per pax level — use mode buttons above to control how it&apos;s applied</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                  {paxCounts.map((p) => {
+                    const existing = config.logistics.rates.find(r => r.pax === p);
+                    const rateValue = existing ? existing.rate : 0;
+                    return (
+                      <div key={p} className="form-group">
+                        <label className="form-label text-center">{p} pax</label>
+                        <input type="number" value={rateValue} onChange={(e) => { const newRates = config.logistics.rates.filter(r => r.pax !== p); newRates.push({ pax: p, rate: Number(e.target.value) }); updateNestedConfig('logistics', { rates: newRates }); }} className="w-full text-center" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

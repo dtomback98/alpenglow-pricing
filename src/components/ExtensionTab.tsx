@@ -722,23 +722,30 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 if (mode === 'total') return 'Total Cost';
                 return 'Rate \u00d7 Nights';
               })()}, applied to extension nights).</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-                {paxCounts.map((p) => {
-                  const existing = config.logistics.rates.find(r => r.pax === p);
-                  const rateValue = existing ? existing.rate : 0;
-                  return (
-                    <div key={p} className="form-group">
-                      <label className="form-label text-center">{p} pax</label>
-                      <input type="number" value={rateValue} disabled className="w-full text-center opacity-50 cursor-not-allowed" />
-                    </div>
-                  );
-                })}
-              </div>
+              {config.logistics.simpleMode !== false ? (
+                <div className="max-w-xs">
+                  <label className="form-label">Rate (all pax)</label>
+                  <input type="number" value={config.logistics.rates[0]?.rate ?? 0} disabled className="w-full opacity-50 cursor-not-allowed" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                  {paxCounts.map((p) => {
+                    const existing = config.logistics.rates.find(r => r.pax === p);
+                    const rateValue = existing ? existing.rate : 0;
+                    return (
+                      <div key={p} className="form-group">
+                        <label className="form-label text-center">{p} pax</label>
+                        <input type="number" value={rateValue} disabled className="w-full text-center opacity-50 cursor-not-allowed" />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ) : (
             <>
               <div className="mb-4">
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2 items-center flex-wrap">
                   {(['perPaxPerDay', 'perDay', 'total'] as const).map((m) => {
                     const extLogMode = ext.logisticsConfig.mode || 'perDay';
                     const labels = { perPaxPerDay: 'Rate \u00d7 Pax \u00d7 Nights', perDay: 'Rate \u00d7 Nights', total: 'Total Cost' };
@@ -748,35 +755,58 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                       </button>
                     );
                   })}
-                  <span className="text-xs text-ag-text-muted ml-2">
-                    {(() => {
-                      const mode = ext.logisticsConfig.mode || 'perDay';
-                      if (mode === 'perPaxPerDay') return '(rate \u00d7 ext pax \u00d7 ext nights)';
-                      if (mode === 'total') return '(entered value is total cost)';
-                      return '(rate \u00d7 ext nights)';
-                    })()}
-                  </span>
+                  <div className="flex gap-1 ml-2">
+                    <button
+                      onClick={() => updateExtLogistics({ simpleMode: true })}
+                      className={`btn text-xs ${ext.logisticsConfig.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}
+                    >
+                      Simple
+                    </button>
+                    <button
+                      onClick={() => updateExtLogistics({ simpleMode: false })}
+                      className={`btn text-xs ${ext.logisticsConfig.simpleMode === false ? 'btn-primary' : 'btn-secondary'}`}
+                    >
+                      Per Pax
+                    </button>
+                  </div>
                 </div>
               </div>
-              <p className="text-xs text-ag-text-muted mb-3">Rate per pax level — use mode buttons above to control how it&apos;s applied</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-                {paxCounts.map((p) => {
-                  const existing = ext.logisticsConfig.rates?.find((r: { pax: number; rate: number }) => r.pax === p);
-                  const rateValue = existing ? existing.rate : 0;
-                  return (
-                    <div key={p} className="form-group">
-                      <label className="form-label text-center">{p} pax</label>
-                      <input type="number" value={rateValue} onChange={(e) => {
-                        updateConfig(prev => {
-                          const rates = (prev.extension.logisticsConfig.rates || []).filter((r: { pax: number; rate: number }) => r.pax !== p);
-                          rates.push({ pax: p, rate: Number(e.target.value) });
-                          return { extension: { ...prev.extension, logisticsConfig: { ...prev.extension.logisticsConfig, rates } } };
-                        });
-                      }} className="w-full text-center" />
-                    </div>
-                  );
-                })}
-              </div>
+              {ext.logisticsConfig.simpleMode !== false ? (
+                <div className="max-w-xs">
+                  <label className="form-label">Rate (all pax)</label>
+                  <input
+                    type="number"
+                    value={ext.logisticsConfig.rates?.[0]?.rate ?? 0}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      updateExtLogistics({ rates: paxCounts.map(p => ({ pax: p, rate: val })) });
+                    }}
+                    className="w-full"
+                  />
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs text-ag-text-muted mb-3">Rate per pax level — use mode buttons above to control how it&apos;s applied</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                    {paxCounts.map((p) => {
+                      const existing = ext.logisticsConfig.rates?.find((r: { pax: number; rate: number }) => r.pax === p);
+                      const rateValue = existing ? existing.rate : 0;
+                      return (
+                        <div key={p} className="form-group">
+                          <label className="form-label text-center">{p} pax</label>
+                          <input type="number" value={rateValue} onChange={(e) => {
+                            updateConfig(prev => {
+                              const rates = (prev.extension.logisticsConfig.rates || []).filter((r: { pax: number; rate: number }) => r.pax !== p);
+                              rates.push({ pax: p, rate: Number(e.target.value) });
+                              return { extension: { ...prev.extension, logisticsConfig: { ...prev.extension.logisticsConfig, rates } } };
+                            });
+                          }} className="w-full text-center" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

@@ -43,6 +43,7 @@ export interface ExtensionLogisticsConfig {
   enabled: boolean;
   inheritFromMain: boolean;
   mode?: 'perPaxPerDay' | 'perDay' | 'total';
+  simpleMode?: boolean; // true = single rate for all pax; false/undefined = per-pax grid
   rates: LogisticsRate[];
   baseRate: number;
 }
@@ -87,6 +88,7 @@ export interface LogisticsConfig {
   rates: LogisticsRate[];
   perPax: boolean; // Legacy — mode is authoritative, perPax used as fallback
   mode?: 'perPaxPerDay' | 'perDay' | 'total';
+  simpleMode?: boolean; // true = single rate for all pax; false/undefined = per-pax grid
   includesGuide: boolean; // Legacy — unused but kept for DB compat
 }
 
