@@ -158,7 +158,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip }: {
 }
 
 export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) {
-  const { trips, loading, selectedCategory, setSelectedCategory, deleteTrip, updateTrip, refresh } = useHistoricalData();
+  const { trips, loading, error, selectedCategory, setSelectedCategory, deleteTrip, updateTrip, refresh } = useHistoricalData();
 
   // Re-fetch when refreshKey changes (e.g. after Save to History)
   useEffect(() => {
@@ -205,6 +205,11 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="card border border-ag-danger text-ag-danger text-sm p-3">
+          {error} — showing cached data.
+        </div>
+      )}
       {/* Category filter */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">

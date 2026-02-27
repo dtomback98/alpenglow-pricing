@@ -184,7 +184,8 @@ function configToRow(config: TripConfiguration): any {
     staff_config: config.staffConfig,
     transport_config: config.transportConfig,
     trip_specific: config.tripSpecific,
-    ui_preferences: { ...(config.uiPreferences || {}), tripPriceMode: config.tripPriceMode, tripPriceByPax: config.tripPriceByPax },
+    // Clear tripPriceMode when per-pax pricing is active to prevent mode+byPax co-persistence inflating revenue
+    ui_preferences: { ...(config.uiPreferences || {}), tripPriceMode: config.tripPriceByPax ? undefined : config.tripPriceMode, tripPriceByPax: config.tripPriceByPax },
   };
 }
 
@@ -339,7 +340,7 @@ export async function saveToHistory(
   year?: number,
   status?: string
 ): Promise<boolean> {
-  if (!supabase || !config.id || pax <= 0) return false;
+  if (!supabase || !config.id || !Number.isFinite(pax) || pax <= 0) return false;
 
   const calc = calculateForPax(pax, config);
 

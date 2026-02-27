@@ -717,7 +717,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                             Flat $
                           </button>
                           <button
-                            onClick={() => updateTripSpecificCost('insurance', { percentOfRevenue: true, perPax: false })}
+                            onClick={() => updateTripSpecificCost('insurance', { percentOfRevenue: true, perPax: false, amount: 0.03 })}
                             className={`btn text-xs ${isPercentMode ? 'btn-primary' : 'btn-secondary'}`}
                           >
                             % of Rev
@@ -824,7 +824,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     return (
                       <div key={p} className="form-group">
                         <label className="form-label text-center">{p} pax</label>
-                        <NumInput type="number" value={rateValue} onChange={(e) => { const newRates = config.logistics.rates.filter(r => r.pax !== p); newRates.push({ pax: p, rate: Number(e.target.value) }); updateNestedConfig('logistics', { rates: newRates }); }} className="w-full text-center" />
+                        <NumInput type="number" value={rateValue} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => { const newRates = prev.logistics.rates.filter(r => r.pax !== p); newRates.push({ pax: p, rate: val }); return { logistics: { ...prev.logistics, rates: newRates } }; }); }} className="w-full text-center" />
                       </div>
                     );
                   })}
