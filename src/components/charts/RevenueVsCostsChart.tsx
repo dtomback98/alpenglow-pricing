@@ -2,6 +2,7 @@
 
 import { PaxCalculation } from '@/lib/types';
 import { CHART_COLORS } from '@/lib/constants';
+import { formatCurrency } from '@/lib/calculations';
 import {
   BarChart,
   Bar,
@@ -24,15 +25,6 @@ export default function RevenueVsCostsChart({ calculations }: RevenueVsCostsChar
     Costs: calc.totalCosts,
     Profit: calc.grossProfit,
   }));
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   return (
     <div className="h-80">

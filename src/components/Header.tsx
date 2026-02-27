@@ -58,6 +58,7 @@ export default function Header({
   }
 
   const handleSaveToHistory = async () => {
+    if (!paxOptions.includes(historyPax)) return; // guard against invalid pax range state
     setHistorySaving(true);
     setHistorySuccess(false);
     const success = await saveTripsToHistory(historyPax, historyCategory, historyYear, historyStatus);

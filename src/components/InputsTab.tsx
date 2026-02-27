@@ -252,7 +252,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-ag-border">
           <div className="form-group">
             <label className="form-label">Min Pax</label>
-            <NumInput type="number" min="1" value={paxMin} onChange={(e) => updateConfig({ paxMin: Math.max(1, Number(e.target.value)) })} className="w-full" />
+            <NumInput type="number" min="1" value={paxMin} onChange={(e) => updateConfig(prev => ({ paxMin: Math.max(1, Math.min(Number(e.target.value), prev.paxMax)) }))} className="w-full" />
           </div>
           <div className="form-group">
             <label className="form-label">Max Pax</label>
@@ -267,7 +267,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <div className="form-group w-48">
             <label className="form-label">Inflation Rate (%)</label>
             <p className="text-xs text-ag-text-muted mb-1">Applied to all cost items</p>
-            <NumInput type="number" step="0.1" value={((config.inflationRate || 0) * 100)} onChange={(e) => updateConfig({ inflationRate: Number(e.target.value) / 100 })} className="w-full" />
+            <NumInput type="number" step="0.1" min="-100" max="1000" value={((config.inflationRate || 0) * 100)} onChange={(e) => updateConfig({ inflationRate: Number(e.target.value) / 100 })} className="w-full" />
           </div>
         </div>
       </div>

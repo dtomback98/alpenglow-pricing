@@ -123,11 +123,11 @@ function rowToConfig(row: any): TripConfiguration {
     logisticsConfig: { ...DEFAULT_CONFIG.extension.logisticsConfig, ...rawExtension?.logisticsConfig },
   };
 
-  // Migrate guide flights from transport to staff config
-  const staffConfig = migrateStaffConfig(row.staff_config);
-  if (staffConfig && !staffConfig.guideFlightCost && row.transport_config?.flightCostPerPerson) {
-    staffConfig.guideFlightCost = row.transport_config.flightCostPerPerson;
-  }
+  // Migrate guide flights from transport to staff config (immutable — no direct mutation)
+  const migratedStaff = migrateStaffConfig(row.staff_config);
+  const staffConfig = migratedStaff && !migratedStaff.guideFlightCost && row.transport_config?.flightCostPerPerson
+    ? { ...migratedStaff, guideFlightCost: row.transport_config.flightCostPerPerson }
+    : migratedStaff;
 
   return {
     id: row.id,
@@ -148,11 +148,11 @@ function rowToConfig(row: any): TripConfiguration {
     loyaltyCountByPax: row.loyalty_count_by_pax || migrateDefaultCountByPax(row.pax_max || 16, 0.05),
     singleSupplement,
     extension,
-    hotelsMeals: { ...DEFAULT_CONFIG.hotelsMeals, ...row.hotels_meals },
-    logistics: migrateLogistics({ ...DEFAULT_CONFIG.logistics, ...row.logistics }),
+    hotelsMeals: { ...DEFAULT_CONFIG.hotelsMeals, ...(typeof row.hotels_meals === 'object' && row.hotels_meals !== null ? row.hotels_meals : {}) },
+    logistics: migrateLogistics({ ...DEFAULT_CONFIG.logistics, ...(typeof row.logistics === 'object' && row.logistics !== null ? row.logistics : {}) }),
     staffConfig: { ...DEFAULT_CONFIG.staffConfig, ...staffConfig },
-    transportConfig: { ...DEFAULT_CONFIG.transportConfig, ...row.transport_config },
-    tripSpecific: migrateTripSpecific({ ...DEFAULT_CONFIG.tripSpecific, ...row.trip_specific }),
+    transportConfig: { ...DEFAULT_CONFIG.transportConfig, ...(typeof row.transport_config === 'object' && row.transport_config !== null ? row.transport_config : {}) },
+    tripSpecific: migrateTripSpecific({ ...DEFAULT_CONFIG.tripSpecific, ...(typeof row.trip_specific === 'object' && row.trip_specific !== null ? row.trip_specific : {}) }),
     uiPreferences: row.ui_preferences || {},
     tripPriceMode: row.ui_preferences?.tripPriceMode || undefined,
     tripPriceByPax: row.ui_preferences?.tripPriceByPax || undefined,
@@ -310,7 +310,7 @@ export async function fetchHistoricalTrips(category?: string): Promise<Historica
     createdAt: row.created_at,
     year: row.year || 2025,
     tripConfigId: row.trip_config_id || undefined,
-    status: (row.status || (row.year && row.year <= 2025 ? 'run' : 'budgeted')) as 'budgeted' | 'run',
+    status: (row.status === 'run' || row.status === 'budgeted') ? row.status : (row.year && row.year <= 2025 ? 'run' : 'budgeted'),
   }));
 }
 

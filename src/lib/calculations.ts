@@ -56,6 +56,7 @@ function calculateExtension(pax: number, config: TripConfiguration) {
   };
 
   if (!extension.enabled) return zeros;
+  if ((extension.extensionNights ?? 0) <= 0) return zeros;
 
   const extPaxCount = Math.min(extension.countByPax?.[pax] ?? 0, pax);
 
@@ -289,8 +290,8 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   // Single room extra cost (gated with single supplement)
   const singleRoomCost = singleSuppOn ? config.singleSupplement.singleRoomExtra * singleSupplementGuests * config.tripNights : 0;
 
-  // Apply inflation multiplier to all costs
-  const inflationMultiplier = 1 + (config.inflationRate || 0);
+  // Apply inflation multiplier to all costs (clamped to 0 so costs never go negative)
+  const inflationMultiplier = Math.max(0, 1 + (config.inflationRate || 0));
   const iHotelsCost = hotelsCost * inflationMultiplier;
   const iMealsCost = mealsCost * inflationMultiplier;
   const iLogisticsCost = logisticsCost * inflationMultiplier;

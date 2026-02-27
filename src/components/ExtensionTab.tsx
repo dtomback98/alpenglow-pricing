@@ -171,17 +171,19 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
     ? config.singleSupplement.singleRoomExtra
     : ext.singleSupplement.singleRoomExtra;
 
+  // When inheriting from main, use per-pax rates if the main trip uses per-pax mode
+  // (effectiveStaffPax is the currently-displayed pax level in the extension UI)
   const resolvedHotelRate = ext.hotelsMeals.inheritFromMain
-    ? config.hotelsMeals.hotelCostPerNight
+    ? (config.hotelsMeals.hotelCostByPax?.[effectiveStaffPax] ?? config.hotelsMeals.hotelCostPerNight)
     : ext.hotelsMeals.hotelCostPerNight;
   const resolvedLunchRate = ext.hotelsMeals.inheritFromMain
-    ? config.hotelsMeals.lunchCostPerDay
+    ? (config.hotelsMeals.lunchCostByPax?.[effectiveStaffPax] ?? config.hotelsMeals.lunchCostPerDay)
     : ext.hotelsMeals.lunchCostPerDay;
   const resolvedDinnerRate = ext.hotelsMeals.inheritFromMain
-    ? config.hotelsMeals.dinnerCostPerNight
+    ? (config.hotelsMeals.dinnerCostByPax?.[effectiveStaffPax] ?? config.hotelsMeals.dinnerCostPerNight)
     : ext.hotelsMeals.dinnerCostPerNight;
   const resolvedAdditionalMeals = ext.hotelsMeals.inheritFromMain
-    ? config.hotelsMeals.additionalMealCosts
+    ? (config.hotelsMeals.additionalMealCostsByPax?.[effectiveStaffPax] ?? config.hotelsMeals.additionalMealCosts)
     : ext.hotelsMeals.additionalMealCosts;
 
   return (
@@ -214,7 +216,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               <div className="form-group">
                 <label className="form-label">Extension Nights</label>
                 <p className="text-xs text-ag-text-muted mb-1">Number of nights for the extension</p>
-                <NumInput type="number" min="1" value={ext.extensionNights} onChange={(e) => updateExtension({ extensionNights: Number(e.target.value) })} className="w-full" />
+                <NumInput type="number" min="1" value={ext.extensionNights} onChange={(e) => updateExtension({ extensionNights: Math.max(1, Number(e.target.value)) })} className="w-full" />
               </div>
             </div>
             {!extPerPax ? (
