@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TabType } from '@/lib/types';
 import { useTripData } from '@/hooks/useTripData';
 import Header from './Header';
@@ -14,6 +14,18 @@ export default function PricingTool() {
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const tripData = useTripData();
+
+  // Auto-select number input text on focus so typing replaces the value instead of appending to it
+  useEffect(() => {
+    const handler = (e: FocusEvent) => {
+      const el = e.target as HTMLInputElement;
+      if (el.tagName === 'INPUT' && el.type === 'number') {
+        el.select();
+      }
+    };
+    document.addEventListener('focusin', handler);
+    return () => document.removeEventListener('focusin', handler);
+  }, []);
 
   const handleLoadTrip = (tripConfigId: string) => {
     tripData.selectTrip(tripConfigId);
