@@ -35,6 +35,13 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
     } as Partial<TripConfiguration>));
   };
 
+  const updateGuideLogistics = (updates: Partial<NonNullable<TripConfiguration['logistics']['guideLogistics']>>) => {
+    updateConfig(prev => {
+      const gl = prev.logistics.guideLogistics ?? { rates: [], mode: 'perDay' as const, simpleMode: true };
+      return { logistics: { ...prev.logistics, guideLogistics: { ...gl, ...updates } } } as Partial<TripConfiguration>;
+    });
+  };
+
   const updateTripSpecificCost = (
     field: keyof Omit<TripConfiguration['tripSpecific'], 'enabled'>,
     updates: Partial<TripSpecificCost>
@@ -831,6 +838,72 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 </div>
               </>
             )}
+
+            {/* Guide Logistics Rate */}
+            <div className="border-t border-ag-border mt-6 pt-6">
+              <h3 className="text-sm font-semibold mb-4">Guide Logistics Rate</h3>
+              <div className="mb-4">
+                <div className="flex gap-2 items-center flex-wrap">
+                  {(['perPaxPerDay', 'perDay', 'total'] as const).map((m) => {
+                    const guideMode = config.logistics.guideLogistics?.mode || 'perDay';
+                    const labels = { perPaxPerDay: 'Rate × Pax × Days', perDay: 'Rate × Days', total: 'Total Cost' };
+                    return (
+                      <button
+                        key={m}
+                        onClick={() => updateGuideLogistics({ mode: m })}
+                        className={`btn text-xs ${guideMode === m ? 'btn-primary' : 'btn-secondary'}`}
+                      >
+                        {labels[m]}
+                      </button>
+                    );
+                  })}
+                  <div className="flex gap-1 ml-2">
+                    <button
+                      onClick={() => updateGuideLogistics({ simpleMode: true })}
+                      className={`btn text-xs ${config.logistics.guideLogistics?.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}
+                    >
+                      Simple
+                    </button>
+                    <button
+                      onClick={() => updateGuideLogistics({ simpleMode: false })}
+                      className={`btn text-xs ${config.logistics.guideLogistics?.simpleMode === false ? 'btn-primary' : 'btn-secondary'}`}
+                    >
+                      Per Pax
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {config.logistics.guideLogistics?.simpleMode !== false ? (
+                <div className="max-w-xs">
+                  <label className="form-label">Rate (all pax)</label>
+                  <NumInput
+                    type="number"
+                    value={config.logistics.guideLogistics?.rates[0]?.rate ?? 0}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      updateGuideLogistics({ rates: paxCounts.map(p => ({ pax: p, rate: val })) });
+                    }}
+                    className="w-full"
+                  />
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs text-ag-text-muted mb-3">Rate per pax level — use mode buttons above to control how it&apos;s applied</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                    {paxCounts.map((p) => {
+                      const existing = config.logistics.guideLogistics?.rates.find(r => r.pax === p);
+                      const rateValue = existing ? existing.rate : 0;
+                      return (
+                        <div key={p} className="form-group">
+                          <label className="form-label text-center">{p} pax</label>
+                          <NumInput type="number" value={rateValue} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => { const gl = prev.logistics.guideLogistics || { rates: [], mode: 'perDay' as const, simpleMode: true }; const newRates = (gl.rates || []).filter(r => r.pax !== p); newRates.push({ pax: p, rate: val }); return { logistics: { ...prev.logistics, guideLogistics: { ...gl, rates: newRates } } }; }); }} className="w-full text-center" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
           </>
         )}
       </div>

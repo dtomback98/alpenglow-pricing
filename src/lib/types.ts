@@ -90,6 +90,11 @@ export interface LogisticsConfig {
   mode?: 'perPaxPerDay' | 'perDay' | 'total';
   simpleMode?: boolean; // true = single rate for all pax; false/undefined = per-pax grid
   includesGuide: boolean; // Legacy — unused but kept for DB compat
+  guideLogistics?: {
+    rates: LogisticsRate[];
+    mode?: 'perPaxPerDay' | 'perDay' | 'total';
+    simpleMode?: boolean;
+  };
 }
 
 export interface StaffMember {

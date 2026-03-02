@@ -251,6 +251,16 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
     if (logisticsMode === 'perPaxPerDay') logisticsCost = logisticsRate * config.tripDays * pax;
     else if (logisticsMode === 'total') logisticsCost = logisticsRate;
     else logisticsCost = logisticsRate * config.tripDays;
+    // Guide logistics rate (sub-section, gated with main logistics)
+    const gl = config.logistics.guideLogistics;
+    if (gl) {
+      const guideRateMatch = gl.rates?.find(r => r.pax === pax);
+      const guideRate = guideRateMatch ? guideRateMatch.rate : 0;
+      const guideMode = gl.mode || 'perDay';
+      if (guideMode === 'perPaxPerDay') logisticsCost += guideRate * config.tripDays * pax;
+      else if (guideMode === 'total') logisticsCost += guideRate;
+      else logisticsCost += guideRate * config.tripDays;
+    }
   }
 
   // Staff (gated)
