@@ -149,6 +149,16 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     if (mode === 'perPaxPerDay') extensionLogisticsCost = rate * extension.extensionNights * extPaxCount;
     else if (mode === 'total') extensionLogisticsCost = rate;
     else extensionLogisticsCost = rate * extension.extensionNights;
+    // Guide logistics rate (sub-section, gated with extension logistics)
+    const gl = lc.inheritFromMain ? config.logistics.guideLogistics : lc.guideLogistics;
+    if (gl) {
+      const guideRateMatch = gl.rates?.find(r => r.pax === pax);
+      const guideRate = guideRateMatch ? guideRateMatch.rate : 0;
+      const guideMode = gl.mode || 'perDay';
+      if (guideMode === 'perPaxPerDay') extensionLogisticsCost += guideRate * extension.extensionNights * extPaxCount;
+      else if (guideMode === 'total') extensionLogisticsCost += guideRate;
+      else extensionLogisticsCost += guideRate * extension.extensionNights;
+    }
   }
 
   const extensionTotalCost = extensionHotelsCost + extensionMealsCost + extensionStaffCost + extensionLogisticsCost + extensionSingleRoomCost;

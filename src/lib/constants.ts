@@ -86,6 +86,11 @@ export const DEFAULT_CONFIG: TripConfiguration = {
       simpleMode: true,
       rates: Array.from({ length: 16 }, (_, i) => ({ pax: i + 1, rate: 0 })),
       baseRate: 0,
+      guideLogistics: {
+        rates: Array.from({ length: 16 }, (_, i) => ({ pax: i + 1, rate: 0 })),
+        mode: 'perDay' as const,
+        simpleMode: true,
+      },
     },
   },
 

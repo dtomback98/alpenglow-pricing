@@ -49,6 +49,13 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
     updateConfig(prev => ({ extension: { ...prev.extension, logisticsConfig: { ...prev.extension.logisticsConfig, ...updates } } }));
   };
 
+  const updateExtGuideLogistics = (updates: Partial<NonNullable<TripConfiguration['extension']['logisticsConfig']['guideLogistics']>>) => {
+    updateConfig(prev => {
+      const gl = prev.extension.logisticsConfig.guideLogistics ?? { rates: [], mode: 'perDay' as const, simpleMode: true };
+      return { extension: { ...prev.extension, logisticsConfig: { ...prev.extension.logisticsConfig, guideLogistics: { ...gl, ...updates } } } } as Partial<TripConfiguration>;
+    });
+  };
+
   const extPerPax = config.uiPreferences?.extPerPax ?? false;
   const extSuppPerPax = config.uiPreferences?.extSuppPerPax ?? false;
   const extDiscountsPerPax = config.uiPreferences?.extDiscountsPerPax ?? false;
@@ -748,6 +755,29 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   })}
                 </div>
               )}
+              {/* Guide Logistics Rate — inherited read-only */}
+              <div className="border-t border-ag-border mt-6 pt-6">
+                <h3 className="text-sm font-semibold mb-3">Guide Logistics Rate</h3>
+                {config.logistics.guideLogistics?.simpleMode !== false ? (
+                  <div className="max-w-xs">
+                    <label className="form-label">Rate (all pax)</label>
+                    <NumInput type="number" value={config.logistics.guideLogistics?.rates[0]?.rate ?? 0} disabled className="w-full opacity-50 cursor-not-allowed" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                    {paxCounts.map((p) => {
+                      const existing = config.logistics.guideLogistics?.rates.find(r => r.pax === p);
+                      const rateValue = existing ? existing.rate : 0;
+                      return (
+                        <div key={p} className="form-group">
+                          <label className="form-label text-center">{p} pax</label>
+                          <NumInput type="number" value={rateValue} disabled className="w-full text-center opacity-50 cursor-not-allowed" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <>
@@ -814,6 +844,75 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   </div>
                 </>
               )}
+
+              {/* Guide Logistics Rate — custom editable */}
+              <div className="border-t border-ag-border mt-6 pt-6">
+                <h3 className="text-sm font-semibold mb-4">Guide Logistics Rate</h3>
+                <div className="mb-4">
+                  <div className="flex gap-2 items-center flex-wrap">
+                    {(['perPaxPerDay', 'perDay', 'total'] as const).map((m) => {
+                      const guideMode = ext.logisticsConfig.guideLogistics?.mode || 'perDay';
+                      const labels = { perPaxPerDay: 'Rate \u00d7 Pax \u00d7 Nights', perDay: 'Rate \u00d7 Nights', total: 'Total Cost' };
+                      return (
+                        <button key={m} onClick={() => updateExtGuideLogistics({ mode: m })} className={`btn text-xs ${guideMode === m ? 'btn-primary' : 'btn-secondary'}`}>
+                          {labels[m]}
+                        </button>
+                      );
+                    })}
+                    <div className="flex gap-1 ml-2">
+                      <button
+                        onClick={() => updateExtGuideLogistics({ simpleMode: true })}
+                        className={`btn text-xs ${ext.logisticsConfig.guideLogistics?.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}
+                      >
+                        Simple
+                      </button>
+                      <button
+                        onClick={() => updateExtGuideLogistics({ simpleMode: false })}
+                        className={`btn text-xs ${ext.logisticsConfig.guideLogistics?.simpleMode === false ? 'btn-primary' : 'btn-secondary'}`}
+                      >
+                        Per Pax
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {ext.logisticsConfig.guideLogistics?.simpleMode !== false ? (
+                  <div className="max-w-xs">
+                    <label className="form-label">Rate (all pax)</label>
+                    <NumInput
+                      type="number"
+                      value={ext.logisticsConfig.guideLogistics?.rates?.[0]?.rate ?? 0}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        updateExtGuideLogistics({ rates: paxCounts.map(p => ({ pax: p, rate: val })) });
+                      }}
+                      className="w-full"
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs text-ag-text-muted mb-3">Rate per pax level — use mode buttons above to control how it&apos;s applied</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                      {paxCounts.map((p) => {
+                        const existing = ext.logisticsConfig.guideLogistics?.rates?.find((r: { pax: number; rate: number }) => r.pax === p);
+                        const rateValue = existing ? existing.rate : 0;
+                        return (
+                          <div key={p} className="form-group">
+                            <label className="form-label text-center">{p} pax</label>
+                            <NumInput type="number" value={rateValue} onChange={(e) => {
+                              updateConfig(prev => {
+                                const gl = prev.extension.logisticsConfig.guideLogistics ?? { rates: [], mode: 'perDay' as const, simpleMode: true };
+                                const rates = (gl.rates || []).filter((r: { pax: number; rate: number }) => r.pax !== p);
+                                rates.push({ pax: p, rate: Number(e.target.value) });
+                                return { extension: { ...prev.extension, logisticsConfig: { ...prev.extension.logisticsConfig, guideLogistics: { ...gl, rates } } } } as Partial<TripConfiguration>;
+                              });
+                            }} className="w-full text-center" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
             </>
           )}
         </div>

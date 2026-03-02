@@ -46,6 +46,11 @@ export interface ExtensionLogisticsConfig {
   simpleMode?: boolean; // true = single rate for all pax; false/undefined = per-pax grid
   rates: LogisticsRate[];
   baseRate: number;
+  guideLogistics?: {
+    rates: LogisticsRate[];
+    mode?: 'perPaxPerDay' | 'perDay' | 'total';
+    simpleMode?: boolean;
+  };
 }
 
 export interface ExtensionConfig {
