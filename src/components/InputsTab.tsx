@@ -832,38 +832,33 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               Check &quot;Per Pax&quot; to multiply the cost by the number of participants
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {TRIP_SPECIFIC_FIELDS.map(({ key, label }) => {
+              {TRIP_SPECIFIC_FIELDS.filter(({ key }) => (config.tripSpecific[key] as TripSpecificCost).active !== false).map(({ key, label }) => {
                 const isInsurance = key === 'insurance';
                 const ins = config.tripSpecific.insurance;
                 const isPercentMode = isInsurance && ins.percentOfRevenue;
-                const isActive = !isInsurance || ins.active !== false;
                 return (
                   <div key={key} className="form-group flex flex-col">
-                    {/* Label row — buttons inline for insurance to keep row heights consistent */}
                     <div className="flex items-center justify-between gap-1 mb-1">
                       <label className="form-label mb-0">{label} {isPercentMode ? '(%)' : '($)'}</label>
-                      {isInsurance && (
-                        <div className="flex gap-1 shrink-0">
-                          <button
-                            onClick={() => updateTripSpecificCost('insurance', { percentOfRevenue: false, perPax: false })}
-                            className={`btn text-xs ${!isPercentMode ? 'btn-primary' : 'btn-secondary'}`}
-                          >
-                            Flat $
-                          </button>
-                          <button
-                            onClick={() => updateTripSpecificCost('insurance', { percentOfRevenue: true, perPax: false, amount: 0.03 })}
-                            className={`btn text-xs ${isPercentMode ? 'btn-primary' : 'btn-secondary'}`}
-                          >
-                            % of Rev
-                          </button>
-                          <button
-                            onClick={() => updateTripSpecificCost('insurance', { active: ins.active === false ? true : false })}
-                            className={`btn text-xs ${isActive ? 'btn-primary' : 'btn-secondary'}`}
-                          >
-                            {isActive ? 'Active' : 'Inactive'}
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex gap-1 shrink-0">
+                        {isInsurance && (
+                          <>
+                            <button
+                              onClick={() => updateTripSpecificCost('insurance', { percentOfRevenue: false, perPax: false })}
+                              className={`btn text-xs ${!isPercentMode ? 'btn-primary' : 'btn-secondary'}`}
+                            >
+                              Flat $
+                            </button>
+                            <button
+                              onClick={() => updateTripSpecificCost('insurance', { percentOfRevenue: true, perPax: false, amount: 0.03 })}
+                              className={`btn text-xs ${isPercentMode ? 'btn-primary' : 'btn-secondary'}`}
+                            >
+                              % of Rev
+                            </button>
+                          </>
+                        )}
+                        <button onClick={() => updateTripSpecificCost(key, { active: false })} className="btn btn-danger text-xs">×</button>
+                      </div>
                     </div>
                     <div className="flex gap-3 items-center">
                       <NumInput
@@ -872,7 +867,6 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                         value={isPercentMode ? parseFloat((ins.amount * 100).toFixed(2)) : config.tripSpecific[key].amount}
                         onChange={(e) => updateTripSpecificCost(key, { amount: isPercentMode ? Number(e.target.value) / 100 : Number(e.target.value) })}
                         className="flex-1 min-w-0"
-                        disabled={isInsurance && !isActive}
                       />
                       {!isPercentMode && (
                         <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
@@ -888,6 +882,14 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 );
               })}
             </div>
+            {/* Restore deleted fixed fields */}
+            {TRIP_SPECIFIC_FIELDS.some(({ key }) => (config.tripSpecific[key] as TripSpecificCost).active === false) && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {TRIP_SPECIFIC_FIELDS.filter(({ key }) => (config.tripSpecific[key] as TripSpecificCost).active === false).map(({ key, label }) => (
+                  <button key={key} onClick={() => updateTripSpecificCost(key, { active: true })} className="btn btn-secondary text-xs">+ {label}</button>
+                ))}
+              </div>
+            )}
 
             {/* Custom Costs */}
             <div className="mt-4">
