@@ -102,6 +102,7 @@ export default function SummaryTab({ config }: SummaryTabProps) {
               <th>Pax</th>
               <th>Core Profit{grossMarginPerPax ? ' /pax' : ''}</th>
               <th>Core Margin</th>
+              <th>Ext. Pax</th>
               <th>Extension Profit{grossMarginPerPax ? ' /pax' : ''}</th>
               <th>Extension Margin</th>
               <th>Combined Profit{grossMarginPerPax ? ' /pax' : ''}</th>
@@ -121,11 +122,13 @@ export default function SummaryTab({ config }: SummaryTabProps) {
               const extMargin = extRevenue > 0 ? (extProfit / extRevenue) * 100 : 0;
 
               const d = grossMarginPerPax ? calc.pax : 1;
+              const extPax = config.extension.enabled ? (config.extension.countByPax?.[calc.pax] ?? 0) : 0;
               return (
                 <tr key={calc.pax}>
                   <td className="font-medium">{calc.pax}</td>
                   <td className={getProfitColor(coreProfit)}>{formatCurrency(coreProfit / d)}</td>
                   <td className={getMarginColor(coreMargin)}>{formatPercent(coreMargin)}</td>
+                  <td className="text-center">{extPax}</td>
                   <td className={getProfitColor(extProfit)}>{formatCurrency(extProfit / d)}</td>
                   <td className={getMarginColor(extMargin)}>{formatPercent(extMargin)}</td>
                   <td className={`font-bold ${getProfitColor(calc.grossProfit)}`}>{formatCurrency(calc.grossProfit / d)}</td>
