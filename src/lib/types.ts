@@ -144,6 +144,13 @@ export interface TripSpecificCost {
   active?: boolean; // undefined = active (backward-compat); false = inactive
 }
 
+export interface CustomTripCost {
+  id: string;
+  label: string;
+  amount: number;
+  perPax: boolean;
+}
+
 export interface TripSpecificConfig {
   enabled: boolean;
   permits: TripSpecificCost;
@@ -153,6 +160,7 @@ export interface TripSpecificConfig {
   contingency: TripSpecificCost;
   hypoxico: TripSpecificCost;
   otherCosts: TripSpecificCost;
+  customCosts?: CustomTripCost[];
 }
 
 export interface SingleSupplementConfig {

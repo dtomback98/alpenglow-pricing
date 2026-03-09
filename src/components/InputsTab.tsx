@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TripConfiguration, StaffMember, TripSpecificCost } from '@/lib/types';
+import { TripConfiguration, StaffMember, TripSpecificCost, CustomTripCost } from '@/lib/types';
 
 interface InputsTabProps {
   config: TripConfiguration;
@@ -15,7 +15,7 @@ const NumInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
   <input {...props} type="number" value={(props.value as number) || ''} />
 );
 
-const TRIP_SPECIFIC_FIELDS: { key: keyof Omit<TripConfiguration['tripSpecific'], 'enabled'>; label: string }[] = [
+const TRIP_SPECIFIC_FIELDS: { key: keyof Omit<TripConfiguration['tripSpecific'], 'enabled' | 'customCosts'>; label: string }[] = [
   { key: 'permits', label: 'Permits' },
   { key: 'equipment', label: 'Equipment' },
   { key: 'jacketsApparel', label: 'Jackets & Apparel' },
@@ -43,13 +43,34 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   };
 
   const updateTripSpecificCost = (
-    field: keyof Omit<TripConfiguration['tripSpecific'], 'enabled'>,
+    field: keyof Omit<TripConfiguration['tripSpecific'], 'enabled' | 'customCosts'>,
     updates: Partial<TripSpecificCost>
   ) => {
     updateConfig(prev => ({
       tripSpecific: { ...prev.tripSpecific, [field]: { ...(prev.tripSpecific[field] as TripSpecificCost), ...updates } },
     }));
   };
+
+  const addCustomCost = () => updateConfig(prev => ({
+    tripSpecific: {
+      ...prev.tripSpecific,
+      customCosts: [...(prev.tripSpecific.customCosts || []), { id: crypto.randomUUID(), label: '', amount: 0, perPax: false }],
+    },
+  }));
+
+  const updateCustomCost = (id: string, updates: Partial<CustomTripCost>) => updateConfig(prev => ({
+    tripSpecific: {
+      ...prev.tripSpecific,
+      customCosts: (prev.tripSpecific.customCosts || []).map(c => c.id === id ? { ...c, ...updates } : c),
+    },
+  }));
+
+  const removeCustomCost = (id: string) => updateConfig(prev => ({
+    tripSpecific: {
+      ...prev.tripSpecific,
+      customCosts: (prev.tripSpecific.customCosts || []).filter(c => c.id !== id),
+    },
+  }));
 
   const paxMin = config.paxMin || 1;
   const paxMax = config.paxMax || 16;
@@ -866,6 +887,35 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   </div>
                 );
               })}
+            </div>
+
+            {/* Custom Costs */}
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-ag-text-muted">Custom Costs</span>
+                <button onClick={addCustomCost} className="btn btn-secondary text-xs">+ Add Cost</button>
+              </div>
+              {(config.tripSpecific.customCosts || []).map((cc) => (
+                <div key={cc.id} className="flex items-center gap-2 mb-2">
+                  <input
+                    type="text"
+                    placeholder="Label"
+                    value={cc.label}
+                    onChange={(e) => updateCustomCost(cc.id, { label: e.target.value })}
+                    className="flex-1 min-w-0"
+                  />
+                  <NumInput
+                    value={cc.amount}
+                    onChange={(e) => updateCustomCost(cc.id, { amount: Number(e.target.value) })}
+                    className="w-28 shrink-0"
+                  />
+                  <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                    <input type="checkbox" checked={cc.perPax} onChange={(e) => updateCustomCost(cc.id, { perPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                    <span>Per Pax</span>
+                  </label>
+                  <button onClick={() => removeCustomCost(cc.id)} className="btn btn-danger text-xs shrink-0">×</button>
+                </div>
+              ))}
             </div>
           </>
         )}

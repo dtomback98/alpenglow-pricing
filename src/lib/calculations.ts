@@ -214,6 +214,10 @@ function calculateTripSpecificCost(pax: number, config: TripConfiguration, total
     }
   }
 
+  for (const cc of (config.tripSpecific.customCosts || [])) {
+    total += cc.perPax ? cc.amount * pax : cc.amount;
+  }
+
   return total;
 }
 

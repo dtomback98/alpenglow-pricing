@@ -160,6 +160,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
     contingency: { amount: 1000, perPax: false },
     hypoxico: { amount: 0, perPax: false },
     otherCosts: { amount: 0, perPax: false },
+    customCosts: [],
   },
 };
 
