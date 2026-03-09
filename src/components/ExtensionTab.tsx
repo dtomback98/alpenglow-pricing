@@ -201,16 +201,9 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
       <div className={`card ${!ext.enabled ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Extension - Core Trip Details</h2>
-          <div className="flex gap-2">
-            {ext.enabled && (
-              <button onClick={() => setExtPerPax(!extPerPax)} className={`btn text-xs ${extPerPax ? 'btn-primary' : 'btn-secondary'}`}>
-                {extPerPax ? 'Per Pax Mode' : 'Simple Mode'}
-              </button>
-            )}
-            <button onClick={() => updateExtension({ enabled: !ext.enabled })} className={`btn text-xs ${!ext.enabled ? 'btn-danger' : 'btn-primary'}`}>
-              {!ext.enabled ? 'Inactive' : 'Active'}
-            </button>
-          </div>
+          <button onClick={() => updateExtension({ enabled: !ext.enabled })} className={`btn text-xs ${!ext.enabled ? 'btn-danger' : 'btn-primary'}`}>
+            {!ext.enabled ? 'Inactive' : 'Active'}
+          </button>
         </div>
         {!ext.enabled ? (
           <p className="text-sm text-ag-text-muted">Extension is disabled — all extension revenue and costs are excluded from calculations.</p>
@@ -228,38 +221,28 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 <NumInput type="number" min="1" value={ext.extensionNights} onChange={(e) => updateExtension({ extensionNights: Math.max(1, Number(e.target.value)) })} className="w-full" />
               </div>
             </div>
-            {!extPerPax ? (
-              <div className="mt-4 pt-4 border-t border-ag-border">
-                <div className="form-group w-48">
-                  <label className="form-label">Guest Count</label>
-                  <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                  <NumInput type="number" min="0" value={ext.countByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateExtension({ countByPax: c }); }} className="w-full" />
-                </div>
-              </div>
-            ) : (
-              <div className="mt-4 pt-4 border-t border-ag-border">
-                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                  <label className="form-label mb-0">Guests Taking Extension by Pax</label>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                      <input type="number" min="0" max="100" value={extPercent} onChange={(e) => setExtPercent(Math.min(100, Math.max(0, Number(e.target.value))))} className="w-16 text-center text-sm" />
-                      <span className="text-sm text-ag-text-muted">%</span>
-                    </div>
-                    <button onClick={() => { const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = Math.ceil(p * extPercent / 100); updateExtension({ countByPax: c }); }} className="btn btn-secondary text-xs">Apply %</button>
-                    <button onClick={() => { const c: { [k: number]: number } = {}; const b = ext.countByPax?.[paxCounts[0]] || 0; for (const p of paxCounts) c[p] = Math.min(b, p); updateExtension({ countByPax: c }); }} className="btn btn-secondary text-xs">Apply First to All</button>
+            <div className="mt-4 pt-4 border-t border-ag-border">
+              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                <label className="form-label mb-0">Guests Taking Extension by Pax</label>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <input type="number" min="0" max="100" value={extPercent} onChange={(e) => setExtPercent(Math.min(100, Math.max(0, Number(e.target.value))))} className="w-16 text-center text-sm" />
+                    <span className="text-sm text-ag-text-muted">%</span>
                   </div>
-                </div>
-                <p className="text-xs text-ag-text-muted mb-2">How many guests join the extension at each group size</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-                  {paxCounts.map((p) => (
-                    <div key={p} className="form-group">
-                      <label className="form-label text-center">{p} pax</label>
-                      <NumInput type="number" min="0" max={p} value={ext.countByPax?.[p] ?? 0} onChange={(e) => { const val = Math.min(Number(e.target.value), p); updateConfig(prev => ({ extension: { ...prev.extension, countByPax: { ...prev.extension.countByPax, [p]: val } } })); }} className="w-full text-center" />
-                    </div>
-                  ))}
+                  <button onClick={() => { const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = Math.ceil(p * extPercent / 100); updateExtension({ countByPax: c }); }} className="btn btn-secondary text-xs">Apply %</button>
+                  <button onClick={() => { const c: { [k: number]: number } = {}; const b = ext.countByPax?.[paxCounts[0]] || 0; for (const p of paxCounts) c[p] = Math.min(b, p); updateExtension({ countByPax: c }); }} className="btn btn-secondary text-xs">Apply First to All</button>
                 </div>
               </div>
-            )}
+              <p className="text-xs text-ag-text-muted mb-2">How many guests join the extension at each group size</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                {paxCounts.map((p) => (
+                  <div key={p} className="form-group">
+                    <label className="form-label text-center">{p} pax</label>
+                    <NumInput type="number" min="0" max={p} value={ext.countByPax?.[p] ?? 0} onChange={(e) => { const val = Math.min(Math.max(0, Number(e.target.value) || 0), p); e.target.value = String(val); updateConfig(prev => ({ extension: { ...prev.extension, countByPax: { ...prev.extension.countByPax, [p]: val } } })); }} className="w-full text-center" />
+                  </div>
+                ))}
+              </div>
+            </div>
           </>
         )}
       </div>
