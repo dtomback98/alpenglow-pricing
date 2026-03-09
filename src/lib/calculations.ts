@@ -312,9 +312,9 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   const transportOn = config.transportConfig.enabled !== false;
   let transportCost = 0;
   if (transportOn) {
-    const groundRate = config.transportConfig.groundTransportByPax?.[pax] ?? config.transportConfig.groundTransportTotal;
-    const airportRate = config.transportConfig.airportTransfersByPax?.[pax] ?? config.transportConfig.airportTransfers;
-    const localRate = config.transportConfig.localTransportByPax?.[pax] ?? config.transportConfig.localTransport;
+    const groundRate = (config.transportConfig.groundTransportByPax?.[pax] ?? config.transportConfig.groundTransportTotal) || 0;
+    const airportRate = (config.transportConfig.airportTransfersByPax?.[pax] ?? config.transportConfig.airportTransfers) || 0;
+    const localRate = (config.transportConfig.localTransportByPax?.[pax] ?? config.transportConfig.localTransport) || 0;
     transportCost += config.transportConfig.groundTransportPerPax ? groundRate * pax : groundRate;
     transportCost += config.transportConfig.airportTransfersPerPax ? airportRate * pax : airportRate;
     transportCost += config.transportConfig.localTransportPerPax ? localRate * pax : localRate;

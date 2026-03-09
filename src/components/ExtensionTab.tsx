@@ -56,11 +56,9 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
     });
   };
 
-  const extPerPax = config.uiPreferences?.extPerPax ?? false;
   const extSuppPerPax = config.uiPreferences?.extSuppPerPax ?? false;
   const extDiscountsPerPax = config.uiPreferences?.extDiscountsPerPax ?? false;
   const extHotelsMealsPerPax = config.uiPreferences?.extHotelsMealsPerPax ?? false;
-  const setExtPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extPerPax: val } }));
   const setExtSuppPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extSuppPerPax: val } }));
   const setExtDiscountsPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extDiscountsPerPax: val } }));
 
