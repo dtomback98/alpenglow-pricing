@@ -83,6 +83,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   const discountsPerPax = config.uiPreferences?.discountsPerPax ?? false;
   const singleSuppPerPax = config.uiPreferences?.singleSuppPerPax ?? false;
   const hotelsMealsPerPax = config.uiPreferences?.hotelsMealsPerPax ?? false;
+  const transportPerPax = config.uiPreferences?.transportPerPax ?? false;
   const setPricingPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, pricingPerPax: val } }));
   const setDiscountsPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, discountsPerPax: val } }));
   const setSingleSuppPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, singleSuppPerPax: val } }));
@@ -90,6 +91,56 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   const [selectedHMPax, setSelectedHMPax] = useState(paxMin);
   useEffect(() => { setSelectedHMPax(paxMin); }, [paxMin]);
   const effectiveHMPax = paxCounts.includes(selectedHMPax) ? selectedHMPax : paxCounts[0] || 1;
+
+  const [selectedTransportPax, setSelectedTransportPax] = useState(paxMin);
+  useEffect(() => { setSelectedTransportPax(paxMin); }, [paxMin]);
+  const effectiveTransportPax = paxCounts.includes(selectedTransportPax) ? selectedTransportPax : paxCounts[0] || 1;
+
+  const toggleTransportPerPax = (val: boolean) => {
+    if (val) {
+      updateConfig(prev => {
+        const t = prev.transportConfig;
+        const needsInit = !t.groundTransportByPax || Object.keys(t.groundTransportByPax).length === 0;
+        if (!needsInit) return { uiPreferences: { ...prev.uiPreferences, transportPerPax: true } };
+        const groundByPax: { [k: number]: number } = {};
+        const airportByPax: { [k: number]: number } = {};
+        const localByPax: { [k: number]: number } = {};
+        for (const p of paxCounts) {
+          groundByPax[p] = t.groundTransportTotal;
+          airportByPax[p] = t.airportTransfers;
+          localByPax[p] = t.localTransport;
+        }
+        return {
+          uiPreferences: { ...prev.uiPreferences, transportPerPax: true },
+          transportConfig: { ...t, groundTransportByPax: groundByPax, airportTransfersByPax: airportByPax, localTransportByPax: localByPax },
+        };
+      });
+    } else {
+      updateConfig(prev => ({
+        uiPreferences: { ...prev.uiPreferences, transportPerPax: false },
+        transportConfig: { ...prev.transportConfig, groundTransportByPax: undefined, airportTransfersByPax: undefined, localTransportByPax: undefined },
+      }));
+    }
+  };
+
+  const copyTransportToAllPax = () => {
+    updateConfig(prev => {
+      const t = prev.transportConfig;
+      const p = effectiveTransportPax;
+      const ground = t.groundTransportByPax?.[p] ?? t.groundTransportTotal;
+      const airport = t.airportTransfersByPax?.[p] ?? t.airportTransfers;
+      const local = t.localTransportByPax?.[p] ?? t.localTransport;
+      const groundByPax: { [k: number]: number } = {};
+      const airportByPax: { [k: number]: number } = {};
+      const localByPax: { [k: number]: number } = {};
+      for (const pp of paxCounts) {
+        groundByPax[pp] = ground;
+        airportByPax[pp] = airport;
+        localByPax[pp] = local;
+      }
+      return { transportConfig: { ...t, groundTransportByPax: groundByPax, airportTransfersByPax: airportByPax, localTransportByPax: localByPax } };
+    });
+  };
 
   const toggleHotelsMealsPerPax = (val: boolean) => {
     if (val) {
@@ -644,13 +695,20 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
       <div className={`card ${config.transportConfig.enabled === false ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Transport</h2>
-          <button onClick={() => updateNestedConfig('transportConfig', { enabled: config.transportConfig.enabled === false })} className={`btn text-xs ${config.transportConfig.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
-            {config.transportConfig.enabled === false ? 'Inactive' : 'Active'}
-          </button>
+          <div className="flex gap-2">
+            {config.transportConfig.enabled !== false && (
+              <button onClick={() => toggleTransportPerPax(!transportPerPax)} className={`btn text-xs ${transportPerPax ? 'btn-primary' : 'btn-secondary'}`}>
+                {transportPerPax ? 'Per Pax Mode' : 'Simple Mode'}
+              </button>
+            )}
+            <button onClick={() => updateNestedConfig('transportConfig', { enabled: config.transportConfig.enabled === false })} className={`btn text-xs ${config.transportConfig.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
+              {config.transportConfig.enabled === false ? 'Inactive' : 'Active'}
+            </button>
+          </div>
         </div>
         {config.transportConfig.enabled === false ? (
           <p className="text-sm text-ag-text-muted">Section disabled — transport costs will not be applied to calculations.</p>
-        ) : (
+        ) : !transportPerPax ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="form-group">
               <label className="form-label">Ground Transport ($)</label>
@@ -686,6 +744,54 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               </div>
             </div>
           </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex gap-2 flex-wrap">
+                {paxCounts.map((p) => (
+                  <button key={p} onClick={() => setSelectedTransportPax(p)} className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${selectedTransportPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-lighter text-ag-text-muted hover:text-ag-text'}`}>
+                    {p} pax
+                  </button>
+                ))}
+              </div>
+              <button onClick={copyTransportToAllPax} className="btn btn-secondary text-xs ml-2">Copy to All Pax</button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+              <div className="form-group">
+                <label className="form-label">Ground Transport ($)</label>
+                <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.groundTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
+                <div className="flex gap-3 items-center">
+                  <NumInput type="number" value={config.transportConfig.groundTransportByPax?.[effectiveTransportPax] ?? config.transportConfig.groundTransportTotal} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, groundTransportByPax: { ...prev.transportConfig.groundTransportByPax, [effectiveTransportPax]: val } } })); }} className="flex-1 min-w-0" />
+                  <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                    <input type="checkbox" checked={config.transportConfig.groundTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                    <span>Per Pax</span>
+                  </label>
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Airport Transfers ($)</label>
+                <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.airportTransfersPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
+                <div className="flex gap-3 items-center">
+                  <NumInput type="number" value={config.transportConfig.airportTransfersByPax?.[effectiveTransportPax] ?? config.transportConfig.airportTransfers} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, airportTransfersByPax: { ...prev.transportConfig.airportTransfersByPax, [effectiveTransportPax]: val } } })); }} className="flex-1 min-w-0" />
+                  <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                    <input type="checkbox" checked={config.transportConfig.airportTransfersPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfersPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                    <span>Per Pax</span>
+                  </label>
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Local Transport ($)</label>
+                <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.localTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
+                <div className="flex gap-3 items-center">
+                  <NumInput type="number" value={config.transportConfig.localTransportByPax?.[effectiveTransportPax] ?? config.transportConfig.localTransport} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, localTransportByPax: { ...prev.transportConfig.localTransportByPax, [effectiveTransportPax]: val } } })); }} className="flex-1 min-w-0" />
+                  <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                    <input type="checkbox" checked={config.transportConfig.localTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { localTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                    <span>Per Pax</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
 

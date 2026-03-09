@@ -126,9 +126,23 @@ function calculateExtension(pax: number, config: TripConfiguration) {
       const mainStaff = config.staffConfig.staffByPax[pax] || [];
       const extStaff = mainStaff.map(s => ({ ...s, days: extension.extensionNights }));
       extensionStaffCost = calculateStaffCostFromArray(extStaff, sc.travelDays, config.staffConfig.travelDayRate);
+      // Staff meals: inherit from main config
+      const mealsAmount = config.staffConfig.staffMealsCost || 0;
+      const mealsMode = config.staffConfig.staffMealsMode || 'perDay';
+      const totalStaffCount = mainStaff.reduce((sum, s) => sum + s.quantity, 0);
+      if (mealsMode === 'perDayPerGuide') extensionStaffCost += mealsAmount * extension.extensionNights * totalStaffCount;
+      else if (mealsMode === 'perDay') extensionStaffCost += mealsAmount * extension.extensionNights;
+      else extensionStaffCost += mealsAmount;
     } else {
       const staff = sc.staffByPax[pax] || [];
       extensionStaffCost = calculateStaffCostFromArray(staff, sc.travelDays, sc.travelDayRate);
+      // Staff meals: use extension's own config
+      const mealsAmount = sc.staffMealsCost || 0;
+      const mealsMode = sc.staffMealsMode || 'perDay';
+      const totalStaffCount = staff.reduce((sum, s) => sum + s.quantity, 0);
+      if (mealsMode === 'perDayPerGuide') extensionStaffCost += mealsAmount * extension.extensionNights * totalStaffCount;
+      else if (mealsMode === 'perDay') extensionStaffCost += mealsAmount * extension.extensionNights;
+      else extensionStaffCost += mealsAmount;
     }
   }
 
@@ -298,9 +312,12 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   const transportOn = config.transportConfig.enabled !== false;
   let transportCost = 0;
   if (transportOn) {
-    transportCost += config.transportConfig.groundTransportPerPax ? config.transportConfig.groundTransportTotal * pax : config.transportConfig.groundTransportTotal;
-    transportCost += config.transportConfig.airportTransfersPerPax ? config.transportConfig.airportTransfers * pax : config.transportConfig.airportTransfers;
-    transportCost += config.transportConfig.localTransportPerPax ? config.transportConfig.localTransport * pax : config.transportConfig.localTransport;
+    const groundRate = config.transportConfig.groundTransportByPax?.[pax] ?? config.transportConfig.groundTransportTotal;
+    const airportRate = config.transportConfig.airportTransfersByPax?.[pax] ?? config.transportConfig.airportTransfers;
+    const localRate = config.transportConfig.localTransportByPax?.[pax] ?? config.transportConfig.localTransport;
+    transportCost += config.transportConfig.groundTransportPerPax ? groundRate * pax : groundRate;
+    transportCost += config.transportConfig.airportTransfersPerPax ? airportRate * pax : airportRate;
+    transportCost += config.transportConfig.localTransportPerPax ? localRate * pax : localRate;
   }
 
   // Trip-specific (gated)

@@ -28,6 +28,8 @@ export interface ExtensionStaffConfig {
   staffByPax: { [pax: number]: StaffMember[] };
   travelDays: number;
   travelDayRate: number;
+  staffMealsCost?: number;
+  staffMealsMode?: 'perDayPerGuide' | 'perDay' | 'total';
 }
 
 export interface ExtensionDiscountsConfig {
@@ -126,10 +128,13 @@ export interface TransportConfig {
   flightCostPerPerson: number; // Legacy — flights now in StaffConfig, kept for migration
   groundTransportTotal: number;
   groundTransportPerPax?: boolean;
+  groundTransportByPax?: { [pax: number]: number };
   airportTransfers: number;
   airportTransfersPerPax?: boolean;
+  airportTransfersByPax?: { [pax: number]: number };
   localTransport: number;
   localTransportPerPax?: boolean;
+  localTransportByPax?: { [pax: number]: number };
 }
 
 export interface TripSpecificCost {
@@ -162,6 +167,7 @@ export interface UiPreferences {
   discountsPerPax?: boolean;
   singleSuppPerPax?: boolean;
   hotelsMealsPerPax?: boolean;
+  transportPerPax?: boolean;
   extPerPax?: boolean;
   extSuppPerPax?: boolean;
   extDiscountsPerPax?: boolean;

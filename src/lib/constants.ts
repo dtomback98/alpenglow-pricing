@@ -66,6 +66,8 @@ export const DEFAULT_CONFIG: TripConfiguration = {
       ),
       travelDays: 0,
       travelDayRate: 150,
+      staffMealsCost: 0,
+      staffMealsMode: 'perDay' as const,
     },
     discounts: {
       enabled: true,

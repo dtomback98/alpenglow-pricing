@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { TripConfiguration } from '@/lib/types';
 import { calculateAllPax, formatCurrency, formatPercent, getMarginColor, getProfitColor } from '@/lib/calculations';
 import { exportTripSummary } from '@/lib/excelExport';
@@ -11,6 +12,10 @@ interface SummaryTabProps {
 }
 
 export default function SummaryTab({ config }: SummaryTabProps) {
+  const [grossMarginPerPax, setGrossMarginPerPax] = useState(false);
+  const [revenuePerPax, setRevenuePerPax] = useState(false);
+  const [costsPerPax, setCostsPerPax] = useState(false);
+
   const calculations = calculateAllPax(config);
 
   if (calculations.length === 0) {
@@ -85,16 +90,21 @@ export default function SummaryTab({ config }: SummaryTabProps) {
 
       {/* Core vs Extension vs Combined Margins */}
       <div className="card overflow-x-auto">
-        <h2 className="text-lg font-semibold mb-4">Gross Margin Summary</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Gross Margin Summary</h2>
+          <button onClick={() => setGrossMarginPerPax(!grossMarginPerPax)} className={`btn text-xs ${grossMarginPerPax ? 'btn-primary' : 'btn-secondary'}`}>
+            {grossMarginPerPax ? 'Per Pax' : 'Totals'}
+          </button>
+        </div>
         <table className="pricing-table">
           <thead>
             <tr>
               <th>Pax</th>
-              <th>Core Profit</th>
+              <th>Core Profit{grossMarginPerPax ? ' /pax' : ''}</th>
               <th>Core Margin</th>
-              <th>Extension Profit</th>
+              <th>Extension Profit{grossMarginPerPax ? ' /pax' : ''}</th>
               <th>Extension Margin</th>
-              <th>Combined Profit</th>
+              <th>Combined Profit{grossMarginPerPax ? ' /pax' : ''}</th>
               <th>Combined Margin</th>
             </tr>
           </thead>
@@ -110,14 +120,15 @@ export default function SummaryTab({ config }: SummaryTabProps) {
               const extProfit = extRevenue - extCosts;
               const extMargin = extRevenue > 0 ? (extProfit / extRevenue) * 100 : 0;
 
+              const d = grossMarginPerPax ? calc.pax : 1;
               return (
                 <tr key={calc.pax}>
                   <td className="font-medium">{calc.pax}</td>
-                  <td className={getProfitColor(coreProfit)}>{formatCurrency(coreProfit)}</td>
+                  <td className={getProfitColor(coreProfit)}>{formatCurrency(coreProfit / d)}</td>
                   <td className={getMarginColor(coreMargin)}>{formatPercent(coreMargin)}</td>
-                  <td className={getProfitColor(extProfit)}>{formatCurrency(extProfit)}</td>
+                  <td className={getProfitColor(extProfit)}>{formatCurrency(extProfit / d)}</td>
                   <td className={getMarginColor(extMargin)}>{formatPercent(extMargin)}</td>
-                  <td className={`font-bold ${getProfitColor(calc.grossProfit)}`}>{formatCurrency(calc.grossProfit)}</td>
+                  <td className={`font-bold ${getProfitColor(calc.grossProfit)}`}>{formatCurrency(calc.grossProfit / d)}</td>
                   <td className={`font-bold ${getMarginColor(calc.margin)}`}>{formatPercent(calc.margin)}</td>
                 </tr>
               );
@@ -128,84 +139,100 @@ export default function SummaryTab({ config }: SummaryTabProps) {
 
       {/* Revenue Breakdown by Pax */}
       <div className="card overflow-x-auto">
-        <h2 className="text-lg font-semibold mb-4">Revenue Breakdown</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Revenue Breakdown</h2>
+          <button onClick={() => setRevenuePerPax(!revenuePerPax)} className={`btn text-xs ${revenuePerPax ? 'btn-primary' : 'btn-secondary'}`}>
+            {revenuePerPax ? 'Per Pax' : 'Totals'}
+          </button>
+        </div>
         <table className="pricing-table">
           <thead>
             <tr>
               <th>Pax</th>
-              <th>Base Revenue</th>
-              <th>Early Bird</th>
-              <th>Loyalty</th>
-              <th>Extension</th>
-              <th>Ext. Single Supp.</th>
-              <th>Ext. Discounts</th>
-              <th>Single Supp.</th>
-              <th>Total Revenue</th>
+              <th>Base Revenue{revenuePerPax ? ' /pax' : ''}</th>
+              <th>Early Bird{revenuePerPax ? ' /pax' : ''}</th>
+              <th>Loyalty{revenuePerPax ? ' /pax' : ''}</th>
+              <th>Extension{revenuePerPax ? ' /pax' : ''}</th>
+              <th>Ext. Single Supp.{revenuePerPax ? ' /pax' : ''}</th>
+              <th>Ext. Discounts{revenuePerPax ? ' /pax' : ''}</th>
+              <th>Single Supp.{revenuePerPax ? ' /pax' : ''}</th>
+              <th>Total Revenue{revenuePerPax ? ' /pax' : ''}</th>
             </tr>
           </thead>
           <tbody>
-            {calculations.map((calc) => (
-              <tr key={calc.pax}>
-                <td className="font-medium">{calc.pax}</td>
-                <td>{formatCurrency(calc.baseRevenue)}</td>
-                <td className="text-ag-danger">-{formatCurrency(calc.earlyBirdCost)}</td>
-                <td className="text-ag-danger">-{formatCurrency(calc.loyaltyCost)}</td>
-                <td className="text-ag-success">+{formatCurrency(calc.extensionRevenue)}</td>
-                <td className="text-ag-success">+{formatCurrency(calc.extensionSingleSuppRevenue)}</td>
-                <td className="text-ag-danger">-{formatCurrency(calc.extensionDiscountCost)}</td>
-                <td className="text-ag-success">+{formatCurrency(calc.singleSupplementRevenue)}</td>
-                <td className="font-bold">{formatCurrency(calc.totalRevenue)}</td>
-              </tr>
-            ))}
+            {calculations.map((calc) => {
+              const d = revenuePerPax ? calc.pax : 1;
+              return (
+                <tr key={calc.pax}>
+                  <td className="font-medium">{calc.pax}</td>
+                  <td>{formatCurrency(calc.baseRevenue / d)}</td>
+                  <td className="text-ag-danger">-{formatCurrency(calc.earlyBirdCost / d)}</td>
+                  <td className="text-ag-danger">-{formatCurrency(calc.loyaltyCost / d)}</td>
+                  <td className="text-ag-success">+{formatCurrency(calc.extensionRevenue / d)}</td>
+                  <td className="text-ag-success">+{formatCurrency(calc.extensionSingleSuppRevenue / d)}</td>
+                  <td className="text-ag-danger">-{formatCurrency(calc.extensionDiscountCost / d)}</td>
+                  <td className="text-ag-success">+{formatCurrency(calc.singleSupplementRevenue / d)}</td>
+                  <td className="font-bold">{formatCurrency(calc.totalRevenue / d)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       {/* Cost Breakdown by Pax */}
       <div className="card overflow-x-auto">
-        <h2 className="text-lg font-semibold mb-4">Cost Breakdown</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Cost Breakdown</h2>
+          <button onClick={() => setCostsPerPax(!costsPerPax)} className={`btn text-xs ${costsPerPax ? 'btn-primary' : 'btn-secondary'}`}>
+            {costsPerPax ? 'Per Pax' : 'Totals'}
+          </button>
+        </div>
         <table className="pricing-table">
           <thead>
             <tr>
               <th>Pax</th>
-              <th>Hotels</th>
-              <th>Meals</th>
-              <th>Staff</th>
-              <th>Guide Flights</th>
-              <th>Staff Meals</th>
-              <th>Transport</th>
-              <th>Logistics</th>
-              <th>Trip Specific</th>
-              <th>Single Room</th>
-              <th>Ext. Hotels</th>
-              <th>Ext. Meals</th>
-              <th>Ext. Staff</th>
-              <th>Ext. Logistics</th>
-              <th>Ext. Room</th>
-              <th>Total Costs</th>
+              <th>Hotels{costsPerPax ? ' /pax' : ''}</th>
+              <th>Meals{costsPerPax ? ' /pax' : ''}</th>
+              <th>Staff{costsPerPax ? ' /pax' : ''}</th>
+              <th>Guide Flights{costsPerPax ? ' /pax' : ''}</th>
+              <th>Staff Meals{costsPerPax ? ' /pax' : ''}</th>
+              <th>Transport{costsPerPax ? ' /pax' : ''}</th>
+              <th>Logistics{costsPerPax ? ' /pax' : ''}</th>
+              <th>Trip Specific{costsPerPax ? ' /pax' : ''}</th>
+              <th>Single Room{costsPerPax ? ' /pax' : ''}</th>
+              <th>Ext. Hotels{costsPerPax ? ' /pax' : ''}</th>
+              <th>Ext. Meals{costsPerPax ? ' /pax' : ''}</th>
+              <th>Ext. Staff{costsPerPax ? ' /pax' : ''}</th>
+              <th>Ext. Logistics{costsPerPax ? ' /pax' : ''}</th>
+              <th>Ext. Room{costsPerPax ? ' /pax' : ''}</th>
+              <th>Total Costs{costsPerPax ? ' /pax' : ''}</th>
             </tr>
           </thead>
           <tbody>
-            {calculations.map((calc) => (
-              <tr key={calc.pax}>
-                <td className="font-medium">{calc.pax}</td>
-                <td>{formatCurrency(calc.hotelsCost)}</td>
-                <td>{formatCurrency(calc.mealsCost)}</td>
-                <td>{formatCurrency(calc.staffCost)}</td>
-                <td>{formatCurrency(calc.guideFlightsCost)}</td>
-                <td>{formatCurrency(calc.staffMealsCost)}</td>
-                <td>{formatCurrency(calc.transportCost)}</td>
-                <td>{formatCurrency(calc.logisticsCost)}</td>
-                <td>{formatCurrency(calc.tripSpecificCost)}</td>
-                <td>{formatCurrency(calc.singleRoomCost)}</td>
-                <td>{formatCurrency(calc.extensionHotelsCost)}</td>
-                <td>{formatCurrency(calc.extensionMealsCost)}</td>
-                <td>{formatCurrency(calc.extensionStaffCost)}</td>
-                <td>{formatCurrency(calc.extensionLogisticsCost)}</td>
-                <td>{formatCurrency(calc.extensionSingleRoomCost)}</td>
-                <td className="font-bold text-ag-danger">{formatCurrency(calc.totalCosts)}</td>
-              </tr>
-            ))}
+            {calculations.map((calc) => {
+              const d = costsPerPax ? calc.pax : 1;
+              return (
+                <tr key={calc.pax}>
+                  <td className="font-medium">{calc.pax}</td>
+                  <td>{formatCurrency(calc.hotelsCost / d)}</td>
+                  <td>{formatCurrency(calc.mealsCost / d)}</td>
+                  <td>{formatCurrency(calc.staffCost / d)}</td>
+                  <td>{formatCurrency(calc.guideFlightsCost / d)}</td>
+                  <td>{formatCurrency(calc.staffMealsCost / d)}</td>
+                  <td>{formatCurrency(calc.transportCost / d)}</td>
+                  <td>{formatCurrency(calc.logisticsCost / d)}</td>
+                  <td>{formatCurrency(calc.tripSpecificCost / d)}</td>
+                  <td>{formatCurrency(calc.singleRoomCost / d)}</td>
+                  <td>{formatCurrency(calc.extensionHotelsCost / d)}</td>
+                  <td>{formatCurrency(calc.extensionMealsCost / d)}</td>
+                  <td>{formatCurrency(calc.extensionStaffCost / d)}</td>
+                  <td>{formatCurrency(calc.extensionLogisticsCost / d)}</td>
+                  <td>{formatCurrency(calc.extensionSingleRoomCost / d)}</td>
+                  <td className="font-bold text-ag-danger">{formatCurrency(calc.totalCosts / d)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

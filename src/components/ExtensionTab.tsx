@@ -64,6 +64,8 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
   const setExtSuppPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extSuppPerPax: val } }));
   const setExtDiscountsPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extDiscountsPerPax: val } }));
 
+  const [extPercent, setExtPercent] = useState(100);
+
   const [selectedExtHMPax, setSelectedExtHMPax] = useState(paxMin);
   useEffect(() => { setSelectedExtHMPax(paxMin); }, [paxMin]);
   const effectiveExtHMPax = paxCounts.includes(selectedExtHMPax) ? selectedExtHMPax : paxCounts[0] || 1;
@@ -236,16 +238,23 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               </div>
             ) : (
               <div className="mt-4 pt-4 border-t border-ag-border">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                   <label className="form-label mb-0">Guests Taking Extension by Pax</label>
-                  <button onClick={() => { const c: { [k: number]: number } = {}; const b = ext.countByPax?.[paxCounts[0]] || 0; for (const p of paxCounts) c[p] = b; updateExtension({ countByPax: c }); }} className="btn btn-secondary text-xs">Apply First to All</button>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <input type="number" min="0" max="100" value={extPercent} onChange={(e) => setExtPercent(Math.min(100, Math.max(0, Number(e.target.value))))} className="w-16 text-center text-sm" />
+                      <span className="text-sm text-ag-text-muted">%</span>
+                    </div>
+                    <button onClick={() => { const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = Math.ceil(p * extPercent / 100); updateExtension({ countByPax: c }); }} className="btn btn-secondary text-xs">Apply %</button>
+                    <button onClick={() => { const c: { [k: number]: number } = {}; const b = ext.countByPax?.[paxCounts[0]] || 0; for (const p of paxCounts) c[p] = Math.min(b, p); updateExtension({ countByPax: c }); }} className="btn btn-secondary text-xs">Apply First to All</button>
+                  </div>
                 </div>
                 <p className="text-xs text-ag-text-muted mb-2">How many guests join the extension at each group size</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
                   {paxCounts.map((p) => (
                     <div key={p} className="form-group">
                       <label className="form-label text-center">{p} pax</label>
-                      <NumInput type="number" min="0" value={ext.countByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, countByPax: { ...prev.extension.countByPax, [p]: val } } })); }} className="w-full text-center" />
+                      <NumInput type="number" min="0" max={p} value={ext.countByPax?.[p] ?? 0} onChange={(e) => { const val = Math.min(Number(e.target.value), p); updateConfig(prev => ({ extension: { ...prev.extension, countByPax: { ...prev.extension.countByPax, [p]: val } } })); }} className="w-full text-center" />
                     </div>
                   ))}
                 </div>
@@ -658,6 +667,29 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   <NumInput type="number" value={config.staffConfig.travelDayRate} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
               </div>
+              <div className="mt-4 pt-4 border-t border-ag-border">
+                <div className="flex items-center gap-3 mb-3">
+                  <label className="form-label mb-0">Staff Guide Meals Cost ($)</label>
+                  <div className="flex gap-1">
+                    {(['perDayPerGuide', 'perDay', 'total'] as const).map((m) => {
+                      const mode = config.staffConfig.staffMealsMode || 'perDay';
+                      return (
+                        <button key={m} disabled className={`btn text-xs opacity-50 cursor-not-allowed ${mode === m ? 'btn-primary' : 'btn-secondary'}`}>
+                          {m === 'perDayPerGuide' ? 'Per Day/Guide' : m === 'perDay' ? 'Per Day' : 'Total'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <span className="text-xs text-ag-text-muted">
+                    {(config.staffConfig.staffMealsMode || 'perDay') === 'perDayPerGuide'
+                      ? `(cost \u00d7 ${ext.extensionNights} nights \u00d7 guides)`
+                      : (config.staffConfig.staffMealsMode || 'perDay') === 'perDay'
+                      ? `(cost \u00d7 ${ext.extensionNights} extension nights)`
+                      : '(entered value is total cost)'}
+                  </span>
+                </div>
+                <NumInput type="number" value={config.staffConfig.staffMealsCost || 0} disabled className="w-48 opacity-50 cursor-not-allowed" />
+              </div>
             </div>
           ) : (
             <>
@@ -704,6 +736,29 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   <label className="form-label">Travel Day Rate ($)</label>
                   <NumInput type="number" value={ext.staffConfig.travelDayRate} onChange={(e) => updateExtStaff({ travelDayRate: Number(e.target.value) })} className="w-full" />
                 </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-ag-border">
+                <div className="flex items-center gap-3 mb-3">
+                  <label className="form-label mb-0">Staff Guide Meals Cost ($)</label>
+                  <div className="flex gap-1">
+                    {(['perDayPerGuide', 'perDay', 'total'] as const).map((m) => {
+                      const mode = ext.staffConfig.staffMealsMode || 'perDay';
+                      return (
+                        <button key={m} onClick={() => updateExtStaff({ staffMealsMode: m })} className={`btn text-xs ${mode === m ? 'btn-primary' : 'btn-secondary'}`}>
+                          {m === 'perDayPerGuide' ? 'Per Day/Guide' : m === 'perDay' ? 'Per Day' : 'Total'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <span className="text-xs text-ag-text-muted">
+                    {(ext.staffConfig.staffMealsMode || 'perDay') === 'perDayPerGuide'
+                      ? `(cost \u00d7 ${ext.extensionNights} nights \u00d7 guides)`
+                      : (ext.staffConfig.staffMealsMode || 'perDay') === 'perDay'
+                      ? `(cost \u00d7 ${ext.extensionNights} extension nights)`
+                      : '(entered value is total cost)'}
+                  </span>
+                </div>
+                <NumInput type="number" value={ext.staffConfig.staffMealsCost || 0} onChange={(e) => updateExtStaff({ staffMealsCost: Number(e.target.value) })} className="w-48" />
               </div>
             </>
           )}
