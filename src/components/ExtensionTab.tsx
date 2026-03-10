@@ -769,6 +769,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               <p className="text-sm text-ag-text-muted mb-3">Using rates and mode from main trip logistics ({(() => {
                 const mode = config.logistics.mode || (config.logistics.perPax ? 'perPaxPerDay' : 'perDay');
                 if (mode === 'perPaxPerDay') return 'Rate \u00d7 Pax \u00d7 Nights';
+                if (mode === 'perPax') return 'Rate \u00d7 Pax';
                 if (mode === 'total') return 'Total Cost';
                 return 'Rate \u00d7 Nights';
               })()}, applied to extension nights).</p>
@@ -819,9 +820,9 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
             <>
               <div className="mb-4">
                 <div className="flex gap-2 items-center flex-wrap">
-                  {(['perPaxPerDay', 'perDay', 'total'] as const).map((m) => {
+                  {(['perPaxPerDay', 'perPax', 'perDay', 'total'] as const).map((m) => {
                     const extLogMode = ext.logisticsConfig.mode || 'perDay';
-                    const labels = { perPaxPerDay: 'Rate \u00d7 Pax \u00d7 Nights', perDay: 'Rate \u00d7 Nights', total: 'Total Cost' };
+                    const labels = { perPaxPerDay: 'Rate \u00d7 Pax \u00d7 Nights', perPax: 'Rate \u00d7 Pax', perDay: 'Rate \u00d7 Nights', total: 'Total Cost' };
                     return (
                       <button key={m} onClick={() => updateExtLogistics({ mode: m })} className={`btn text-xs ${extLogMode === m ? 'btn-primary' : 'btn-secondary'}`}>
                         {labels[m]}
@@ -886,9 +887,9 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 <h3 className="text-sm font-semibold mb-4">Guide Logistics Rate</h3>
                 <div className="mb-4">
                   <div className="flex gap-2 items-center flex-wrap">
-                    {(['perPaxPerDay', 'perDay', 'total'] as const).map((m) => {
+                    {(['perPaxPerDay', 'perPax', 'perDay', 'total'] as const).map((m) => {
                       const guideMode = ext.logisticsConfig.guideLogistics?.mode || 'perDay';
-                      const labels = { perPaxPerDay: 'Rate \u00d7 Pax \u00d7 Nights', perDay: 'Rate \u00d7 Nights', total: 'Total Cost' };
+                      const labels = { perPaxPerDay: 'Rate \u00d7 Pax \u00d7 Nights', perPax: 'Rate \u00d7 Pax', perDay: 'Rate \u00d7 Nights', total: 'Total Cost' };
                       return (
                         <button key={m} onClick={() => updateExtGuideLogistics({ mode: m })} className={`btn text-xs ${guideMode === m ? 'btn-primary' : 'btn-secondary'}`}>
                           {labels[m]}

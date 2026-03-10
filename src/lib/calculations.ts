@@ -161,6 +161,7 @@ function calculateExtension(pax: number, config: TripConfiguration) {
       mode = lc.mode || 'perDay';
     }
     if (mode === 'perPaxPerDay') extensionLogisticsCost = rate * extension.extensionNights * extPaxCount;
+    else if (mode === 'perPax') extensionLogisticsCost = rate * extPaxCount;
     else if (mode === 'total') extensionLogisticsCost = rate;
     else extensionLogisticsCost = rate * extension.extensionNights;
     // Guide logistics rate (sub-section, gated with extension logistics)
@@ -170,6 +171,7 @@ function calculateExtension(pax: number, config: TripConfiguration) {
       const guideRate = guideRateMatch ? guideRateMatch.rate : 0;
       const guideMode = gl.mode || 'perDay';
       if (guideMode === 'perPaxPerDay') extensionLogisticsCost += guideRate * extension.extensionNights * extPaxCount;
+      else if (guideMode === 'perPax') extensionLogisticsCost += guideRate * extPaxCount;
       else if (guideMode === 'total') extensionLogisticsCost += guideRate;
       else extensionLogisticsCost += guideRate * extension.extensionNights;
     }
@@ -277,6 +279,7 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   let logisticsCost = 0;
   if (logisticsOn) {
     if (logisticsMode === 'perPaxPerDay') logisticsCost = logisticsRate * config.tripDays * pax;
+    else if (logisticsMode === 'perPax') logisticsCost = logisticsRate * pax;
     else if (logisticsMode === 'total') logisticsCost = logisticsRate;
     else logisticsCost = logisticsRate * config.tripDays;
     // Guide logistics rate (sub-section, gated with main logistics)
@@ -286,6 +289,7 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
       const guideRate = guideRateMatch ? guideRateMatch.rate : 0;
       const guideMode = gl.mode || 'perDay';
       if (guideMode === 'perPaxPerDay') logisticsCost += guideRate * config.tripDays * pax;
+      else if (guideMode === 'perPax') logisticsCost += guideRate * pax;
       else if (guideMode === 'total') logisticsCost += guideRate;
       else logisticsCost += guideRate * config.tripDays;
     }

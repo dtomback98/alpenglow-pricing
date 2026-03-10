@@ -937,9 +937,9 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <>
             <div className="mb-4">
               <div className="flex gap-2 items-center flex-wrap">
-                {(['perPaxPerDay', 'perDay', 'total'] as const).map((m) => {
+                {(['perPaxPerDay', 'perPax', 'perDay', 'total'] as const).map((m) => {
                   const logisticsMode = config.logistics.mode || (config.logistics.perPax ? 'perPaxPerDay' : 'perDay');
-                  const labels = { perPaxPerDay: 'Rate × Pax × Days', perDay: 'Rate × Days', total: 'Total Cost' };
+                  const labels = { perPaxPerDay: 'Rate × Pax × Days', perPax: 'Rate × Pax', perDay: 'Rate × Days', total: 'Total Cost' };
                   return (
                     <button
                       key={m}
@@ -1002,9 +1002,9 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <h3 className="text-sm font-semibold mb-4">Guide Logistics Rate</h3>
               <div className="mb-4">
                 <div className="flex gap-2 items-center flex-wrap">
-                  {(['perPaxPerDay', 'perDay', 'total'] as const).map((m) => {
+                  {(['perPaxPerDay', 'perPax', 'perDay', 'total'] as const).map((m) => {
                     const guideMode = config.logistics.guideLogistics?.mode || 'perDay';
-                    const labels = { perPaxPerDay: 'Rate × Pax × Days', perDay: 'Rate × Days', total: 'Total Cost' };
+                    const labels = { perPaxPerDay: 'Rate × Pax × Days', perPax: 'Rate × Pax', perDay: 'Rate × Days', total: 'Total Cost' };
                     return (
                       <button
                         key={m}

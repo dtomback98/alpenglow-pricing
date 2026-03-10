@@ -44,13 +44,13 @@ export interface ExtensionDiscountsConfig {
 export interface ExtensionLogisticsConfig {
   enabled: boolean;
   inheritFromMain: boolean;
-  mode?: 'perPaxPerDay' | 'perDay' | 'total';
+  mode?: 'perPaxPerDay' | 'perPax' | 'perDay' | 'total';
   simpleMode?: boolean; // true = single rate for all pax; false/undefined = per-pax grid
   rates: LogisticsRate[];
   baseRate: number;
   guideLogistics?: {
     rates: LogisticsRate[];
-    mode?: 'perPaxPerDay' | 'perDay' | 'total';
+    mode?: 'perPaxPerDay' | 'perPax' | 'perDay' | 'total';
     simpleMode?: boolean;
   };
 }
@@ -94,12 +94,12 @@ export interface LogisticsConfig {
   baseRate: number; // Legacy — unused but kept for DB compat
   rates: LogisticsRate[];
   perPax: boolean; // Legacy — mode is authoritative, perPax used as fallback
-  mode?: 'perPaxPerDay' | 'perDay' | 'total';
+  mode?: 'perPaxPerDay' | 'perPax' | 'perDay' | 'total';
   simpleMode?: boolean; // true = single rate for all pax; false/undefined = per-pax grid
   includesGuide: boolean; // Legacy — unused but kept for DB compat
   guideLogistics?: {
     rates: LogisticsRate[];
-    mode?: 'perPaxPerDay' | 'perDay' | 'total';
+    mode?: 'perPaxPerDay' | 'perPax' | 'perDay' | 'total';
     simpleMode?: boolean;
   };
 }
