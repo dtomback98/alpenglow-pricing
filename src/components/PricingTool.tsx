@@ -9,6 +9,7 @@ import SummaryTab from './SummaryTab';
 import InputsTab from './InputsTab';
 import ExtensionTab from './ExtensionTab';
 import HistoryTab from './HistoryTab';
+import FinancialsTab from './FinancialsTab';
 
 export default function PricingTool() {
   const [activeTab, setActiveTab] = useState<TabType>('summary');
@@ -65,6 +66,9 @@ export default function PricingTool() {
         )}
         {activeTab === 'history' && (
           <HistoryTab onLoadTrip={handleLoadTrip} refreshKey={historyRefreshKey} />
+        )}
+        {activeTab === 'financials' && (
+          <FinancialsTab refreshKey={historyRefreshKey} />
         )}
       </div>
     </div>

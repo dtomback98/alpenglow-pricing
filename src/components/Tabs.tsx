@@ -12,6 +12,7 @@ const tabs: { id: TabType; label: string }[] = [
   { id: 'inputs-core', label: 'Inputs - Core Trip' },
   { id: 'inputs-extension', label: 'Inputs - Extension' },
   { id: 'history', label: 'History' },
+  { id: 'financials', label: 'Financials' },
 ];
 
 export default function Tabs({ activeTab, setActiveTab }: TabsProps) {

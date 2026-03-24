@@ -1,4 +1,4 @@
-import { TripConfiguration, PaxCalculation, LogisticsConfig, StaffMember } from './types';
+import { TripConfiguration, PaxCalculation, LogisticsConfig, StaffMember, FinancialBreakdown } from './types';
 
 // Get logistics rate based on pax count
 export function getLogisticsRate(pax: number, logistics: LogisticsConfig): number {
@@ -407,6 +407,69 @@ export function calculateAllPax(config: TripConfiguration): PaxCalculation[] {
   }
 
   return results;
+}
+
+// Map a PaxCalculation to the six financial reporting categories
+export function calculateFinancialBreakdown(pax: number, config: TripConfiguration): FinancialBreakdown {
+  const calc = calculateForPax(pax, config);
+  const inflationMultiplier = Math.max(0, 1 + (config.inflationRate || 0));
+  const tripSpecificOn = config.tripSpecific.enabled !== false;
+
+  const calcTsItem = (item: { amount: number; perPax: boolean; percentOfRevenue?: boolean; active?: boolean }): number => {
+    if (item.active === false) return 0;
+    if (item.percentOfRevenue) return item.amount * calc.totalRevenue;
+    return item.perPax ? item.amount * pax : item.amount;
+  };
+
+  let commercialLicensing = 0;
+  let tripSupplies = 0;
+  let otherTripCosts = 0;
+
+  if (tripSpecificOn) {
+    const ts = config.tripSpecific;
+    commercialLicensing = calcTsItem(ts.permits) * inflationMultiplier;
+    tripSupplies = (
+      calcTsItem(ts.equipment) +
+      calcTsItem(ts.jacketsApparel) +
+      calcTsItem(ts.hypoxico || { amount: 0, perPax: false })
+    ) * inflationMultiplier;
+    const customTotal = (ts.customCosts || []).reduce(
+      (sum, cc) => sum + (cc.perPax ? cc.amount * pax : cc.amount), 0
+    );
+    otherTripCosts = (
+      calcTsItem(ts.insurance) +
+      calcTsItem(ts.contingency) +
+      calcTsItem(ts.otherCosts) +
+      customTotal
+    ) * inflationMultiplier;
+  }
+
+  const tripTravelLogistics =
+    calc.transportCost +
+    calc.logisticsCost +
+    calc.hotelsCost +
+    calc.mealsCost +
+    calc.singleRoomCost +
+    calc.extensionLogisticsCost +
+    calc.extensionHotelsCost +
+    calc.extensionMealsCost +
+    calc.extensionSingleRoomCost;
+
+  const guideWages =
+    calc.staffCost +
+    calc.guideFlightsCost +
+    calc.staffMealsCost +
+    calc.extensionStaffCost;
+
+  return {
+    tripTravelLogistics,
+    guideWages,
+    tripSupplies,
+    commercialLicensing,
+    tripCommunications: 0,
+    otherTripCosts,
+    total: calc.totalCosts,
+  };
 }
 
 // Format currency

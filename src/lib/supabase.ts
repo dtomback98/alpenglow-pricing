@@ -224,6 +224,27 @@ export async function fetchTripConfiguration(id: string): Promise<TripConfigurat
   return data ? rowToConfig(data) : null;
 }
 
+// Fetch multiple trip configurations by IDs (returns a map for fast lookup)
+export async function fetchTripConfigurationsByIds(ids: string[]): Promise<Map<string, TripConfiguration>> {
+  if (!supabase || ids.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from('trip_configurations')
+    .select('*')
+    .in('id', ids);
+
+  if (error) {
+    console.error('Error fetching trip configurations by ids:', error);
+    return new Map();
+  }
+
+  const map = new Map<string, TripConfiguration>();
+  for (const row of (data || [])) {
+    map.set(row.id, rowToConfig(row));
+  }
+  return map;
+}
+
 // Save a trip configuration (insert or update)
 export async function saveTripConfiguration(config: TripConfiguration): Promise<TripConfiguration | null> {
   if (!supabase) return null;

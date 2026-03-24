@@ -275,4 +275,14 @@ export interface HistoricalTrip {
   status?: 'budgeted' | 'run';
 }
 
-export type TabType = 'summary' | 'inputs-core' | 'inputs-extension' | 'history';
+export interface FinancialBreakdown {
+  tripTravelLogistics: number;
+  guideWages: number;
+  tripSupplies: number;
+  commercialLicensing: number;
+  tripCommunications: number;
+  otherTripCosts: number;
+  total: number;
+}
+
+export type TabType = 'summary' | 'inputs-core' | 'inputs-extension' | 'history' | 'financials';
