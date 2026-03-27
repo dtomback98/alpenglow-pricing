@@ -228,6 +228,17 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
           </button>
         </div>
         <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <p className="text-xs text-ag-text-muted">Year</p>
+            <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="text-sm">
+              <option value="all">All Years</option>
+              <option value="2025">2025 Only</option>
+              <option value={String(currentYear)}>{currentYear} — All</option>
+              <option value={`${currentYear}-run`}>{currentYear} — Trips Run</option>
+              <option value={`${currentYear}-budgeted`}>{currentYear} — Budgeted</option>
+              <option value={String(nextYear)}>{nextYear} Only</option>
+            </select>
+          </div>
           <div>
             <p className="text-xs text-ag-text-muted mb-2">Category</p>
             <div className="flex flex-wrap gap-2">
@@ -245,17 +256,6 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
                 );
               })}
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <p className="text-xs text-ag-text-muted">Year</p>
-            <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="text-sm">
-              <option value="all">All Years</option>
-              <option value="2025">2025 Only</option>
-              <option value={String(currentYear)}>{currentYear} — All</option>
-              <option value={`${currentYear}-run`}>{currentYear} — Trips Run</option>
-              <option value={`${currentYear}-budgeted`}>{currentYear} — Budgeted</option>
-              <option value={String(nextYear)}>{nextYear} Only</option>
-            </select>
           </div>
           {availableCountries.length > 0 && (
             <div>
