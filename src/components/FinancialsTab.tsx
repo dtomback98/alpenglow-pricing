@@ -25,6 +25,7 @@ interface FinancialsTabProps {
 export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
   const { trips, loading, error, selectedCategory, setSelectedCategory, refresh } = useHistoricalData();
   const [yearFilter, setYearFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [configMap, setConfigMap] = useState<Map<string, TripConfiguration>>(new Map());
   const [configsLoading, setConfigsLoading] = useState(false);
 
@@ -63,11 +64,13 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
   for (const t of trips) { yearMap[t.year || 2025] = true; }
   const availableYears = Object.keys(yearMap).map(Number).sort((a, b) => b - a);
 
-  // Apply year filter (category already filtered by the hook)
+  // Apply year + status filters (category already filtered by the hook)
   const filteredTrips = trips.filter(t => {
-    if (yearFilter === 'all') return true;
-    if (yearFilter === '2025') return (t.year || 2025) === 2025;
-    return t.year === Number(yearFilter);
+    if (yearFilter !== 'all') {
+      if (yearFilter === '2025' ? (t.year || 2025) !== 2025 : t.year !== Number(yearFilter)) return false;
+    }
+    if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+    return true;
   });
 
   // Compute financial breakdown for each filtered trip
@@ -142,6 +145,17 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
             {availableYears.map(y => (
               <option key={y} value={String(y)}>{y}</option>
             ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="text-sm"
+          >
+            <option value="all">All Statuses</option>
+            <option value="run">Run</option>
+            <option value="open-enrollment">Open Enrollment</option>
+            <option value="budgeted">Budgeted</option>
+            <option value="scratch">Scratch</option>
           </select>
         </div>
       </div>
