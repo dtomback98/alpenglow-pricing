@@ -284,6 +284,7 @@ export interface HistoricalTrip {
   year?: number;
   tripConfigId?: string;
   status?: 'budgeted' | 'run';
+  country?: string;
 }
 
 export interface FinancialBreakdown {

@@ -168,14 +168,21 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
   }, [refreshKey, refresh]);
   const currentYear = new Date().getFullYear();
   const nextYear = currentYear + 1;
-  const [chartYearFilter, setChartYearFilter] = useState<string>('all');
-  const [statsYearFilter, setStatsYearFilter] = useState<string>('all');
+  const [yearFilter, setYearFilter] = useState<string>('all');
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
-  const trips2025 = trips.filter(t => (t.year || 2025) === 2025);
-  const tripsCurrentYear = trips.filter(t => t.year === currentYear);
+  // Derive sorted country list from loaded trips
+  const countryMap: Record<string, true> = {};
+  for (const t of trips) { countryMap[t.country || 'Unknown'] = true; }
+  const availableCountries = Object.keys(countryMap).sort();
+
+  const countryFiltered = selectedCountry ? trips.filter(t => (t.country || 'Unknown') === selectedCountry) : trips;
+
+  const trips2025 = countryFiltered.filter(t => (t.year || 2025) === 2025);
+  const tripsCurrentYear = countryFiltered.filter(t => t.year === currentYear);
   const tripsCurrentYearRun = tripsCurrentYear.filter(t => t.status === 'run');
   const tripsCurrentYearBudgeted = tripsCurrentYear.filter(t => t.status !== 'run');
-  const tripsNextYear = trips.filter(t => t.year === nextYear);
+  const tripsNextYear = countryFiltered.filter(t => t.year === nextYear);
 
   const getFilteredTrips = (filter: string) =>
     filter === '2025' ? trips2025
@@ -183,21 +190,16 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
     : filter === `${currentYear}-run` ? tripsCurrentYearRun
     : filter === `${currentYear}-budgeted` ? tripsCurrentYearBudgeted
     : filter === String(nextYear) ? tripsNextYear
-    : trips;
+    : countryFiltered;
 
-  const statsTrips = getFilteredTrips(statsYearFilter);
-  const chartTrips = getFilteredTrips(chartYearFilter);
+  const filteredTrips = getFilteredTrips(yearFilter);
 
-  const chartData = chartTrips.map(trip => ({
+  const chartData = filteredTrips.map(trip => ({
     name: trip.name,
     margin: trip.margin,
     grossProfit: trip.grossProfit,
     category: trip.category,
   }));
-
-  const avgMargin = statsTrips.length > 0
-    ? statsTrips.reduce((sum, t) => sum + t.margin, 0) / statsTrips.length
-    : 0;
 
   if (loading) {
     return <div className="text-center text-ag-text-muted py-8">Loading historical data...</div>;
@@ -210,14 +212,14 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
           {error} — showing cached data.
         </div>
       )}
-      {/* Category filter */}
+      {/* Filters */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Filter by Category</h2>
+          <h2 className="text-lg font-semibold">Filters</h2>
           <button
             onClick={() => exportHistoricalTrips(
-              statsTrips,
-              statsYearFilter === 'all' ? 'all_years' : statsYearFilter,
+              filteredTrips,
+              yearFilter === 'all' ? 'all_years' : yearFilter,
               selectedCategory || 'all_categories'
             )}
             className="btn btn-secondary text-sm"
@@ -225,82 +227,65 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
             Export to Excel
           </button>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((cat) => {
-            const isActive = cat === 'All' ? selectedCategory === null : selectedCategory === cat;
-            return (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat === 'All' ? null : cat)}
-                className={`btn ${isActive ? 'btn-primary' : 'btn-secondary'}`}
-                style={isActive && cat !== 'All' ? { backgroundColor: CATEGORY_COLORS[cat] } : undefined}
-              >
-                {CATEGORY_LABELS[cat] || cat}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Summary stats */}
-      <div className="card mb-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Summary Statistics</h2>
-          <select
-            value={statsYearFilter}
-            onChange={(e) => setStatsYearFilter(e.target.value)}
-            className="text-sm"
-          >
-            <option value="all">All Years</option>
-            <option value="2025">2025 Only</option>
-            <option value={String(currentYear)}>{currentYear} — All</option>
-            <option value={`${currentYear}-run`}>{currentYear} — Trips Run</option>
-            <option value={`${currentYear}-budgeted`}>{currentYear} — Budgeted</option>
-            <option value={String(nextYear)}>{nextYear} Only</option>
-          </select>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="card">
-          <div className="text-sm text-ag-text-muted mb-1">Total Trips</div>
-          <div className="text-2xl font-bold text-ag-text">{statsTrips.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-ag-text-muted mb-1">Total Revenue</div>
-          <div className="text-2xl font-bold text-ag-text">
-            {formatCurrency(statsTrips.reduce((sum, t) => sum + t.revenue, 0))}
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs text-ag-text-muted mb-2">Category</p>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((cat) => {
+                const isActive = cat === 'All' ? selectedCategory === null : selectedCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat === 'All' ? null : cat)}
+                    className={`btn ${isActive ? 'btn-primary' : 'btn-secondary'}`}
+                    style={isActive && cat !== 'All' ? { backgroundColor: CATEGORY_COLORS[cat] } : undefined}
+                  >
+                    {CATEGORY_LABELS[cat] || cat}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-ag-text-muted mb-1">Total Profit</div>
-          <div className={`text-2xl font-bold ${statsTrips.reduce((sum, t) => sum + t.grossProfit, 0) >= 0 ? 'text-ag-success' : 'text-ag-danger'}`}>
-            {formatCurrency(statsTrips.reduce((sum, t) => sum + t.grossProfit, 0))}
+          <div className="flex items-center gap-3">
+            <p className="text-xs text-ag-text-muted">Year</p>
+            <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="text-sm">
+              <option value="all">All Years</option>
+              <option value="2025">2025 Only</option>
+              <option value={String(currentYear)}>{currentYear} — All</option>
+              <option value={`${currentYear}-run`}>{currentYear} — Trips Run</option>
+              <option value={`${currentYear}-budgeted`}>{currentYear} — Budgeted</option>
+              <option value={String(nextYear)}>{nextYear} Only</option>
+            </select>
           </div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-ag-text-muted mb-1">Average Margin</div>
-          <div className={`text-2xl font-bold ${getMarginColor(avgMargin)}`}>
-            {formatPercent(avgMargin)}
-          </div>
+          {availableCountries.length > 0 && (
+            <div>
+              <p className="text-xs text-ag-text-muted mb-2">Country</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedCountry(null)}
+                  className={`btn ${selectedCountry === null ? 'btn-primary' : 'btn-secondary'}`}
+                >
+                  All
+                </button>
+                {availableCountries.map((country) => (
+                  <button
+                    key={country}
+                    onClick={() => setSelectedCountry(country)}
+                    className={`btn ${selectedCountry === country ? 'btn-primary' : 'btn-secondary'}`}
+                  >
+                    {country}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Margin chart */}
       <div className="card">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <h2 className="text-lg font-semibold">Margin by Trip</h2>
-          <select
-            value={chartYearFilter}
-            onChange={(e) => setChartYearFilter(e.target.value)}
-            className="text-sm"
-          >
-            <option value="all">All Years</option>
-            <option value="2025">2025 Only</option>
-            <option value={String(currentYear)}>{currentYear} — All</option>
-            <option value={`${currentYear}-run`}>{currentYear} — Trips Run</option>
-            <option value={`${currentYear}-budgeted`}>{currentYear} — Budgeted</option>
-            <option value={String(nextYear)}>{nextYear} Only</option>
-          </select>
         </div>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">

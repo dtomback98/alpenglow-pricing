@@ -5,6 +5,7 @@ import { TripConfiguration } from '@/lib/types';
 import TripSelector from './TripSelector';
 
 const CATEGORIES = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
+const COUNTRIES = ['Argentina', 'Bolivia', 'Chile', 'Ecuador', 'Japan', 'Kyrgyzstan', 'Mexico', 'Nepal', 'Peru', 'Tanzania', 'Unknown'];
 
 interface HeaderProps {
   config: TripConfiguration;
@@ -13,7 +14,7 @@ interface HeaderProps {
   selectedTripId: string | null;
   selectTrip: (id: string | null) => void;
   saveTrip: () => Promise<void>;
-  saveTripsToHistory: (pax: number, category: string, year?: number, status?: string) => Promise<boolean>;
+  saveTripsToHistory: (pax: number, category: string, year?: number, status?: string, country?: string) => Promise<boolean>;
   createNewTrip: () => void;
   deleteTrip: (id: string) => Promise<void>;
   saving: boolean;
@@ -43,6 +44,7 @@ export default function Header({
   const currentYear = new Date().getFullYear();
   const [historyYear, setHistoryYear] = useState(currentYear);
   const [historyStatus, setHistoryStatus] = useState<'budgeted' | 'run'>('budgeted');
+  const [historyCountry, setHistoryCountry] = useState('Unknown');
 
   const paxMin = config.paxMin || 1;
   const paxMax = config.paxMax || 16;
@@ -61,7 +63,7 @@ export default function Header({
     if (!paxOptions.includes(historyPax)) return; // guard against invalid pax range state
     setHistorySaving(true);
     setHistorySuccess(false);
-    const success = await saveTripsToHistory(historyPax, historyCategory, historyYear, historyStatus);
+    const success = await saveTripsToHistory(historyPax, historyCategory, historyYear, historyStatus, historyCountry);
     setHistorySaving(false);
     if (success) {
       setHistorySuccess(true);
@@ -172,11 +174,20 @@ export default function Header({
                   </select>
                 </div>
 
-                <div className="form-group mb-4">
+                <div className="form-group mb-3">
                   <label className="form-label">Status</label>
                   <select value={historyStatus} onChange={(e) => setHistoryStatus(e.target.value as 'budgeted' | 'run')} className="w-full">
                     <option value="budgeted">Budgeted</option>
                     <option value="run">Run</option>
+                  </select>
+                </div>
+
+                <div className="form-group mb-4">
+                  <label className="form-label">Country</label>
+                  <select value={historyCountry} onChange={(e) => setHistoryCountry(e.target.value)} className="w-full">
+                    {COUNTRIES.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
                   </select>
                 </div>
 
