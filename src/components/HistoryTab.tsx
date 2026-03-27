@@ -175,6 +175,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
   const currentYear = new Date().getFullYear();
   const nextYear = currentYear + 1;
   const [yearFilter, setYearFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
   // Derive sorted country list from loaded trips
@@ -184,21 +185,20 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
 
   const countryFiltered = selectedCountry ? trips.filter(t => (t.country || 'Other') === selectedCountry) : trips;
 
-  const trips2025 = countryFiltered.filter(t => (t.year || 2025) === 2025);
-  const tripsCurrentYear = countryFiltered.filter(t => t.year === currentYear);
+  const matchesYear = (t: HistoricalTrip) => {
+    if (yearFilter === 'all') return true;
+    if (yearFilter === '2025') return (t.year || 2025) === 2025;
+    return t.year === Number(yearFilter);
+  };
+  const matchesStatus = (t: HistoricalTrip) => statusFilter === 'all' || t.status === statusFilter;
+
+  const trips2025 = countryFiltered.filter(t => (t.year || 2025) === 2025 && matchesStatus(t));
+  const tripsCurrentYear = countryFiltered.filter(t => t.year === currentYear && matchesStatus(t));
   const tripsCurrentYearRun = tripsCurrentYear.filter(t => t.status === 'run');
   const tripsCurrentYearBudgeted = tripsCurrentYear.filter(t => t.status !== 'run');
-  const tripsNextYear = countryFiltered.filter(t => t.year === nextYear);
+  const tripsNextYear = countryFiltered.filter(t => t.year === nextYear && matchesStatus(t));
 
-  const getFilteredTrips = (filter: string) =>
-    filter === '2025' ? trips2025
-    : filter === String(currentYear) ? tripsCurrentYear
-    : filter === `${currentYear}-run` ? tripsCurrentYearRun
-    : filter === `${currentYear}-budgeted` ? tripsCurrentYearBudgeted
-    : filter === String(nextYear) ? tripsNextYear
-    : countryFiltered;
-
-  const filteredTrips = getFilteredTrips(yearFilter);
+  const filteredTrips = countryFiltered.filter(t => matchesYear(t) && matchesStatus(t));
 
   const chartData = filteredTrips.map(trip => ({
     name: trip.name,
@@ -226,7 +226,8 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
             onClick={() => exportHistoricalTrips(
               filteredTrips,
               yearFilter === 'all' ? 'all_years' : yearFilter,
-              selectedCategory || 'all_categories'
+              selectedCategory || 'all_categories',
+              statusFilter === 'all' ? undefined : statusFilter
             )}
             className="btn btn-secondary text-sm"
           >
@@ -234,16 +235,26 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
           </button>
         </div>
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <p className="text-xs text-ag-text-muted">Year</p>
-            <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="text-sm">
-              <option value="all">All Years</option>
-              <option value="2025">2025 Only</option>
-              <option value={String(currentYear)}>{currentYear} — All</option>
-              <option value={`${currentYear}-run`}>{currentYear} — Trips Run</option>
-              <option value={`${currentYear}-budgeted`}>{currentYear} — Budgeted</option>
-              <option value={String(nextYear)}>{nextYear} Only</option>
-            </select>
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-ag-text-muted">Year</p>
+              <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="text-sm">
+                <option value="all">All Years</option>
+                <option value="2025">2025</option>
+                <option value={String(currentYear)}>{currentYear}</option>
+                <option value={String(nextYear)}>{nextYear}</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-ag-text-muted">Status</p>
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="text-sm">
+                <option value="all">All Statuses</option>
+                <option value="run">Run</option>
+                <option value="open-enrollment">Open Enrollment</option>
+                <option value="budgeted">Budgeted</option>
+                <option value="scratch">Scratch</option>
+              </select>
+            </div>
           </div>
           <div>
             <p className="text-xs text-ag-text-muted mb-2">Category</p>

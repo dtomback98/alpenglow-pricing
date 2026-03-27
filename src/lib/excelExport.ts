@@ -73,7 +73,7 @@ export function exportTripSummary(config: TripConfiguration, calculations: PaxCa
   XLSX.writeFile(wb, `${safeName}_summary.xlsx`);
 }
 
-export function exportHistoricalTrips(trips: HistoricalTrip[], yearLabel: string, categoryLabel: string) {
+export function exportHistoricalTrips(trips: HistoricalTrip[], yearLabel: string, categoryLabel: string, statusLabel?: string) {
   const wb = XLSX.utils.book_new();
 
   const data = trips.map((t) => ({
@@ -92,6 +92,7 @@ export function exportHistoricalTrips(trips: HistoricalTrip[], yearLabel: string
   const ws = XLSX.utils.json_to_sheet(data);
   XLSX.utils.book_append_sheet(wb, ws, 'Historical Trips');
 
-  const fileName = `trip_history_${yearLabel}_${categoryLabel}.xlsx`.replace(/[^a-zA-Z0-9_.-]/g, '_');
+  const statusPart = statusLabel ? `_${statusLabel}` : '';
+  const fileName = `trip_history_${yearLabel}_${categoryLabel}${statusPart}.xlsx`.replace(/[^a-zA-Z0-9_.-]/g, '_');
   XLSX.writeFile(wb, fileName);
 }
