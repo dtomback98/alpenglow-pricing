@@ -48,5 +48,13 @@ UPDATE historical_trips SET country = 'Chile'
 -- Kyrgyzstan
 UPDATE historical_trips SET country = 'Kyrgyzstan' WHERE LOWER(name) LIKE '%lenin%';
 
+-- Canada
+UPDATE historical_trips SET country = 'Canada' WHERE name = 'DiMM';
+
+-- Ecuador (specific trips by exact name, with renames)
+UPDATE historical_trips SET name = 'Ring of Fire - Ecuador', country = 'Ecuador' WHERE name = 'ROF';
+UPDATE historical_trips SET name = 'Women''s Climbing Adv - Ecuador', country = 'Ecuador' WHERE name = 'Womens Climbing Adv';
+UPDATE historical_trips SET name = 'PVT Thill - Ecuador', country = 'Ecuador' WHERE name = 'PVT Thill';
+
 -- Everything else → Unknown
 UPDATE historical_trips SET country = 'Unknown' WHERE country IS NULL;
