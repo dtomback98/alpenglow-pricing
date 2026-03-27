@@ -349,7 +349,11 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
       </div>
 
       {/* Dynamic trip tables — one per year+status group */}
-      {tripGroups.map(({ year, status, trips: groupTrips }) => {
+      {tripGroups.length === 0 ? (
+        <div className="card text-center text-ag-text-muted py-8 text-sm">
+          No trips match the current filters.
+        </div>
+      ) : tripGroups.map(({ year, status, trips: groupTrips }) => {
         const isEditable = year >= currentYear;
         return (
           <TripTable

@@ -63,7 +63,9 @@ export default function Header({
     if (!paxOptions.includes(historyPax)) return; // guard against invalid pax range state
     setHistorySaving(true);
     setHistorySuccess(false);
-    const success = await saveTripsToHistory(historyPax, historyCategory, historyYear, historyStatus, historyCountry);
+    const trimmed = historyCountry.trim();
+    const normalizedCountry = COUNTRIES.find(c => c.toLowerCase() === trimmed.toLowerCase()) ?? trimmed;
+    const success = await saveTripsToHistory(historyPax, historyCategory, historyYear, historyStatus, normalizedCountry);
     setHistorySaving(false);
     if (success) {
       setHistorySuccess(true);

@@ -29,7 +29,6 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
   const [configsLoading, setConfigsLoading] = useState(false);
 
   const currentYear = new Date().getFullYear();
-  const nextYear = currentYear + 1;
 
   // Re-fetch when refreshKey changes (after Save to History)
   useEffect(() => {
@@ -58,6 +57,11 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
       setConfigsLoading(false);
     });
   }, [trips]);
+
+  // Derive unique years from loaded trips for the year dropdown
+  const yearMap: Record<number, true> = {};
+  for (const t of trips) { yearMap[t.year || 2025] = true; }
+  const availableYears = Object.keys(yearMap).map(Number).sort((a, b) => b - a);
 
   // Apply year filter (category already filtered by the hook)
   const filteredTrips = trips.filter(t => {
@@ -135,9 +139,9 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
             className="text-sm"
           >
             <option value="all">All Years</option>
-            <option value="2025">2025 Only</option>
-            <option value={String(currentYear)}>{currentYear} Only</option>
-            <option value={String(nextYear)}>{nextYear} Only</option>
+            {availableYears.map(y => (
+              <option key={y} value={String(y)}>{y}</option>
+            ))}
           </select>
         </div>
       </div>

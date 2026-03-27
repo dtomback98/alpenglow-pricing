@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { TripConfiguration, PaxCalculation, HistoricalTrip } from './types';
+import { STATUS_LABELS } from './constants';
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
@@ -79,13 +80,14 @@ export function exportHistoricalTrips(trips: HistoricalTrip[], yearLabel: string
   const data = trips.map((t) => ({
     'Trip': t.name,
     'Category': t.category,
+    'Country': t.country || 'Other',
     'Year': t.year || 2025,
+    'Status': STATUS_LABELS[t.status || 'budgeted'] || t.status || 'Budgeted',
     'Pax': t.pax,
     '$/Pax': round2(t.pricePerPax),
     'Revenue': round2(t.revenue),
     'Gross Profit': round2(t.grossProfit),
     'Margin %': round2(t.margin),
-    'Status': t.status || 'budgeted',
     'Notes': t.notes || '',
   }));
 
