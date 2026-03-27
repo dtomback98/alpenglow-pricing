@@ -526,16 +526,21 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               </div>
               {!extHotelsMealsPerPax ? (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 items-end">
                     <div className="form-group">
-                      <label className="form-label">Hotel 1 — Nights</label>
+                      <label className="form-label">Hotel 1 — Name</label>
+                      <input type="text" value={ext.hotelsMeals.hotelLabel || ''} onChange={(e) => updateExtHotelsMeals({ hotelLabel: e.target.value })} className="w-full" placeholder="Hotel 1" />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Nights</label>
                       <NumInput value={ext.hotelsMeals.hotelNights ?? ext.extensionNights} onChange={(e) => updateExtHotelsMeals({ hotelNights: Number(e.target.value) || 1 })} className="w-full" />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">Hotel 1 — Rate ($)</label>
+                      <label className="form-label">Rate ($)</label>
                       <p className="text-xs text-ag-text-muted mb-1">{(ext.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (ext.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
                       <NumInput type="number" value={ext.hotelsMeals.hotelCostPerNight} onChange={(e) => updateExtHotelsMeals({ hotelCostPerNight: Number(e.target.value) })} className="w-full" />
                     </div>
+                    <div />
                   </div>
                   {(ext.hotelsMeals.additionalHotels || []).map((hotel, idx) => (
                     <div key={hotel.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 items-end">
@@ -588,9 +593,17 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                     </div>
                     <button onClick={copyExtHMToAllPax} className="btn btn-secondary text-xs ml-2">Copy to All Pax</button>
                   </div>
-                  <div className="form-group mb-3 w-40">
-                    <label className="form-label">Hotel 1 — Nights</label>
-                    <NumInput value={ext.hotelsMeals.hotelNights ?? ext.extensionNights} onChange={(e) => updateExtHotelsMeals({ hotelNights: Number(e.target.value) || 1 })} className="w-full" />
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 items-end">
+                    <div className="form-group">
+                      <label className="form-label">Hotel 1 — Name</label>
+                      <input type="text" value={ext.hotelsMeals.hotelLabel || ''} onChange={(e) => updateExtHotelsMeals({ hotelLabel: e.target.value })} className="w-full" placeholder="Hotel 1" />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Nights</label>
+                      <NumInput value={ext.hotelsMeals.hotelNights ?? ext.extensionNights} onChange={(e) => updateExtHotelsMeals({ hotelNights: Number(e.target.value) || 1 })} className="w-full" />
+                    </div>
+                    <div />
+                    <div />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
                     <div className="form-group">
