@@ -186,11 +186,17 @@ export default function Header({
 
                 <div className="form-group mb-4">
                   <label className="form-label">Country</label>
-                  <select value={historyCountry} onChange={(e) => setHistoryCountry(e.target.value)} className="w-full">
-                    {COUNTRIES.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                  <input
+                    type="text"
+                    list="country-suggestions"
+                    value={historyCountry}
+                    onChange={(e) => setHistoryCountry(e.target.value)}
+                    className="w-full"
+                    placeholder="Type or select a country"
+                  />
+                  <datalist id="country-suggestions">
+                    {COUNTRIES.map(c => <option key={c} value={c} />)}
+                  </datalist>
                 </div>
 
                 <div className="flex gap-2">
