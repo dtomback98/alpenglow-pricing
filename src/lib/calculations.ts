@@ -104,15 +104,24 @@ function calculateExtension(pax: number, config: TripConfiguration) {
       ? (config.hotelsMeals.additionalMealCostsByPax?.[pax] ?? config.hotelsMeals.additionalMealCosts)
       : (hm.additionalMealCostsByPax?.[pax] ?? hm.additionalMealCosts);
     const extHmMode = hm.inheritFromMain ? (config.hotelsMeals.mode || 'perPaxPerNight') : (hm.mode || 'perPaxPerNight');
+    // When inheriting, always use extensionNights; when custom, respect hotelNights override
+    const extHotelNights = hm.inheritFromMain
+      ? extension.extensionNights
+      : (hm.hotelNights ?? extension.extensionNights);
+    // Additional hotels only apply in custom mode
+    const extAdditionalHotels = hm.inheritFromMain ? [] : (hm.additionalHotels || []);
 
     if (extHmMode === 'perPaxPerNight') {
-      extensionHotelsCost = hotelRate * extension.extensionNights * extPaxCount;
+      extensionHotelsCost = hotelRate * extHotelNights * extPaxCount;
+      for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * h.nights * extPaxCount;
       extensionMealsCost = (lunchRate + dinnerRate) * extension.extensionNights * extPaxCount + additionalMeals;
     } else if (extHmMode === 'perNight') {
-      extensionHotelsCost = hotelRate * extension.extensionNights;
+      extensionHotelsCost = hotelRate * extHotelNights;
+      for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * h.nights;
       extensionMealsCost = (lunchRate + dinnerRate) * extension.extensionNights + additionalMeals;
     } else {
       extensionHotelsCost = hotelRate;
+      for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight;
       extensionMealsCost = lunchRate + dinnerRate + additionalMeals;
     }
   }
@@ -257,17 +266,22 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   const hmLunchRate = config.hotelsMeals.lunchCostByPax?.[pax] ?? config.hotelsMeals.lunchCostPerDay;
   const hmDinnerRate = config.hotelsMeals.dinnerCostByPax?.[pax] ?? config.hotelsMeals.dinnerCostPerNight;
   const hmAdditional = config.hotelsMeals.additionalMealCostsByPax?.[pax] ?? config.hotelsMeals.additionalMealCosts;
+  const hmHotelNights = config.hotelsMeals.hotelNights ?? config.tripNights;
+  const hmAdditionalHotels = config.hotelsMeals.additionalHotels || [];
   let hotelsCost = 0;
   let mealsCost = 0;
   if (hotelsMealsOn) {
     if (hmMode === 'perPaxPerNight') {
-      hotelsCost = hmHotelRate * config.tripNights * pax;
+      hotelsCost = hmHotelRate * hmHotelNights * pax;
+      for (const h of hmAdditionalHotels) hotelsCost += h.ratePerNight * h.nights * pax;
       mealsCost = (hmLunchRate * config.tripDays + hmDinnerRate * config.tripNights) * pax + hmAdditional;
     } else if (hmMode === 'perNight') {
-      hotelsCost = hmHotelRate * config.tripNights;
+      hotelsCost = hmHotelRate * hmHotelNights;
+      for (const h of hmAdditionalHotels) hotelsCost += h.ratePerNight * h.nights;
       mealsCost = hmLunchRate * config.tripDays + hmDinnerRate * config.tripNights + hmAdditional;
     } else {
       hotelsCost = hmHotelRate;
+      for (const h of hmAdditionalHotels) hotelsCost += h.ratePerNight;
       mealsCost = hmLunchRate + hmDinnerRate + hmAdditional;
     }
   }

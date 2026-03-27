@@ -12,6 +12,7 @@ export interface ExtensionHotelsMealsConfig {
   enabled: boolean;
   inheritFromMain: boolean;
   mode?: 'perPaxPerNight' | 'perNight' | 'total';
+  hotelNights?: number; // nights for primary hotel; defaults to extensionNights (custom mode only)
   hotelCostPerNight: number;
   lunchCostPerDay: number;
   dinnerCostPerNight: number;
@@ -20,6 +21,7 @@ export interface ExtensionHotelsMealsConfig {
   lunchCostByPax?: { [pax: number]: number };
   dinnerCostByPax?: { [pax: number]: number };
   additionalMealCostsByPax?: { [pax: number]: number };
+  additionalHotels?: AdditionalHotel[]; // custom mode only
 }
 
 export interface ExtensionStaffConfig {
@@ -71,9 +73,17 @@ export interface ExtensionConfig {
   logisticsConfig: ExtensionLogisticsConfig;
 }
 
+export interface AdditionalHotel {
+  id: string;
+  label: string;
+  nights: number;
+  ratePerNight: number;
+}
+
 export interface HotelsMealsConfig {
   enabled: boolean;
   mode?: 'perPaxPerNight' | 'perNight' | 'total';
+  hotelNights?: number; // nights for primary hotel; defaults to tripNights
   hotelCostPerNight: number;
   lunchCostPerDay: number;
   dinnerCostPerNight: number;
@@ -82,6 +92,7 @@ export interface HotelsMealsConfig {
   lunchCostByPax?: { [pax: number]: number };
   dinnerCostByPax?: { [pax: number]: number };
   additionalMealCostsByPax?: { [pax: number]: number };
+  additionalHotels?: AdditionalHotel[];
 }
 
 export interface LogisticsRate {

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TripConfiguration, StaffMember, TripSpecificCost, CustomTripCost } from '@/lib/types';
+import { TripConfiguration, StaffMember, TripSpecificCost, CustomTripCost, AdditionalHotel } from '@/lib/types';
 
 interface InputsTabProps {
   config: TripConfiguration;
@@ -534,28 +534,57 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               </div>
             </div>
             {!hotelsMealsPerPax ? (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="form-group">
-                  <label className="form-label">Hotel Cost ($)</label>
-                  <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total for entire trip'}</p>
-                  <NumInput type="number" value={config.hotelsMeals.hotelCostPerNight} onChange={(e) => updateNestedConfig('hotelsMeals', { hotelCostPerNight: Number(e.target.value) })} className="w-full" />
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                  <div className="form-group">
+                    <label className="form-label">Hotel 1 — Nights</label>
+                    <NumInput value={config.hotelsMeals.hotelNights ?? config.tripNights} onChange={(e) => updateNestedConfig('hotelsMeals', { hotelNights: Number(e.target.value) || 1 })} className="w-full" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Hotel 1 — Rate ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total for entire trip'}</p>
+                    <NumInput type="number" value={config.hotelsMeals.hotelCostPerNight} onChange={(e) => updateNestedConfig('hotelsMeals', { hotelCostPerNight: Number(e.target.value) })} className="w-full" />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Lunch Cost ($)</label>
-                  <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per day' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per day (flat)' : 'Total for entire trip'}</p>
-                  <NumInput type="number" value={config.hotelsMeals.lunchCostPerDay} onChange={(e) => updateNestedConfig('hotelsMeals', { lunchCostPerDay: Number(e.target.value) })} className="w-full" />
+                {(config.hotelsMeals.additionalHotels || []).map((hotel, idx) => (
+                  <div key={hotel.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 items-end">
+                    <div className="form-group">
+                      <label className="form-label">Hotel {idx + 2} — Name</label>
+                      <input type="text" value={hotel.label} onChange={(e) => { const updated = (config.hotelsMeals.additionalHotels || []).map((h, i) => i === idx ? { ...h, label: e.target.value } : h); updateNestedConfig('hotelsMeals', { additionalHotels: updated }); }} className="w-full" />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Nights</label>
+                      <NumInput value={hotel.nights} onChange={(e) => { const updated = (config.hotelsMeals.additionalHotels || []).map((h, i) => i === idx ? { ...h, nights: Number(e.target.value) || 1 } : h); updateNestedConfig('hotelsMeals', { additionalHotels: updated }); }} className="w-full" />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Rate ($)</label>
+                      <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
+                      <NumInput value={hotel.ratePerNight} onChange={(e) => { const updated = (config.hotelsMeals.additionalHotels || []).map((h, i) => i === idx ? { ...h, ratePerNight: Number(e.target.value) } : h); updateNestedConfig('hotelsMeals', { additionalHotels: updated }); }} className="w-full" />
+                    </div>
+                    <div className="form-group flex items-end pb-0.5">
+                      <button className="btn btn-danger text-xs" onClick={() => updateNestedConfig('hotelsMeals', { additionalHotels: (config.hotelsMeals.additionalHotels || []).filter((_, i) => i !== idx) })}>Remove</button>
+                    </div>
+                  </div>
+                ))}
+                <button className="btn btn-secondary text-xs mb-4" onClick={() => { const newHotel: AdditionalHotel = { id: Date.now().toString(), label: `Hotel ${(config.hotelsMeals.additionalHotels?.length || 0) + 2}`, nights: config.hotelsMeals.hotelNights ?? config.tripNights, ratePerNight: config.hotelsMeals.hotelCostPerNight }; updateNestedConfig('hotelsMeals', { additionalHotels: [...(config.hotelsMeals.additionalHotels || []), newHotel] }); }}>+ Add Hotel</button>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="form-group">
+                    <label className="form-label">Lunch Cost ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per day' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per day (flat)' : 'Total for entire trip'}</p>
+                    <NumInput type="number" value={config.hotelsMeals.lunchCostPerDay} onChange={(e) => updateNestedConfig('hotelsMeals', { lunchCostPerDay: Number(e.target.value) })} className="w-full" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Dinner Cost ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total for entire trip'}</p>
+                    <NumInput type="number" value={config.hotelsMeals.dinnerCostPerNight} onChange={(e) => updateNestedConfig('hotelsMeals', { dinnerCostPerNight: Number(e.target.value) })} className="w-full" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Additional Meal Costs ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">Flat total for entire trip</p>
+                    <NumInput type="number" value={config.hotelsMeals.additionalMealCosts} onChange={(e) => updateNestedConfig('hotelsMeals', { additionalMealCosts: Number(e.target.value) })} className="w-full" />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Dinner Cost ($)</label>
-                  <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total for entire trip'}</p>
-                  <NumInput type="number" value={config.hotelsMeals.dinnerCostPerNight} onChange={(e) => updateNestedConfig('hotelsMeals', { dinnerCostPerNight: Number(e.target.value) })} className="w-full" />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Additional Meal Costs ($)</label>
-                  <p className="text-xs text-ag-text-muted mb-1">Flat total for entire trip</p>
-                  <NumInput type="number" value={config.hotelsMeals.additionalMealCosts} onChange={(e) => updateNestedConfig('hotelsMeals', { additionalMealCosts: Number(e.target.value) })} className="w-full" />
-                </div>
-              </div>
+              </>
             ) : (
               <>
                 <div className="flex items-center justify-between mb-2">
@@ -567,6 +596,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     ))}
                   </div>
                   <button onClick={copyHMToAllPax} className="btn btn-secondary text-xs ml-2">Copy to All Pax</button>
+                </div>
+                <div className="form-group mb-3 w-40">
+                  <label className="form-label">Hotel 1 — Nights</label>
+                  <NumInput value={config.hotelsMeals.hotelNights ?? config.tripNights} onChange={(e) => updateNestedConfig('hotelsMeals', { hotelNights: Number(e.target.value) || 1 })} className="w-full" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
                   <div className="form-group">
@@ -590,6 +623,27 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     <NumInput type="number" value={config.hotelsMeals.additionalMealCostsByPax?.[effectiveHMPax] ?? config.hotelsMeals.additionalMealCosts} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, additionalMealCostsByPax: { ...prev.hotelsMeals.additionalMealCostsByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
                   </div>
                 </div>
+                {(config.hotelsMeals.additionalHotels || []).map((hotel, idx) => (
+                  <div key={hotel.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3 items-end">
+                    <div className="form-group">
+                      <label className="form-label">Hotel {idx + 2} — Name</label>
+                      <input type="text" value={hotel.label} onChange={(e) => { const updated = (config.hotelsMeals.additionalHotels || []).map((h, i) => i === idx ? { ...h, label: e.target.value } : h); updateNestedConfig('hotelsMeals', { additionalHotels: updated }); }} className="w-full" />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Nights</label>
+                      <NumInput value={hotel.nights} onChange={(e) => { const updated = (config.hotelsMeals.additionalHotels || []).map((h, i) => i === idx ? { ...h, nights: Number(e.target.value) || 1 } : h); updateNestedConfig('hotelsMeals', { additionalHotels: updated }); }} className="w-full" />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Rate ($)</label>
+                      <p className="text-xs text-ag-text-muted mb-1">{(config.hotelsMeals.mode || 'perPaxPerNight') === 'perPaxPerNight' ? 'Per pax, per night' : (config.hotelsMeals.mode || 'perPaxPerNight') === 'perNight' ? 'Per night (flat)' : 'Total'}</p>
+                      <NumInput value={hotel.ratePerNight} onChange={(e) => { const updated = (config.hotelsMeals.additionalHotels || []).map((h, i) => i === idx ? { ...h, ratePerNight: Number(e.target.value) } : h); updateNestedConfig('hotelsMeals', { additionalHotels: updated }); }} className="w-full" />
+                    </div>
+                    <div className="form-group flex items-end pb-0.5">
+                      <button className="btn btn-danger text-xs" onClick={() => updateNestedConfig('hotelsMeals', { additionalHotels: (config.hotelsMeals.additionalHotels || []).filter((_, i) => i !== idx) })}>Remove</button>
+                    </div>
+                  </div>
+                ))}
+                <button className="btn btn-secondary text-xs mt-3" onClick={() => { const newHotel: AdditionalHotel = { id: Date.now().toString(), label: `Hotel ${(config.hotelsMeals.additionalHotels?.length || 0) + 2}`, nights: config.hotelsMeals.hotelNights ?? config.tripNights, ratePerNight: config.hotelsMeals.hotelCostPerNight }; updateNestedConfig('hotelsMeals', { additionalHotels: [...(config.hotelsMeals.additionalHotels || []), newHotel] }); }}>+ Add Hotel</button>
               </>
             )}
           </>
