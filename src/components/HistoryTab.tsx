@@ -130,15 +130,19 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip }: {
                         Load
                       </button>
                     )}
-                    {onUpdateTrip && (trip.status === 'budgeted' || trip.status === 'open-enrollment') && (
-                      <button
-                        onClick={async () => {
-                          await onUpdateTrip(trip.id, { status: 'run' });
+                    {onUpdateTrip && (
+                      <select
+                        value={trip.status || 'budgeted'}
+                        onChange={async (e) => {
+                          await onUpdateTrip(trip.id, { status: e.target.value });
                         }}
-                        className="btn btn-secondary text-xs"
+                        className="text-xs"
                       >
-                        Mark Run
-                      </button>
+                        <option value="budgeted">Budgeted</option>
+                        <option value="open-enrollment">Open Enrollment</option>
+                        <option value="run">Run</option>
+                        <option value="scratch">Scratch</option>
+                      </select>
                     )}
                     {onDeleteTrip && (
                       <button
