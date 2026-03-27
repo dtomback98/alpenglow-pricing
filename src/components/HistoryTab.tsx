@@ -70,9 +70,15 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip }: {
               </td>
               <td>
                 <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  trip.status === 'run' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                  trip.status === 'run' ? 'bg-green-500/20 text-green-400'
+                  : trip.status === 'scratch' ? 'bg-red-500/20 text-red-400'
+                  : trip.status === 'open-enrollment' ? 'bg-blue-500/20 text-blue-400'
+                  : 'bg-yellow-500/20 text-yellow-400'
                 }`}>
-                  {trip.status === 'run' ? 'Run' : 'Budgeted'}
+                  {trip.status === 'run' ? 'Run'
+                    : trip.status === 'scratch' ? 'Scratch'
+                    : trip.status === 'open-enrollment' ? 'Open Enrollment'
+                    : 'Budgeted'}
                 </span>
               </td>
               <td>{trip.pax}</td>
@@ -124,7 +130,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip }: {
                         Load
                       </button>
                     )}
-                    {onUpdateTrip && trip.status === 'budgeted' && (
+                    {onUpdateTrip && (trip.status === 'budgeted' || trip.status === 'open-enrollment') && (
                       <button
                         onClick={async () => {
                           await onUpdateTrip(trip.id, { status: 'run' });
