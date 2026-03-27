@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useHistoricalData } from '@/hooks/useHistoricalData';
-import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants';
+import { CATEGORY_COLORS, CATEGORY_LABELS, STATUS_ORDER, STATUS_LABELS, STATUS_BADGE_CLASSES } from '@/lib/constants';
 import { formatCurrency, formatPercent, getMarginColor } from '@/lib/calculations';
 import { exportHistoricalTrips } from '@/lib/excelExport';
 import { HistoricalTrip } from '@/lib/types';
@@ -69,16 +69,8 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip }: {
                 )}
               </td>
               <td>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  trip.status === 'run' ? 'bg-green-500/20 text-green-400'
-                  : trip.status === 'scratch' ? 'bg-red-500/20 text-red-400'
-                  : trip.status === 'open-enrollment' ? 'bg-blue-500/20 text-blue-400'
-                  : 'bg-yellow-500/20 text-yellow-400'
-                }`}>
-                  {trip.status === 'run' ? 'Run'
-                    : trip.status === 'scratch' ? 'Scratch'
-                    : trip.status === 'open-enrollment' ? 'Open Enrollment'
-                    : 'Budgeted'}
+                <span className={`px-2 py-1 rounded text-xs font-medium ${STATUS_BADGE_CLASSES[trip.status || 'budgeted'] || STATUS_BADGE_CLASSES['budgeted']}`}>
+                  {STATUS_LABELS[trip.status || 'budgeted'] || 'Budgeted'}
                 </span>
               </td>
               <td>{trip.pax}</td>
@@ -199,13 +191,6 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
   const filteredTrips = countryFiltered.filter(t => matchesYear(t) && matchesStatus(t));
 
   // Group filtered trips by year + status for dynamic table sections
-  const STATUS_ORDER = ['open-enrollment', 'budgeted', 'run', 'scratch'];
-  const STATUS_LABELS: Record<string, string> = {
-    'run': 'Run',
-    'budgeted': 'Budgeted',
-    'open-enrollment': 'Open Enrollment',
-    'scratch': 'Scratch',
-  };
   const groupMap: Record<string, HistoricalTrip[]> = {};
   for (const t of filteredTrips) {
     const key = `${t.year || 2025}|${t.status || 'budgeted'}`;

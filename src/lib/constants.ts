@@ -183,6 +183,23 @@ export const CATEGORY_COLORS: Record<string, string> = {
   '8K': '#ef4444',
 };
 
+// Trip status constants
+export const STATUS_ORDER = ['open-enrollment', 'budgeted', 'run', 'scratch'];
+
+export const STATUS_LABELS: Record<string, string> = {
+  'run': 'Run',
+  'budgeted': 'Budgeted',
+  'open-enrollment': 'Open Enrollment',
+  'scratch': 'Scratch',
+};
+
+export const STATUS_BADGE_CLASSES: Record<string, string> = {
+  'run': 'bg-green-500/20 text-green-400',
+  'scratch': 'bg-red-500/20 text-red-400',
+  'open-enrollment': 'bg-blue-500/20 text-blue-400',
+  'budgeted': 'bg-yellow-500/20 text-yellow-400',
+};
+
 // Category labels
 export const CATEGORY_LABELS: Record<string, string> = {
   All: 'All',

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useHistoricalData } from '@/hooks/useHistoricalData';
-import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants';
+import { CATEGORY_COLORS, CATEGORY_LABELS, STATUS_LABELS, STATUS_BADGE_CLASSES } from '@/lib/constants';
 import { formatCurrency, formatPercent, getMarginColor, calculateFinancialBreakdown } from '@/lib/calculations';
 import { fetchTripConfigurationsByIds } from '@/lib/supabase';
 import { TripConfiguration, FinancialBreakdown } from '@/lib/types';
@@ -61,10 +61,9 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
 
   // Apply year filter (category already filtered by the hook)
   const filteredTrips = trips.filter(t => {
+    if (yearFilter === 'all') return true;
     if (yearFilter === '2025') return (t.year || 2025) === 2025;
-    if (yearFilter === String(currentYear)) return t.year === currentYear;
-    if (yearFilter === String(nextYear)) return t.year === nextYear;
-    return true;
+    return t.year === Number(yearFilter);
   });
 
   // Compute financial breakdown for each filtered trip
@@ -227,10 +226,8 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
                   </td>
                   <td>{trip.year || 2025}</td>
                   <td>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      trip.status === 'run' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                    }`}>
-                      {trip.status === 'run' ? 'Run' : 'Budgeted'}
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${STATUS_BADGE_CLASSES[trip.status || 'budgeted'] || STATUS_BADGE_CLASSES['budgeted']}`}>
+                      {STATUS_LABELS[trip.status || 'budgeted'] || 'Budgeted'}
                     </span>
                   </td>
                   <td>{trip.pax}</td>
