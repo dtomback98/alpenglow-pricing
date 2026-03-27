@@ -191,6 +191,11 @@ export default function Header({
                     list="country-suggestions"
                     value={historyCountry}
                     onChange={(e) => setHistoryCountry(e.target.value)}
+                    onBlur={(e) => {
+                      const trimmed = e.target.value.trim();
+                      const match = COUNTRIES.find(c => c.toLowerCase() === trimmed.toLowerCase());
+                      setHistoryCountry(match ?? trimmed);
+                    }}
                     className="w-full"
                     placeholder="Type or select a country"
                   />
