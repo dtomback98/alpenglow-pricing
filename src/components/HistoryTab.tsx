@@ -196,13 +196,28 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
   };
   const matchesStatus = (t: HistoricalTrip) => statusFilter === 'all' || t.status === statusFilter;
 
-  const trips2025 = countryFiltered.filter(t => (t.year || 2025) === 2025 && matchesStatus(t));
-  const tripsCurrentYear = countryFiltered.filter(t => t.year === currentYear && matchesStatus(t));
-  const tripsCurrentYearRun = tripsCurrentYear.filter(t => t.status === 'run');
-  const tripsCurrentYearBudgeted = tripsCurrentYear.filter(t => t.status !== 'run');
-  const tripsNextYear = countryFiltered.filter(t => t.year === nextYear && matchesStatus(t));
-
   const filteredTrips = countryFiltered.filter(t => matchesYear(t) && matchesStatus(t));
+
+  // Group filtered trips by year + status for dynamic table sections
+  const STATUS_ORDER = ['open-enrollment', 'budgeted', 'run', 'scratch'];
+  const STATUS_LABELS: Record<string, string> = {
+    'run': 'Run',
+    'budgeted': 'Budgeted',
+    'open-enrollment': 'Open Enrollment',
+    'scratch': 'Scratch',
+  };
+  const groupMap: Record<string, HistoricalTrip[]> = {};
+  for (const t of filteredTrips) {
+    const key = `${t.year || 2025}|${t.status || 'budgeted'}`;
+    if (!groupMap[key]) groupMap[key] = [];
+    groupMap[key].push(t);
+  }
+  const tripGroups = Object.entries(groupMap)
+    .map(([key, groupTrips]) => {
+      const [yearStr, status] = key.split('|');
+      return { year: Number(yearStr), status, trips: groupTrips };
+    })
+    .sort((a, b) => b.year - a.year || STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
 
   const chartData = filteredTrips.map(trip => ({
     name: trip.name,
@@ -343,19 +358,20 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
         </div>
       </div>
 
-      {/* Next Year Trip Performance */}
-      {tripsNextYear.length > 0 && (
-        <TripTable trips={tripsNextYear} title={`${nextYear} Budgeted Trips`} onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} onUpdateTrip={updateTrip} />
-      )}
-
-      {/* Current Year Trips Run */}
-      <TripTable trips={tripsCurrentYearRun} title={`${currentYear} Trips Run`} onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} onUpdateTrip={updateTrip} />
-
-      {/* Current Year Budgeted Trips */}
-      <TripTable trips={tripsCurrentYearBudgeted} title={`${currentYear} Budgeted Trips`} onLoadTrip={onLoadTrip} onDeleteTrip={deleteTrip} onUpdateTrip={updateTrip} />
-
-      {/* 2025 Trip Performance */}
-      <TripTable trips={trips2025} title="2025 Trip Performance" />
+      {/* Dynamic trip tables — one per year+status group */}
+      {tripGroups.map(({ year, status, trips: groupTrips }) => {
+        const isEditable = year >= currentYear;
+        return (
+          <TripTable
+            key={`${year}-${status}`}
+            trips={groupTrips}
+            title={`${year} — ${STATUS_LABELS[status] || status}`}
+            onLoadTrip={isEditable ? onLoadTrip : undefined}
+            onDeleteTrip={isEditable ? deleteTrip : undefined}
+            onUpdateTrip={isEditable ? updateTrip : undefined}
+          />
+        );
+      })}
 
       {/* Target margins footer */}
       <div className="card text-center text-sm">
