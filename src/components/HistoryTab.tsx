@@ -169,7 +169,6 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
     }
   }, [refreshKey, refresh]);
   const currentYear = new Date().getFullYear();
-  const nextYear = currentYear + 1;
   const [yearFilter, setYearFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
@@ -180,6 +179,11 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
   const availableCountries = Object.keys(countryMap).sort();
 
   const countryFiltered = selectedCountry ? trips.filter(t => (t.country || 'Other') === selectedCountry) : trips;
+
+  // Derive unique years from all trips for the year dropdown
+  const yearMap: Record<number, true> = {};
+  for (const t of trips) { yearMap[t.year || 2025] = true; }
+  const availableYears = Object.keys(yearMap).map(Number).sort((a, b) => b - a);
 
   const matchesYear = (t: HistoricalTrip) => {
     if (yearFilter === 'all') return true;
@@ -200,7 +204,8 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
   const tripGroups = Object.entries(groupMap)
     .map(([key, groupTrips]) => {
       const [yearStr, status] = key.split('|');
-      return { year: Number(yearStr), status, trips: groupTrips };
+      const sorted = [...groupTrips].sort((a, b) => a.name.localeCompare(b.name));
+      return { year: Number(yearStr), status, trips: sorted };
     })
     .sort((a, b) => b.year - a.year || STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
 
@@ -244,9 +249,9 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
               <p className="text-xs text-ag-text-muted">Year</p>
               <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="text-sm">
                 <option value="all">All Years</option>
-                <option value="2025">2025</option>
-                <option value={String(currentYear)}>{currentYear}</option>
-                <option value={String(nextYear)}>{nextYear}</option>
+                {availableYears.map(y => (
+                  <option key={y} value={String(y)}>{y}</option>
+                ))}
               </select>
             </div>
             <div className="flex items-center gap-3">

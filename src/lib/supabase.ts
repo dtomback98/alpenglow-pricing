@@ -139,7 +139,7 @@ function rowToConfig(row: any): TripConfiguration {
     tripNights: row.trip_nights,
     paxMin: row.pax_min || 1,
     paxMax: row.pax_max || 16,
-    paxStep: row.pax_step || 1,
+    paxStep: Math.max(1, Math.round(row.pax_step || 1)),
     inflationRate: row.inflation_rate || 0,
     discountsEnabled: row.discounts_enabled ?? true,
     earlyBirdDiscount: Number(row.early_bird_discount),

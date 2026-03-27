@@ -467,11 +467,11 @@ export function calculateFinancialBreakdown(pax: number, config: TripConfigurati
     calc.extensionLogisticsCost +
     calc.extensionHotelsCost +
     calc.extensionMealsCost +
-    calc.extensionSingleRoomCost;
+    calc.extensionSingleRoomCost +
+    calc.guideFlightsCost;
 
   const guideWages =
     calc.staffCost +
-    calc.guideFlightsCost +
     calc.staffMealsCost +
     calc.extensionStaffCost;
 
