@@ -333,7 +333,7 @@ export async function fetchHistoricalTrips(category?: string): Promise<Historica
     year: row.year || 2025,
     tripConfigId: row.trip_config_id || undefined,
     status: (row.status === 'run' || row.status === 'budgeted') ? row.status : (row.year && row.year <= 2025 ? 'run' : 'budgeted'),
-    country: row.country || 'Unknown',
+    country: row.country || 'Other',
   }));
 }
 
@@ -380,7 +380,7 @@ export async function saveToHistory(
     trip_config_id: config.id,
     notes: '',
     status: status || 'budgeted',
-    country: country || 'Unknown',
+    country: country || 'Other',
   };
 
   const { error } = await supabase

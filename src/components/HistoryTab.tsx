@@ -173,10 +173,10 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
 
   // Derive sorted country list from loaded trips
   const countryMap: Record<string, true> = {};
-  for (const t of trips) { countryMap[t.country || 'Unknown'] = true; }
+  for (const t of trips) { countryMap[t.country || 'Other'] = true; }
   const availableCountries = Object.keys(countryMap).sort();
 
-  const countryFiltered = selectedCountry ? trips.filter(t => (t.country || 'Unknown') === selectedCountry) : trips;
+  const countryFiltered = selectedCountry ? trips.filter(t => (t.country || 'Other') === selectedCountry) : trips;
 
   const trips2025 = countryFiltered.filter(t => (t.year || 2025) === 2025);
   const tripsCurrentYear = countryFiltered.filter(t => t.year === currentYear);

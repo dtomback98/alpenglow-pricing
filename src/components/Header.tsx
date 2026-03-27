@@ -5,7 +5,7 @@ import { TripConfiguration } from '@/lib/types';
 import TripSelector from './TripSelector';
 
 const CATEGORIES = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
-const COUNTRIES = ['Argentina', 'Bolivia', 'Chile', 'Ecuador', 'Japan', 'Kyrgyzstan', 'Mexico', 'Nepal', 'Peru', 'Tanzania', 'Unknown'];
+const COUNTRIES = ['Antarctica', 'Argentina', 'Bolivia', 'Canada', 'Chile', 'Ecuador', 'Japan', 'Kyrgyzstan', 'Mexico', 'Nepal', 'Peru', 'Tanzania', 'Other'];
 
 interface HeaderProps {
   config: TripConfiguration;
@@ -44,7 +44,7 @@ export default function Header({
   const currentYear = new Date().getFullYear();
   const [historyYear, setHistoryYear] = useState(currentYear);
   const [historyStatus, setHistoryStatus] = useState<'budgeted' | 'run'>('budgeted');
-  const [historyCountry, setHistoryCountry] = useState('Unknown');
+  const [historyCountry, setHistoryCountry] = useState('Other');
 
   const paxMin = config.paxMin || 1;
   const paxMax = config.paxMax || 16;
