@@ -65,7 +65,7 @@ export default function PricingTool() {
           />
         )}
         {activeTab === 'history' && (
-          <HistoryTab onLoadTrip={handleLoadTrip} refreshKey={historyRefreshKey} />
+          <HistoryTab onLoadTrip={handleLoadTrip} refreshKey={historyRefreshKey} onTripConfigRenamed={tripData.refreshTrips} />
         )}
         {activeTab === 'financials' && (
           <FinancialsTab refreshKey={historyRefreshKey} />

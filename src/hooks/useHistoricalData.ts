@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { HistoricalTrip } from '@/lib/types';
-import { fetchHistoricalTrips, deleteHistoricalTrip, updateHistoricalTrip, isSupabaseConfigured } from '@/lib/supabase';
+import { fetchHistoricalTrips, deleteHistoricalTrip, updateHistoricalTrip, updateTripConfigurationName, isSupabaseConfigured } from '@/lib/supabase';
 import historicalData from '@/lib/historical-data.json';
 
 // Type the imported JSON data
@@ -16,7 +16,7 @@ interface UseHistoricalDataReturn {
   setSelectedCategory: (category: string | null) => void;
   refresh: () => Promise<void>;
   deleteTrip: (id: string) => Promise<boolean>;
-  updateTrip: (id: string, updates: { status?: string; notes?: string }) => Promise<boolean>;
+  updateTrip: (id: string, updates: { status?: string; notes?: string; name?: string }) => Promise<boolean>;
 }
 
 export function useHistoricalData(): UseHistoricalDataReturn {
@@ -73,10 +73,16 @@ export function useHistoricalData(): UseHistoricalDataReturn {
     }
   }, [loadData]);
 
-  const updateTrip = useCallback(async (id: string, updates: { status?: string; notes?: string }): Promise<boolean> => {
+  const updateTrip = useCallback(async (id: string, updates: { status?: string; notes?: string; name?: string }): Promise<boolean> => {
     try {
       const success = await updateHistoricalTrip(id, updates);
       if (success) {
+        if (updates.name !== undefined) {
+          const trip = trips.find(t => t.id === id);
+          if (trip?.tripConfigId) {
+            await updateTripConfigurationName(trip.tripConfigId, updates.name);
+          }
+        }
         await loadData();
       }
       return success;
@@ -85,7 +91,7 @@ export function useHistoricalData(): UseHistoricalDataReturn {
       setError('Failed to update trip');
       return false;
     }
-  }, [loadData]);
+  }, [loadData, trips]);
 
   return {
     trips,

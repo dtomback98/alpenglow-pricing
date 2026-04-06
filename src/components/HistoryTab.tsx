@@ -13,17 +13,21 @@ const CATEGORIES = ['All', 'Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 interface HistoryTabProps {
   onLoadTrip?: (tripConfigId: string) => void;
   refreshKey?: number;
+  onTripConfigRenamed?: () => void;
 }
 
-function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip }: {
+function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTripConfigRenamed }: {
   trips: HistoricalTrip[];
   title: string;
   onLoadTrip?: (id: string) => void;
   onDeleteTrip?: (id: string) => void;
-  onUpdateTrip?: (id: string, updates: { status?: string; notes?: string }) => Promise<boolean>;
+  onUpdateTrip?: (id: string, updates: { status?: string; notes?: string; name?: string }) => Promise<boolean>;
+  onTripConfigRenamed?: () => void;
 }) {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editNoteText, setEditNoteText] = useState('');
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editNameText, setEditNameText] = useState('');
 
   if (trips.length === 0) {
     return (
@@ -57,7 +61,36 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip }: {
         <tbody>
           {trips.map((trip) => (
             <tr key={trip.id}>
-              <td className="font-medium">{trip.name}</td>
+              <td className="font-medium">
+                {editingNameId === trip.id ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={editNameText}
+                      onChange={(e) => setEditNameText(e.target.value)}
+                      className="text-sm w-36"
+                    />
+                    <button className="btn btn-primary text-xs" onClick={async () => {
+                      if (onUpdateTrip) {
+                        await onUpdateTrip(trip.id, { name: editNameText });
+                        onTripConfigRenamed?.();
+                      }
+                      setEditingNameId(null);
+                    }}>Save</button>
+                    <button className="btn btn-secondary text-xs" onClick={() => setEditingNameId(null)}>Cancel</button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <span>{trip.name}</span>
+                    {onUpdateTrip && (
+                      <button className="btn btn-secondary text-xs shrink-0" onClick={() => {
+                        setEditingNameId(trip.id);
+                        setEditNameText(trip.name);
+                      }}>Edit</button>
+                    )}
+                  </div>
+                )}
+              </td>
               <td>
                 {trip.category && (
                   <span
@@ -159,7 +192,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip }: {
   );
 }
 
-export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) {
+export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed }: HistoryTabProps) {
   const { trips, loading, error, selectedCategory, setSelectedCategory, deleteTrip, updateTrip, refresh } = useHistoricalData();
 
   // Re-fetch when refreshKey changes (e.g. after Save to History)
@@ -363,6 +396,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey }: HistoryTabProps) 
             onLoadTrip={isEditable ? onLoadTrip : undefined}
             onDeleteTrip={isEditable ? deleteTrip : undefined}
             onUpdateTrip={isEditable ? updateTrip : undefined}
+            onTripConfigRenamed={isEditable ? onTripConfigRenamed : undefined}
           />
         );
       })}

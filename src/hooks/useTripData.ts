@@ -23,6 +23,7 @@ interface UseTripDataReturn {
   saveTripsToHistory: (pax: number, category: string, year?: number, status?: string, country?: string) => Promise<boolean>;
   deleteTrip: (id: string) => Promise<void>;
   createNewTrip: () => void;
+  refreshTrips: () => Promise<void>;
   loading: boolean;
   saving: boolean;
   error: string | null;
@@ -214,6 +215,17 @@ export function useTripData(): UseTripDataReturn {
     }
   }, [selectedTripId]);
 
+  // Refresh the trips list and sync current config name if it was renamed externally
+  const refreshTrips = useCallback(async () => {
+    if (!isSupabaseConfigured()) return;
+    const updatedTrips = await fetchTripConfigurations();
+    setTrips(updatedTrips);
+    if (selectedTripId) {
+      const updated = updatedTrips.find(t => t.id === selectedTripId);
+      if (updated) setConfigState(prev => ({ ...prev, name: updated.name }));
+    }
+  }, [selectedTripId]);
+
   // Create a new trip
   const createNewTrip = useCallback(() => {
     setSelectedTripId(null);
@@ -231,6 +243,7 @@ export function useTripData(): UseTripDataReturn {
     saveTripsToHistory,
     deleteTrip,
     createNewTrip,
+    refreshTrips,
     loading,
     saving,
     error,
