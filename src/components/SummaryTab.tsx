@@ -9,9 +9,10 @@ import MarginChart from './charts/MarginChart';
 
 interface SummaryTabProps {
   config: TripConfiguration;
+  updateConfig: (updates: Partial<TripConfiguration>) => void;
 }
 
-export default function SummaryTab({ config }: SummaryTabProps) {
+export default function SummaryTab({ config, updateConfig }: SummaryTabProps) {
   const [grossMarginPerPax, setGrossMarginPerPax] = useState(false);
   const [revenuePerPax, setRevenuePerPax] = useState(false);
   const [costsPerPax, setCostsPerPax] = useState(false);
@@ -87,6 +88,18 @@ export default function SummaryTab({ config }: SummaryTabProps) {
           </div>
         );
       })()}
+
+      {/* Trip Notes */}
+      <div className="card">
+        <h2 className="text-lg font-semibold mb-3">Trip Notes</h2>
+        <textarea
+          value={config.notes || ''}
+          onChange={(e) => updateConfig({ notes: e.target.value })}
+          className="w-full text-sm resize-y"
+          rows={3}
+          placeholder="Add notes for this trip..."
+        />
+      </div>
 
       {/* Core vs Extension vs Combined Margins */}
       <div className="card overflow-x-auto">

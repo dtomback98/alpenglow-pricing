@@ -198,6 +198,7 @@ export interface UiPreferences {
 export interface TripConfiguration {
   id?: string;
   name: string;
+  notes?: string;
   createdAt?: string;
   updatedAt?: string;
 

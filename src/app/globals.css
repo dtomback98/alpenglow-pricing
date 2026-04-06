@@ -39,7 +39,8 @@ body {
 /* Input styling */
 input[type="number"],
 input[type="text"],
-select {
+select,
+textarea {
   @apply bg-ag-card-lighter border border-ag-border rounded px-3 py-2 text-ag-text;
   @apply focus:outline-none focus:border-ag-accent focus:ring-1 focus:ring-ag-accent;
 }

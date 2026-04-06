@@ -156,6 +156,7 @@ function rowToConfig(row: any): TripConfiguration {
     uiPreferences: row.ui_preferences || {},
     tripPriceMode: row.ui_preferences?.tripPriceMode || undefined,
     tripPriceByPax: row.ui_preferences?.tripPriceByPax || undefined,
+    notes: row.ui_preferences?.notes || '',
   };
 }
 
@@ -185,7 +186,7 @@ function configToRow(config: TripConfiguration): any {
     transport_config: config.transportConfig,
     trip_specific: config.tripSpecific,
     // Clear tripPriceMode when per-pax pricing is active to prevent mode+byPax co-persistence inflating revenue
-    ui_preferences: { ...(config.uiPreferences || {}), tripPriceMode: config.tripPriceByPax ? undefined : config.tripPriceMode, tripPriceByPax: config.tripPriceByPax },
+    ui_preferences: { ...(config.uiPreferences || {}), tripPriceMode: config.tripPriceByPax ? undefined : config.tripPriceMode, tripPriceByPax: config.tripPriceByPax, notes: config.notes || '' },
   };
 }
 
@@ -378,7 +379,7 @@ export async function saveToHistory(
     year: year || new Date().getFullYear(),
     trip_date: new Date().toISOString().split('T')[0],
     trip_config_id: config.id,
-    notes: '',
+    notes: config.notes || '',
     status: status || 'budgeted',
     country: country || 'Other',
   };

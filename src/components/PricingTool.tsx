@@ -50,7 +50,7 @@ export default function PricingTool() {
 
       <div className="mt-6">
         {activeTab === 'summary' && (
-          <SummaryTab config={tripData.config} />
+          <SummaryTab config={tripData.config} updateConfig={tripData.updateConfig} />
         )}
         {activeTab === 'inputs-core' && (
           <InputsTab
