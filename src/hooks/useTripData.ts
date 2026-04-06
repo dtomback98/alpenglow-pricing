@@ -15,7 +15,7 @@ import {
 interface UseTripDataReturn {
   config: TripConfiguration;
   setConfig: (config: TripConfiguration) => void;
-  updateConfig: (updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>)) => void;
+  updateConfig: (updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>), options?: { silent?: boolean }) => void;
   trips: TripConfiguration[];
   selectedTripId: string | null;
   selectTrip: (id: string | null) => void;
@@ -76,12 +76,13 @@ export function useTripData(): UseTripDataReturn {
   }, []);
 
   // Update config with partial updates (accepts object or function for latest-state reads)
-  const updateConfig = useCallback((updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>)) => {
+  // Pass { silent: true } for system-initiated normalizations that should not mark the config dirty
+  const updateConfig = useCallback((updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>), options?: { silent?: boolean }) => {
     setConfigState(prev => {
       const resolved = typeof updates === 'function' ? updates(prev) : updates;
       return { ...prev, ...resolved };
     });
-    setIsDirty(true);
+    if (!options?.silent) setIsDirty(true);
   }, []);
 
   // Set entire config

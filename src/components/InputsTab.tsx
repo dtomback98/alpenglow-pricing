@@ -5,7 +5,7 @@ import { TripConfiguration, StaffMember, TripSpecificCost, CustomTripCost, Addit
 
 interface InputsTabProps {
   config: TripConfiguration;
-  updateConfig: (updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>)) => void;
+  updateConfig: (updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>), options?: { silent?: boolean }) => void;
 }
 
 type NestedConfigKey = 'extension' | 'hotelsMeals' | 'logistics' | 'staffConfig' | 'transportConfig' | 'tripSpecific' | 'singleSupplement';
@@ -85,6 +85,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   useEffect(() => { setSelectedStaffPax(paxMin); }, [paxMin]);
 
   // Auto-sync staff days with tripDays when not using custom days
+  // Uses silent:true so tab mounts don't mark the config dirty when no change occurs
   useEffect(() => {
     updateConfig(prev => {
       if (prev.staffConfig.useCustomStaffDays || prev.staffConfig.enabled === false) return {};
@@ -98,7 +99,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
       }
       if (!changed) return {};
       return { staffConfig: { ...prev.staffConfig, staffByPax: newStaffByPax } };
-    });
+    }, { silent: true });
   }, [config.tripDays, config.staffConfig.useCustomStaffDays, updateConfig]);
   const pricingPerPax = config.uiPreferences?.pricingPerPax ?? false;
   const discountsPerPax = config.uiPreferences?.discountsPerPax ?? false;
