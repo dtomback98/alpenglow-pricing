@@ -17,6 +17,7 @@ interface HeaderProps {
   saveTripsToHistory: (pax: number, category: string, year?: number, status?: string, country?: string) => Promise<boolean>;
   createNewTrip: () => void;
   deleteTrip: (id: string) => Promise<void>;
+  isDirty: boolean;
   saving: boolean;
   isConnected: boolean;
   error: string | null;
@@ -32,6 +33,7 @@ export default function Header({
   saveTripsToHistory,
   createNewTrip,
   deleteTrip,
+  isDirty,
   saving,
   isConnected,
   error,
@@ -76,6 +78,18 @@ export default function Header({
     }
   };
 
+  const UNSAVED_WARNING = 'You have unsaved changes that will be lost. Continue?';
+
+  const guardedSelectTrip = (id: string | null) => {
+    if (isDirty && !confirm(UNSAVED_WARNING)) return;
+    selectTrip(id);
+  };
+
+  const guardedCreateNewTrip = () => {
+    if (isDirty && !confirm(UNSAVED_WARNING)) return;
+    createNewTrip();
+  };
+
   return (
     <header className="card mb-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -105,8 +119,8 @@ export default function Header({
           <TripSelector
             trips={trips}
             selectedTripId={selectedTripId}
-            selectTrip={selectTrip}
-            createNewTrip={createNewTrip}
+            selectTrip={guardedSelectTrip}
+            createNewTrip={guardedCreateNewTrip}
             deleteTrip={deleteTrip}
           />
 
@@ -123,9 +137,9 @@ export default function Header({
           <button
             onClick={saveTrip}
             disabled={saving}
-            className="btn btn-primary"
+            className={`btn ${isDirty ? 'btn-primary ring-2 ring-ag-accent ring-offset-2 ring-offset-ag-bg' : 'btn-secondary'}`}
           >
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? 'Saving...' : isDirty ? 'Save*' : 'Saved'}
           </button>
 
           {/* Save to History button */}

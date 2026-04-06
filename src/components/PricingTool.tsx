@@ -41,6 +41,7 @@ export default function PricingTool() {
         saveTripsToHistory={handleSaveToHistory}
         createNewTrip={tripData.createNewTrip}
         deleteTrip={tripData.deleteTrip}
+        isDirty={tripData.isDirty}
         saving={tripData.saving}
         isConnected={tripData.isConnected}
         error={tripData.error}

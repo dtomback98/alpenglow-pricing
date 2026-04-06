@@ -24,6 +24,7 @@ interface UseTripDataReturn {
   deleteTrip: (id: string) => Promise<void>;
   createNewTrip: () => void;
   refreshTrips: () => Promise<void>;
+  isDirty: boolean;
   loading: boolean;
   saving: boolean;
   error: string | null;
@@ -38,6 +39,7 @@ export function useTripData(): UseTripDataReturn {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   // Load trips on mount
   useEffect(() => {
@@ -79,11 +81,13 @@ export function useTripData(): UseTripDataReturn {
       const resolved = typeof updates === 'function' ? updates(prev) : updates;
       return { ...prev, ...resolved };
     });
+    setIsDirty(true);
   }, []);
 
   // Set entire config
   const setConfig = useCallback((newConfig: TripConfiguration) => {
     setConfigState(newConfig);
+    setIsDirty(true);
   }, []);
 
   // Select a trip
@@ -91,6 +95,7 @@ export function useTripData(): UseTripDataReturn {
     if (id === null) {
       setSelectedTripId(null);
       setConfigState(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
+      setIsDirty(false);
       return;
     }
 
@@ -102,6 +107,7 @@ export function useTripData(): UseTripDataReturn {
       if (trip) {
         setSelectedTripId(id);
         setConfigState(trip);
+        setIsDirty(false);
       } else {
         setError('Trip not found. It may have been deleted.');
       }
@@ -134,6 +140,7 @@ export function useTripData(): UseTripDataReturn {
       if (saved) {
         setSelectedTripId(saved.id || null);
         setConfigState(saved);
+        setIsDirty(false);
 
         // Refresh trips list
         const updatedTrips = await fetchTripConfigurations();
@@ -173,6 +180,7 @@ export function useTripData(): UseTripDataReturn {
       }
       setSelectedTripId(saved.id || null);
       setConfigState(saved);
+      setIsDirty(false);
 
       const updatedTrips = await fetchTripConfigurations();
       setTrips(updatedTrips);
@@ -207,6 +215,7 @@ export function useTripData(): UseTripDataReturn {
         if (selectedTripId === id) {
           setSelectedTripId(null);
           setConfigState(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
+          setIsDirty(false);
         }
       }
     } catch (err) {
@@ -230,6 +239,7 @@ export function useTripData(): UseTripDataReturn {
   const createNewTrip = useCallback(() => {
     setSelectedTripId(null);
     setConfigState({ ...JSON.parse(JSON.stringify(DEFAULT_CONFIG)), name: 'New Trip' });
+    setIsDirty(false);
   }, []);
 
   return {
@@ -244,6 +254,7 @@ export function useTripData(): UseTripDataReturn {
     deleteTrip,
     createNewTrip,
     refreshTrips,
+    isDirty,
     loading,
     saving,
     error,
