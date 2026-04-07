@@ -413,10 +413,10 @@ export async function updateTripConfigurationName(id: string, name: string): Pro
   return true;
 }
 
-// Update a historical trip entry (status, notes, name)
+// Update a historical trip entry (status, notes, name, country)
 export async function updateHistoricalTrip(
   id: string,
-  updates: { status?: string; notes?: string; name?: string }
+  updates: { status?: string; notes?: string; name?: string; country?: string }
 ): Promise<boolean> {
   if (!supabase) return false;
 

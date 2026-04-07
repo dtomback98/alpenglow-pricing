@@ -9,6 +9,7 @@ import { HistoricalTrip } from '@/lib/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const CATEGORIES = ['All', 'Beg', 'Inter', 'Adv', 'Ski', '8k E'];
+const COUNTRIES = ['Antarctica', 'Argentina', 'Bolivia', 'Canada', 'Chile', 'Ecuador', 'Japan', 'Kyrgyzstan', 'Mexico', 'Nepal', 'Peru', 'Tanzania', 'Other'];
 
 interface HistoryTabProps {
   onLoadTrip?: (tripConfigId: string) => void;
@@ -21,7 +22,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
   title: string;
   onLoadTrip?: (id: string) => void;
   onDeleteTrip?: (id: string) => void;
-  onUpdateTrip?: (id: string, updates: { status?: string; notes?: string; name?: string }) => Promise<boolean>;
+  onUpdateTrip?: (id: string, updates: { status?: string; notes?: string; name?: string; country?: string }) => Promise<boolean>;
   onTripConfigRenamed?: () => void;
 }) {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -167,6 +168,19 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
                         <option value="open-enrollment">Open Enrollment</option>
                         <option value="run">Run</option>
                         <option value="scratch">Scratch</option>
+                      </select>
+                    )}
+                    {onUpdateTrip && (
+                      <select
+                        value={trip.country || 'Other'}
+                        onChange={async (e) => {
+                          await onUpdateTrip(trip.id, { country: e.target.value });
+                        }}
+                        className="text-xs"
+                      >
+                        {COUNTRIES.map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
                       </select>
                     )}
                     {onDeleteTrip && (
