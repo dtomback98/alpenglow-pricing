@@ -127,6 +127,7 @@ export function useTripData(): UseTripDataReturn {
       });
 
       setConfigState(saved);
+      setLoadedHistoryEntry(prev => prev ? { ...prev, name: saved.name, notes: saved.notes || '' } : prev);
       setIsDirty(false);
     } catch (err) {
       setError('Failed to save trip');

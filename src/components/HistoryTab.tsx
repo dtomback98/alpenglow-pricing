@@ -64,7 +64,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
         </thead>
         <tbody>
           {trips.map((trip) => (
-            <tr key={trip.id} className={trip.id === loadedHistoryEntryId ? 'ring-1 ring-inset ring-ag-accent bg-ag-accent/5' : ''}>
+            <tr key={trip.id} className={trip.id === loadedHistoryEntryId ? 'bg-ag-accent/10' : ''}>
               <td className="font-medium">
                 {editingNameId === trip.id ? (
                   <div className="flex items-center gap-1">
