@@ -200,6 +200,9 @@ export const STATUS_BADGE_CLASSES: Record<string, string> = {
   'budgeted': 'bg-yellow-500/20 text-yellow-400',
 };
 
+// Countries list (shared between Header and HistoryTab)
+export const COUNTRIES = ['Antarctica', 'Argentina', 'Bolivia', 'Canada', 'Chile', 'Ecuador', 'Japan', 'Kyrgyzstan', 'Mexico', 'Nepal', 'Peru', 'Tanzania', 'Other'];
+
 // Category labels
 export const CATEGORY_LABELS: Record<string, string> = {
   All: 'All',

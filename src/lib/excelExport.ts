@@ -9,7 +9,15 @@ function round2(n: number): number {
 export function exportTripSummary(config: TripConfiguration, calculations: PaxCalculation[]) {
   const wb = XLSX.utils.book_new();
 
-  // Sheet 1: Gross Margin Summary
+  // Sheet 1: Trip Info (name + notes)
+  const infoData = [
+    { 'Field': 'Trip Name', 'Value': config.name || '' },
+    { 'Field': 'Notes', 'Value': config.notes || '' },
+  ];
+  const wsInfo = XLSX.utils.json_to_sheet(infoData);
+  XLSX.utils.book_append_sheet(wb, wsInfo, 'Trip Info');
+
+  // Sheet 2: Gross Margin Summary
   const marginData = calculations.map((calc) => {
     const coreRevenue = calc.totalRevenue - calc.extensionRevenue - calc.extensionSingleSuppRevenue + calc.extensionDiscountCost;
     const coreCosts = calc.totalCosts - calc.extensionTotalCost;

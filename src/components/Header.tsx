@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { TripConfiguration } from '@/lib/types';
+import { COUNTRIES } from '@/lib/constants';
 import TripSelector from './TripSelector';
 
 const CATEGORIES = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
-const COUNTRIES = ['Antarctica', 'Argentina', 'Bolivia', 'Canada', 'Chile', 'Ecuador', 'Japan', 'Kyrgyzstan', 'Mexico', 'Nepal', 'Peru', 'Tanzania', 'Other'];
 
 interface HeaderProps {
   config: TripConfiguration;

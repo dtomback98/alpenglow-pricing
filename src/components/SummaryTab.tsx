@@ -99,6 +99,7 @@ export default function SummaryTab({ config, updateConfig }: SummaryTabProps) {
           rows={3}
           placeholder="Add notes for this trip..."
         />
+        <p className="text-xs text-ag-text-muted mt-2">Notes are saved with the trip config and copied to a history entry when you Save to History. Edits made directly on the History tab only update that entry — they do not sync back here.</p>
       </div>
 
       {/* Core vs Extension vs Combined Margins */}

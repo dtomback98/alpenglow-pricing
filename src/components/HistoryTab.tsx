@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useHistoricalData } from '@/hooks/useHistoricalData';
-import { CATEGORY_COLORS, CATEGORY_LABELS, STATUS_ORDER, STATUS_LABELS, STATUS_BADGE_CLASSES } from '@/lib/constants';
+import { CATEGORY_COLORS, CATEGORY_LABELS, STATUS_ORDER, STATUS_LABELS, STATUS_BADGE_CLASSES, COUNTRIES } from '@/lib/constants';
 import { formatCurrency, formatPercent, getMarginColor } from '@/lib/calculations';
 import { exportHistoricalTrips } from '@/lib/excelExport';
 import { HistoricalTrip } from '@/lib/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const CATEGORIES = ['All', 'Beg', 'Inter', 'Adv', 'Ski', '8k E'];
-const COUNTRIES = ['Antarctica', 'Argentina', 'Bolivia', 'Canada', 'Chile', 'Ecuador', 'Japan', 'Kyrgyzstan', 'Mexico', 'Nepal', 'Peru', 'Tanzania', 'Other'];
 
 interface HistoryTabProps {
   onLoadTrip?: (tripConfigId: string) => void;
@@ -72,8 +71,9 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
                       className="text-sm w-36"
                     />
                     <button className="btn btn-primary text-xs" onClick={async () => {
+                      if (!editNameText.trim()) return;
                       if (onUpdateTrip) {
-                        await onUpdateTrip(trip.id, { name: editNameText });
+                        await onUpdateTrip(trip.id, { name: editNameText.trim() });
                         onTripConfigRenamed?.();
                       }
                       setEditingNameId(null);
@@ -181,6 +181,9 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
                         {COUNTRIES.map(c => (
                           <option key={c} value={c}>{c}</option>
                         ))}
+                        {trip.country && !COUNTRIES.includes(trip.country) && (
+                          <option key={trip.country} value={trip.country}>{trip.country}</option>
+                        )}
                       </select>
                     )}
                     {onDeleteTrip && (

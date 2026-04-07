@@ -193,6 +193,7 @@ export interface UiPreferences {
   extSuppPerPax?: boolean;
   extDiscountsPerPax?: boolean;
   extHotelsMealsPerPax?: boolean;
+  notes?: string;
 }
 
 export interface TripConfiguration {
