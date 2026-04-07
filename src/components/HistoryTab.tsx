@@ -42,17 +42,18 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
     );
   }
 
-  const hasActions = onLoadTrip || onDeleteTrip || onUpdateTrip;
+  const hasActions = !!(onLoadTrip || onDeleteTrip);
 
   return (
     <div className="card overflow-x-auto">
-      <h2 className="text-lg font-semibold mb-4">{title}</h2>
-      <table className="pricing-table">
+      <h2 className="text-lg font-semibold mb-3">{title}</h2>
+      <table className="pricing-table history-table">
         <thead>
           <tr>
             <th>Trip</th>
             <th>Cat</th>
             <th>Status</th>
+            <th>Country</th>
             <th>Pax</th>
             <th>$/Pax</th>
             <th>Revenue</th>
@@ -65,130 +66,147 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
         <tbody>
           {trips.map((trip) => (
             <tr key={trip.id} className={trip.id === loadedHistoryEntryId ? 'bg-ag-accent/10' : ''}>
-              <td className="font-medium">
+
+              {/* Trip name — click to edit */}
+              <td className="font-medium" style={{ maxWidth: '160px' }}>
                 {editingNameId === trip.id ? (
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="text"
-                      value={editNameText}
-                      onChange={(e) => setEditNameText(e.target.value)}
-                      className="text-sm w-36"
-                    />
-                    <button className="btn btn-primary text-xs" onClick={async () => {
-                      if (!editNameText.trim()) return;
-                      if (onUpdateTrip) {
-                        await onUpdateTrip(trip.id, { name: editNameText.trim() });
+                  <input
+                    type="text"
+                    value={editNameText}
+                    autoFocus
+                    onChange={(e) => setEditNameText(e.target.value)}
+                    onBlur={async () => {
+                      const trimmed = editNameText.trim();
+                      if (trimmed && trimmed !== trip.name && onUpdateTrip) {
+                        await onUpdateTrip(trip.id, { name: trimmed });
                         onTripConfigRenamed?.();
                       }
                       setEditingNameId(null);
-                    }}>Save</button>
-                    <button className="btn btn-secondary text-xs" onClick={() => setEditingNameId(null)}>Cancel</button>
-                  </div>
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.currentTarget.blur();
+                      if (e.key === 'Escape') setEditingNameId(null);
+                    }}
+                    className="w-full"
+                  />
                 ) : (
-                  <div className="flex items-center gap-1">
-                    <span>{trip.name}</span>
-                    {onUpdateTrip && (
-                      <button className="btn btn-secondary text-xs shrink-0" onClick={() => {
+                  <span
+                    className={`block overflow-hidden text-ellipsis whitespace-nowrap ${onUpdateTrip ? 'cursor-pointer hover:text-ag-accent' : ''}`}
+                    title={trip.name}
+                    onClick={() => {
+                      if (onUpdateTrip) {
                         setEditingNameId(trip.id);
                         setEditNameText(trip.name);
-                      }}>Edit</button>
-                    )}
-                  </div>
+                      }
+                    }}
+                  >
+                    {trip.name}
+                  </span>
                 )}
               </td>
-              <td>
+
+              {/* Category badge */}
+              <td className="whitespace-nowrap">
                 {trip.category && (
                   <span
-                    className="px-2 py-1 rounded text-xs font-medium"
+                    className="px-1.5 py-0.5 rounded text-xs font-medium"
                     style={{ backgroundColor: `${CATEGORY_COLORS[trip.category] || '#3b82f6'}30`, color: CATEGORY_COLORS[trip.category] || '#3b82f6' }}
                   >
                     {trip.category}
                   </span>
                 )}
               </td>
-              <td>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${STATUS_BADGE_CLASSES[trip.status || 'budgeted'] || STATUS_BADGE_CLASSES['budgeted']}`}>
-                  {STATUS_LABELS[trip.status || 'budgeted'] || 'Budgeted'}
-                </span>
+
+              {/* Status — inline select for editable rows, badge for readonly */}
+              <td className="whitespace-nowrap">
+                {onUpdateTrip ? (
+                  <select
+                    value={trip.status || 'budgeted'}
+                    onChange={async (e) => { await onUpdateTrip(trip.id, { status: e.target.value }); }}
+                  >
+                    <option value="budgeted">Budgeted</option>
+                    <option value="open-enrollment">Open Enrollment</option>
+                    <option value="run">Run</option>
+                    <option value="scratch">Scratch</option>
+                  </select>
+                ) : (
+                  <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${STATUS_BADGE_CLASSES[trip.status || 'budgeted'] || STATUS_BADGE_CLASSES['budgeted']}`}>
+                    {STATUS_LABELS[trip.status || 'budgeted'] || 'Budgeted'}
+                  </span>
+                )}
               </td>
-              <td>{trip.pax}</td>
-              <td>{formatCurrency(trip.pricePerPax)}</td>
-              <td>{formatCurrency(trip.revenue)}</td>
-              <td className={trip.grossProfit >= 0 ? 'text-ag-success' : 'text-ag-danger'}>
+
+              {/* Country — inline select for editable rows, text for readonly */}
+              <td className="whitespace-nowrap">
+                {onUpdateTrip ? (
+                  <select
+                    value={trip.country || 'Other'}
+                    onChange={async (e) => { await onUpdateTrip(trip.id, { country: e.target.value }); }}
+                  >
+                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    {trip.country && !COUNTRIES.includes(trip.country) && (
+                      <option key={trip.country} value={trip.country}>{trip.country}</option>
+                    )}
+                  </select>
+                ) : (
+                  <span className="text-ag-text-muted">{trip.country || 'Other'}</span>
+                )}
+              </td>
+
+              <td className="whitespace-nowrap">{trip.pax}</td>
+              <td className="whitespace-nowrap">{formatCurrency(trip.pricePerPax)}</td>
+              <td className="whitespace-nowrap">{formatCurrency(trip.revenue)}</td>
+              <td className={`whitespace-nowrap ${trip.grossProfit >= 0 ? 'text-ag-success' : 'text-ag-danger'}`}>
                 {formatCurrency(trip.grossProfit)}
               </td>
-              <td className={getMarginColor(trip.margin)}>{formatPercent(trip.margin)}</td>
-              <td style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+              <td className={`whitespace-nowrap ${getMarginColor(trip.margin)}`}>{formatPercent(trip.margin)}</td>
+
+              {/* Notes — click to edit, truncated display */}
+              <td style={{ minWidth: '100px', maxWidth: '200px' }}>
                 {editingNoteId === trip.id ? (
                   <div className="flex flex-col gap-1">
                     <textarea
                       value={editNoteText}
+                      autoFocus
                       onChange={(e) => setEditNoteText(e.target.value)}
-                      className="w-full text-sm p-1"
+                      className="w-full p-1"
                       rows={2}
                     />
                     <div className="flex gap-1">
-                      <button className="btn btn-primary text-xs" onClick={async () => {
-                        if (onUpdateTrip) {
-                          await onUpdateTrip(trip.id, { notes: editNoteText });
-                        }
+                      <button className="btn btn-primary text-xs py-0.5 px-2" onClick={async () => {
+                        if (onUpdateTrip) await onUpdateTrip(trip.id, { notes: editNoteText });
                         setEditingNoteId(null);
                       }}>Save</button>
-                      <button className="btn btn-secondary text-xs" onClick={() => setEditingNoteId(null)}>Cancel</button>
+                      <button className="btn btn-secondary text-xs py-0.5 px-2" onClick={() => setEditingNoteId(null)}>×</button>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-start gap-1">
-                    <span className="text-sm text-ag-text-muted">{trip.notes || '\u2014'}</span>
-                    {onUpdateTrip && (
-                      <button className="btn btn-secondary text-xs shrink-0" onClick={() => {
+                  <span
+                    className={`text-ag-text-muted ${onUpdateTrip ? 'cursor-pointer hover:text-ag-accent' : ''}`}
+                    title={trip.notes || undefined}
+                    onClick={() => {
+                      if (onUpdateTrip) {
                         setEditingNoteId(trip.id);
                         setEditNoteText(trip.notes || '');
-                      }}>Edit</button>
-                    )}
-                  </div>
+                      }
+                    }}
+                    style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}
+                  >
+                    {trip.notes
+                      ? (trip.notes.length > 55 ? trip.notes.slice(0, 55) + '…' : trip.notes)
+                      : (onUpdateTrip ? <span className="text-ag-border italic">add note</span> : '—')}
+                  </span>
                 )}
               </td>
+
+              {/* Actions — Load + Delete only */}
               {hasActions && (
-                <td>
+                <td className="whitespace-nowrap">
                   <div className="flex gap-1">
                     {onLoadTrip && trip.tripConfigId && (
-                      <button
-                        onClick={() => onLoadTrip(trip)}
-                        className="btn btn-secondary text-xs"
-                      >
+                      <button onClick={() => onLoadTrip(trip)} className="btn btn-secondary text-xs py-0.5 px-2">
                         Load
                       </button>
-                    )}
-                    {onUpdateTrip && (
-                      <select
-                        value={trip.status || 'budgeted'}
-                        onChange={async (e) => {
-                          await onUpdateTrip(trip.id, { status: e.target.value });
-                        }}
-                        className="text-xs"
-                      >
-                        <option value="budgeted">Budgeted</option>
-                        <option value="open-enrollment">Open Enrollment</option>
-                        <option value="run">Run</option>
-                        <option value="scratch">Scratch</option>
-                      </select>
-                    )}
-                    {onUpdateTrip && (
-                      <select
-                        value={trip.country || 'Other'}
-                        onChange={async (e) => {
-                          await onUpdateTrip(trip.id, { country: e.target.value });
-                        }}
-                        className="text-xs"
-                      >
-                        {COUNTRIES.map(c => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                        {trip.country && !COUNTRIES.includes(trip.country) && (
-                          <option key={trip.country} value={trip.country}>{trip.country}</option>
-                        )}
-                      </select>
                     )}
                     {onDeleteTrip && (
                       <button
@@ -198,9 +216,9 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
                             if (success) onTripDeleted?.(trip.id);
                           }
                         }}
-                        className="btn btn-danger text-xs"
+                        className="btn btn-danger text-xs py-0.5 px-2"
                       >
-                        Delete
+                        Del
                       </button>
                     )}
                   </div>

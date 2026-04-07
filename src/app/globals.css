@@ -82,6 +82,22 @@ input[type="number"]::-webkit-outer-spin-button {
   @apply bg-ag-card-lighter/50;
 }
 
+/* Compact variant for the History tab — tighter padding + smaller font */
+.history-table th,
+.history-table td {
+  @apply px-2 py-1.5 text-xs;
+}
+
+.history-table th {
+  @apply text-xs;
+}
+
+.history-table select,
+.history-table input[type="text"],
+.history-table textarea {
+  @apply px-1.5 py-0.5 text-xs;
+}
+
 /* Card styling */
 .card {
   @apply bg-ag-card rounded-lg p-6 border border-ag-border;
