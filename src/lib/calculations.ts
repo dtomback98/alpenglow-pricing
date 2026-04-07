@@ -119,6 +119,10 @@ function calculateExtension(pax: number, config: TripConfiguration) {
       extensionHotelsCost = hotelRate * extHotelNights;
       for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * h.nights;
       extensionMealsCost = (lunchRate + dinnerRate) * extension.extensionNights + additionalMeals;
+    } else if (extHmMode === 'perPax') {
+      extensionHotelsCost = hotelRate * extPaxCount;
+      for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * extPaxCount;
+      extensionMealsCost = (lunchRate + dinnerRate) * extPaxCount + additionalMeals;
     } else {
       extensionHotelsCost = hotelRate;
       for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight;
@@ -279,6 +283,10 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
       hotelsCost = hmHotelRate * hmHotelNights;
       for (const h of hmAdditionalHotels) hotelsCost += h.ratePerNight * h.nights;
       mealsCost = hmLunchRate * config.tripDays + hmDinnerRate * config.tripNights + hmAdditional;
+    } else if (hmMode === 'perPax') {
+      hotelsCost = hmHotelRate * pax;
+      for (const h of hmAdditionalHotels) hotelsCost += h.ratePerNight * pax;
+      mealsCost = (hmLunchRate + hmDinnerRate) * pax + hmAdditional;
     } else {
       hotelsCost = hmHotelRate;
       for (const h of hmAdditionalHotels) hotelsCost += h.ratePerNight;
