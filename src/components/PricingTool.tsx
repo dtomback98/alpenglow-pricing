@@ -16,6 +16,11 @@ export default function PricingTool() {
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const tripData = useTripData();
 
+  const handleSaveTrip = async () => {
+    await tripData.saveTrip();
+    setHistoryRefreshKey(k => k + 1);
+  };
+
   const handleLoadTrip = (trip: HistoricalTrip) => {
     if (tripData.isDirty) {
       const msg = tripData.isNewTrip
@@ -40,7 +45,7 @@ export default function PricingTool() {
       <Header
         config={tripData.config}
         updateConfig={tripData.updateConfig}
-        saveTrip={tripData.saveTrip}
+        saveTrip={handleSaveTrip}
         saveTripsToHistory={handleSaveToHistory}
         createNewTrip={tripData.createNewTrip}
         isDirty={tripData.isDirty}
@@ -54,7 +59,7 @@ export default function PricingTool() {
 
       <div className="mt-6">
         {activeTab === 'summary' && (
-          <SummaryTab config={tripData.config} updateConfig={tripData.updateConfig} />
+          <SummaryTab config={tripData.config} updateConfig={tripData.updateConfig} isNewTrip={tripData.isNewTrip} />
         )}
         {activeTab === 'inputs-core' && (
           <InputsTab
@@ -73,6 +78,10 @@ export default function PricingTool() {
             onLoadTrip={handleLoadTrip}
             refreshKey={historyRefreshKey}
             onTripConfigRenamed={tripData.syncLoadedTripName}
+            loadedHistoryEntryId={tripData.loadedHistoryEntry?.id}
+            onTripDeleted={(id) => {
+              if (tripData.loadedHistoryEntry?.id === id) tripData.createNewTrip();
+            }}
           />
         )}
         {activeTab === 'financials' && (

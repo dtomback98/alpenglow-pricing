@@ -10,9 +10,10 @@ import MarginChart from './charts/MarginChart';
 interface SummaryTabProps {
   config: TripConfiguration;
   updateConfig: (updates: Partial<TripConfiguration>) => void;
+  isNewTrip?: boolean;
 }
 
-export default function SummaryTab({ config, updateConfig }: SummaryTabProps) {
+export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryTabProps) {
   const [grossMarginPerPax, setGrossMarginPerPax] = useState(false);
   const [revenuePerPax, setRevenuePerPax] = useState(false);
   const [costsPerPax, setCostsPerPax] = useState(false);
@@ -25,6 +26,13 @@ export default function SummaryTab({ config, updateConfig }: SummaryTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Startup hint for new trips */}
+      {isNewTrip && (
+        <div className="card border border-ag-border text-sm text-ag-text-muted text-center py-4">
+          Load an existing trip from the <strong className="text-ag-text">History</strong> tab, or fill in the inputs above to build a new one — then hit <strong className="text-ag-text">Save to History</strong> to save it.
+        </div>
+      )}
+
       {/* Export button */}
       <div className="flex justify-end">
         <button

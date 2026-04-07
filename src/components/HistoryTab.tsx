@@ -14,15 +14,19 @@ interface HistoryTabProps {
   onLoadTrip?: (trip: HistoricalTrip) => void;
   refreshKey?: number;
   onTripConfigRenamed?: () => void;
+  loadedHistoryEntryId?: string;
+  onTripDeleted?: (id: string) => void;
 }
 
-function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTripConfigRenamed }: {
+function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted }: {
   trips: HistoricalTrip[];
   title: string;
   onLoadTrip?: (trip: HistoricalTrip) => void;
-  onDeleteTrip?: (id: string) => void;
+  onDeleteTrip?: (id: string) => Promise<boolean>;
   onUpdateTrip?: (id: string, updates: { status?: string; notes?: string; name?: string; country?: string }) => Promise<boolean>;
   onTripConfigRenamed?: () => void;
+  loadedHistoryEntryId?: string;
+  onTripDeleted?: (id: string) => void;
 }) {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editNoteText, setEditNoteText] = useState('');
@@ -60,7 +64,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
         </thead>
         <tbody>
           {trips.map((trip) => (
-            <tr key={trip.id}>
+            <tr key={trip.id} className={trip.id === loadedHistoryEntryId ? 'ring-1 ring-inset ring-ag-accent bg-ag-accent/5' : ''}>
               <td className="font-medium">
                 {editingNameId === trip.id ? (
                   <div className="flex items-center gap-1">
@@ -188,9 +192,10 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
                     )}
                     {onDeleteTrip && (
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           if (confirm(`Delete "${trip.name}" from history?`)) {
-                            onDeleteTrip(trip.id);
+                            const success = await onDeleteTrip(trip.id);
+                            if (success) onTripDeleted?.(trip.id);
                           }
                         }}
                         className="btn btn-danger text-xs"
@@ -209,7 +214,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
   );
 }
 
-export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed }: HistoryTabProps) {
+export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted }: HistoryTabProps) {
   const { trips, loading, error, selectedCategory, setSelectedCategory, deleteTrip, updateTrip, refresh } = useHistoricalData();
 
   // Re-fetch when refreshKey changes (e.g. after Save to History)
@@ -414,6 +419,8 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
             onDeleteTrip={isEditable ? deleteTrip : undefined}
             onUpdateTrip={isEditable ? updateTrip : undefined}
             onTripConfigRenamed={isEditable ? onTripConfigRenamed : undefined}
+            loadedHistoryEntryId={loadedHistoryEntryId}
+            onTripDeleted={isEditable ? onTripDeleted : undefined}
           />
         );
       })}

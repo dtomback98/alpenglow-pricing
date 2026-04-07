@@ -187,6 +187,7 @@ export function useTripData(): UseTripDataReturn {
     setConfigState({ ...JSON.parse(JSON.stringify(DEFAULT_CONFIG)), name: 'New Trip' });
     setLoadedHistoryEntry(null);
     setIsDirty(false);
+    setError(null);
   }, []);
 
   // Sync the loaded trip's name from DB (called after a rename on the history tab)
