@@ -19,7 +19,6 @@ const TRIP_SPECIFIC_FIELDS: { key: keyof Omit<TripConfiguration['tripSpecific'],
   { key: 'permits', label: 'Permits' },
   { key: 'equipment', label: 'Equipment' },
   { key: 'jacketsApparel', label: 'Jackets & Apparel' },
-  { key: 'insurance', label: 'Insurance' },
   { key: 'contingency', label: 'Contingency' },
   { key: 'hypoxico', label: 'Hypoxico' },
   { key: 'otherCosts', label: 'Other Costs' },
@@ -812,7 +811,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               </div>
             </div>
             <div className="form-group">
-              <label className="form-label">Airport Transfers ($)</label>
+              <label className="form-label">Helicopters ($)</label>
               <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.airportTransfersPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
               <div className="flex gap-3 items-center">
                 <NumInput type="number" value={config.transportConfig.airportTransfers} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfers: Number(e.target.value) })} className="flex-1 min-w-0" />
@@ -859,7 +858,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 </div>
               </div>
               <div className="form-group">
-                <label className="form-label">Airport Transfers ($)</label>
+                <label className="form-label">Helicopters ($)</label>
                 <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.airportTransfersPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
                 <div className="flex gap-3 items-center">
                   <NumInput type="number" value={config.transportConfig.airportTransfersByPax?.[effectiveTransportPax] ?? config.transportConfig.airportTransfers} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, airportTransfersByPax: { ...prev.transportConfig.airportTransfersByPax, [effectiveTransportPax]: val } } })); }} className="flex-1 min-w-0" />
@@ -996,9 +995,19 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
       <div className={`card ${config.logistics.enabled === false ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Logistics Rates</h2>
-          <button onClick={() => updateNestedConfig('logistics', { enabled: config.logistics.enabled === false })} className={`btn text-xs ${config.logistics.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
-            {config.logistics.enabled === false ? 'Inactive' : 'Active'}
-          </button>
+          <div className="flex gap-2">
+            {config.logistics.enabled !== false && (
+              <button
+                onClick={() => updateNestedConfig('logistics', { simpleMode: config.logistics.simpleMode !== false ? false : true })}
+                className={`btn text-xs ${config.logistics.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}
+              >
+                {config.logistics.simpleMode !== false ? 'Simple Mode' : 'Per Pax Mode'}
+              </button>
+            )}
+            <button onClick={() => updateNestedConfig('logistics', { enabled: config.logistics.enabled === false })} className={`btn text-xs ${config.logistics.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
+              {config.logistics.enabled === false ? 'Inactive' : 'Active'}
+            </button>
+          </div>
         </div>
         {config.logistics.enabled === false ? (
           <p className="text-sm text-ag-text-muted">Section disabled — logistics costs will not be applied to calculations.</p>
@@ -1019,20 +1028,6 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     </button>
                   );
                 })}
-                <div className="flex gap-1 ml-2">
-                  <button
-                    onClick={() => updateNestedConfig('logistics', { simpleMode: true })}
-                    className={`btn text-xs ${config.logistics.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}
-                  >
-                    Simple
-                  </button>
-                  <button
-                    onClick={() => updateNestedConfig('logistics', { simpleMode: false })}
-                    className={`btn text-xs ${config.logistics.simpleMode === false ? 'btn-primary' : 'btn-secondary'}`}
-                  >
-                    Per Pax
-                  </button>
-                </div>
               </div>
             </div>
             {config.logistics.simpleMode !== false ? (
