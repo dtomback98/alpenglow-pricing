@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { HistoricalTrip } from '@/lib/types';
-import { fetchHistoricalTrips, deleteHistoricalTrip, updateHistoricalTrip, updateTripConfigurationName, isSupabaseConfigured } from '@/lib/supabase';
+import { fetchHistoricalTrips, deleteHistoricalTripWithConfig, updateHistoricalTrip, updateTripConfigurationName, isSupabaseConfigured } from '@/lib/supabase';
 import historicalData from '@/lib/historical-data.json';
 
 // Type the imported JSON data
@@ -61,7 +61,8 @@ export function useHistoricalData(): UseHistoricalDataReturn {
 
   const deleteTrip = useCallback(async (id: string): Promise<boolean> => {
     try {
-      const success = await deleteHistoricalTrip(id);
+      const trip = trips.find(t => t.id === id);
+      const success = await deleteHistoricalTripWithConfig(id, trip?.tripConfigId);
       if (success) {
         await loadData();
       }
@@ -71,7 +72,7 @@ export function useHistoricalData(): UseHistoricalDataReturn {
       setError('Failed to delete trip');
       return false;
     }
-  }, [loadData]);
+  }, [loadData, trips]);
 
   const updateTrip = useCallback(async (id: string, updates: { status?: string; notes?: string; name?: string; country?: string }): Promise<boolean> => {
     try {

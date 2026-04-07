@@ -356,6 +356,7 @@ export async function deleteHistoricalTrip(id: string): Promise<boolean> {
 }
 
 // Save a trip to history with calculated values at a specific pax level
+// Returns the created HistoricalTrip (with its ID) so callers can track the loaded entry
 export async function saveToHistory(
   config: TripConfiguration,
   pax: number,
@@ -363,8 +364,8 @@ export async function saveToHistory(
   year?: number,
   status?: string,
   country?: string
-): Promise<boolean> {
-  if (!supabase || !config.id || !Number.isFinite(pax) || pax <= 0) return false;
+): Promise<HistoricalTrip | null> {
+  if (!supabase || !config.id || !Number.isFinite(pax) || pax <= 0) return null;
 
   const calc = calculateForPax(pax, config);
 
@@ -384,13 +385,80 @@ export async function saveToHistory(
     country: country || 'Other',
   };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('historical_trips')
-    .insert(row);
+    .insert(row)
+    .select()
+    .single();
 
   if (error) {
     console.error('Error inserting history entry:', error);
+    return null;
+  }
+
+  return data ? {
+    id: data.id,
+    name: data.name,
+    category: data.category,
+    pax: data.pax,
+    pricePerPax: Number(data.price_per_pax),
+    revenue: Number(data.revenue),
+    grossProfit: Number(data.gross_profit),
+    margin: Number(data.margin),
+    notes: data.notes || '',
+    tripDate: data.trip_date,
+    createdAt: data.created_at,
+    year: data.year || new Date().getFullYear(),
+    tripConfigId: data.trip_config_id || undefined,
+    status: data.status || 'budgeted',
+    country: data.country || 'Other',
+  } : null;
+}
+
+// Update the stored financial numbers (and optionally name/notes) in a history entry
+export async function updateHistoryEntryNumbers(
+  id: string,
+  updates: { revenue: number; gross_profit: number; margin: number; price_per_pax: number; name?: string; notes?: string }
+): Promise<boolean> {
+  if (!supabase) return false;
+
+  const { error } = await supabase
+    .from('historical_trips')
+    .update(updates)
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error updating history entry numbers:', error);
     return false;
+  }
+
+  return true;
+}
+
+// Delete a historical trip entry AND its linked config (1:1 ownership in new architecture)
+export async function deleteHistoricalTripWithConfig(id: string, tripConfigId?: string): Promise<boolean> {
+  if (!supabase) return false;
+
+  const { error: histErr } = await supabase
+    .from('historical_trips')
+    .delete()
+    .eq('id', id);
+
+  if (histErr) {
+    console.error('Error deleting historical trip:', histErr);
+    return false;
+  }
+
+  // Delete the linked config if it exists (best-effort — don't fail if this errors)
+  if (tripConfigId) {
+    const { error: cfgErr } = await supabase
+      .from('trip_configurations')
+      .delete()
+      .eq('id', tripConfigId);
+
+    if (cfgErr) {
+      console.error('Error deleting linked trip config (non-fatal):', cfgErr);
+    }
   }
 
   return true;

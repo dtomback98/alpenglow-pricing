@@ -3,21 +3,17 @@
 import { useState, useEffect } from 'react';
 import { TripConfiguration } from '@/lib/types';
 import { COUNTRIES } from '@/lib/constants';
-import TripSelector from './TripSelector';
 
 const CATEGORIES = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 
 interface HeaderProps {
   config: TripConfiguration;
   updateConfig: (updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>)) => void;
-  trips: TripConfiguration[];
-  selectedTripId: string | null;
-  selectTrip: (id: string | null) => void;
   saveTrip: () => Promise<void>;
   saveTripsToHistory: (pax: number, category: string, year?: number, status?: string, country?: string) => Promise<boolean>;
   createNewTrip: () => void;
-  deleteTrip: (id: string) => Promise<void>;
   isDirty: boolean;
+  isNewTrip: boolean;
   saving: boolean;
   isConnected: boolean;
   error: string | null;
@@ -26,14 +22,11 @@ interface HeaderProps {
 export default function Header({
   config,
   updateConfig,
-  trips,
-  selectedTripId,
-  selectTrip,
   saveTrip,
   saveTripsToHistory,
   createNewTrip,
-  deleteTrip,
   isDirty,
+  isNewTrip,
   saving,
   isConnected,
   error,
@@ -43,6 +36,7 @@ export default function Header({
   const [historyCategory, setHistoryCategory] = useState('Beg');
   const [historySaving, setHistorySaving] = useState(false);
   const [historySuccess, setHistorySuccess] = useState(false);
+  const [saveWarning, setSaveWarning] = useState(false);
   const currentYear = new Date().getFullYear();
   const [historyYear, setHistoryYear] = useState(currentYear);
   const [historyStatus, setHistoryStatus] = useState<'budgeted' | 'run' | 'scratch' | 'open-enrollment'>('budgeted');
@@ -56,13 +50,27 @@ export default function Header({
   useEffect(() => {
     setHistoryPax(paxMin);
   }, [paxMin, paxMax, paxStep]);
+
+  // Clear save warning when isDirty or isNewTrip changes
+  useEffect(() => {
+    setSaveWarning(false);
+  }, [isDirty, isNewTrip]);
+
   const paxOptions: number[] = [];
   for (let p = paxMin; p <= paxMax; p += paxStep) {
     paxOptions.push(p);
   }
 
+  const handleSaveClick = () => {
+    if (isNewTrip) {
+      setSaveWarning(true);
+      return;
+    }
+    saveTrip();
+  };
+
   const handleSaveToHistory = async () => {
-    if (!paxOptions.includes(historyPax)) return; // guard against invalid pax range state
+    if (!paxOptions.includes(historyPax)) return;
     setHistorySaving(true);
     setHistorySuccess(false);
     const trimmed = historyCountry.trim();
@@ -78,15 +86,12 @@ export default function Header({
     }
   };
 
-  const UNSAVED_WARNING = 'You have unsaved changes that will be lost. Continue?';
-
-  const guardedSelectTrip = (id: string | null) => {
-    if (isDirty && !confirm(UNSAVED_WARNING)) return;
-    selectTrip(id);
-  };
+  const dirtyWarning = isNewTrip
+    ? "You have unsaved changes. Use 'Save to History' to save this new trip, or continue and lose your work."
+    : "You have unsaved changes. Hit 'Save' to update this trip or 'Save to History' to create a new version — continue and lose your work?";
 
   const guardedCreateNewTrip = () => {
-    if (isDirty && !confirm(UNSAVED_WARNING)) return;
+    if (isDirty && !confirm(dirtyWarning)) return;
     createNewTrip();
   };
 
@@ -105,24 +110,20 @@ export default function Header({
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           {/* Connection status */}
           <div className="flex items-center gap-2">
-            <div
-              className={`w-2 h-2 rounded-full ${
-                isConnected ? 'bg-ag-success' : 'bg-ag-warning'
-              }`}
-            />
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-ag-success' : 'bg-ag-warning'}`} />
             <span className="text-sm text-ag-text-muted">
               {isConnected ? 'Connected' : 'Local Mode'}
             </span>
           </div>
 
-          {/* Trip selector */}
-          <TripSelector
-            trips={trips}
-            selectedTripId={selectedTripId}
-            selectTrip={guardedSelectTrip}
-            createNewTrip={guardedCreateNewTrip}
-            deleteTrip={deleteTrip}
-          />
+          {/* New Trip button */}
+          <button
+            onClick={guardedCreateNewTrip}
+            disabled={saving}
+            className="btn btn-secondary"
+          >
+            + New Trip
+          </button>
 
           {/* Trip name input */}
           <input
@@ -135,11 +136,11 @@ export default function Header({
 
           {/* Save button */}
           <button
-            onClick={saveTrip}
+            onClick={handleSaveClick}
             disabled={saving}
-            className={`btn ${isDirty ? 'btn-primary ring-2 ring-ag-accent ring-offset-2 ring-offset-ag-bg' : 'btn-secondary'}`}
+            className={`btn ${isDirty && !isNewTrip ? 'btn-primary ring-2 ring-ag-accent ring-offset-2 ring-offset-ag-bg' : 'btn-secondary'}`}
           >
-            {saving ? 'Saving...' : isDirty ? 'Save*' : 'Saved'}
+            {saving ? 'Saving...' : isDirty && !isNewTrip ? 'Save*' : 'Save'}
           </button>
 
           {/* Save to History button */}
@@ -240,6 +241,13 @@ export default function Header({
           </div>
         </div>
       </div>
+
+      {/* Save warning for new trips */}
+      {saveWarning && (
+        <div className="mt-3 p-3 bg-ag-warning/20 border border-ag-warning rounded text-sm text-ag-warning">
+          No trip loaded — use <strong>Save to History</strong> to save this new trip, or load an existing trip from the History tab.
+        </div>
+      )}
 
       {/* Error message */}
       {error && (

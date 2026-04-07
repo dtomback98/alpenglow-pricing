@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { TabType } from '@/lib/types';
+import { TabType, HistoricalTrip } from '@/lib/types';
 import { useTripData } from '@/hooks/useTripData';
 import Header from './Header';
 import Tabs from './Tabs';
@@ -16,8 +16,14 @@ export default function PricingTool() {
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const tripData = useTripData();
 
-  const handleLoadTrip = (tripConfigId: string) => {
-    tripData.selectTrip(tripConfigId);
+  const handleLoadTrip = (trip: HistoricalTrip) => {
+    if (tripData.isDirty) {
+      const msg = tripData.isNewTrip
+        ? "You have unsaved changes. Use 'Save to History' to save this new trip first, or continue and lose your work."
+        : "You have unsaved changes. Hit 'Save' to preserve them, or continue and lose your work.";
+      if (!confirm(msg)) return;
+    }
+    tripData.loadFromHistory(trip);
     setActiveTab('summary');
   };
 
@@ -34,14 +40,11 @@ export default function PricingTool() {
       <Header
         config={tripData.config}
         updateConfig={tripData.updateConfig}
-        trips={tripData.trips}
-        selectedTripId={tripData.selectedTripId}
-        selectTrip={tripData.selectTrip}
         saveTrip={tripData.saveTrip}
         saveTripsToHistory={handleSaveToHistory}
         createNewTrip={tripData.createNewTrip}
-        deleteTrip={tripData.deleteTrip}
         isDirty={tripData.isDirty}
+        isNewTrip={tripData.isNewTrip}
         saving={tripData.saving}
         isConnected={tripData.isConnected}
         error={tripData.error}
@@ -66,7 +69,11 @@ export default function PricingTool() {
           />
         )}
         {activeTab === 'history' && (
-          <HistoryTab onLoadTrip={handleLoadTrip} refreshKey={historyRefreshKey} onTripConfigRenamed={tripData.refreshTrips} />
+          <HistoryTab
+            onLoadTrip={handleLoadTrip}
+            refreshKey={historyRefreshKey}
+            onTripConfigRenamed={tripData.syncLoadedTripName}
+          />
         )}
         {activeTab === 'financials' && (
           <FinancialsTab refreshKey={historyRefreshKey} />

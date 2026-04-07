@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { TripConfiguration } from '@/lib/types';
+import { TripConfiguration, HistoricalTrip } from '@/lib/types';
 import { DEFAULT_CONFIG } from '@/lib/constants';
+import { calculateForPax } from '@/lib/calculations';
 import {
-  fetchTripConfigurations,
   fetchTripConfiguration,
   saveTripConfiguration,
-  deleteTripConfiguration,
   saveToHistory,
+  updateHistoryEntryNumbers,
   isSupabaseConfigured,
 } from '@/lib/supabase';
 
@@ -16,14 +16,13 @@ interface UseTripDataReturn {
   config: TripConfiguration;
   setConfig: (config: TripConfiguration) => void;
   updateConfig: (updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>), options?: { silent?: boolean }) => void;
-  trips: TripConfiguration[];
-  selectedTripId: string | null;
-  selectTrip: (id: string | null) => void;
+  loadedHistoryEntry: HistoricalTrip | null;
+  isNewTrip: boolean;
+  loadFromHistory: (entry: HistoricalTrip) => Promise<void>;
   saveTrip: () => Promise<void>;
   saveTripsToHistory: (pax: number, category: string, year?: number, status?: string, country?: string) => Promise<boolean>;
-  deleteTrip: (id: string) => Promise<void>;
   createNewTrip: () => void;
-  refreshTrips: () => Promise<void>;
+  syncLoadedTripName: () => Promise<void>;
   isDirty: boolean;
   loading: boolean;
   saving: boolean;
@@ -33,51 +32,27 @@ interface UseTripDataReturn {
 
 export function useTripData(): UseTripDataReturn {
   const [config, setConfigState] = useState<TripConfiguration>(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
-  const [trips, setTrips] = useState<TripConfiguration[]>([]);
-  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadedHistoryEntry, setLoadedHistoryEntry] = useState<HistoricalTrip | null>(null);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
-  // Load trips on mount
+  // isNewTrip: true when no history entry has been saved yet for this config
+  const isNewTrip = loadedHistoryEntry === null;
+
+  // Check connection on mount (no auto-load — user picks a trip from history tab)
   useEffect(() => {
-    const loadTrips = async () => {
-      if (!isSupabaseConfigured()) {
-        setIsConnected(false);
-        setLoading(false);
-        return;
-      }
-
-      setIsConnected(true);
-      setLoading(true);
-      setError(null);
-
-      try {
-        const loadedTrips = await fetchTripConfigurations();
-        setTrips(loadedTrips);
-
-        // If we have trips, select the most recent one
-        if (loadedTrips.length > 0) {
-          const mostRecent = loadedTrips[0];
-          setSelectedTripId(mostRecent.id || null);
-          setConfigState(mostRecent);
-        }
-      } catch (err) {
-        setError('Failed to load trips');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadTrips();
+    setIsConnected(isSupabaseConfigured());
   }, []);
 
-  // Update config with partial updates (accepts object or function for latest-state reads)
-  // Pass { silent: true } for system-initiated normalizations that should not mark the config dirty
-  const updateConfig = useCallback((updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>), options?: { silent?: boolean }) => {
+  // Update config with partial updates
+  // Pass { silent: true } for system-initiated normalizations that should not mark dirty
+  const updateConfig = useCallback((
+    updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>),
+    options?: { silent?: boolean }
+  ) => {
     setConfigState(prev => {
       const resolved = typeof updates === 'function' ? updates(prev) : updates;
       return { ...prev, ...resolved };
@@ -91,26 +66,24 @@ export function useTripData(): UseTripDataReturn {
     setIsDirty(true);
   }, []);
 
-  // Select a trip
-  const selectTrip = useCallback(async (id: string | null) => {
-    if (id === null) {
-      setSelectedTripId(null);
-      setConfigState(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
-      setIsDirty(false);
+  // Load a trip from a history entry
+  const loadFromHistory = useCallback(async (entry: HistoricalTrip) => {
+    if (!entry.tripConfigId) {
+      setError('This entry has no linked config and cannot be loaded.');
       return;
     }
 
-    if (!isSupabaseConfigured()) return;
-
     setLoading(true);
+    setError(null);
+
     try {
-      const trip = await fetchTripConfiguration(id);
+      const trip = await fetchTripConfiguration(entry.tripConfigId);
       if (trip) {
-        setSelectedTripId(id);
         setConfigState(trip);
+        setLoadedHistoryEntry(entry);
         setIsDirty(false);
       } else {
-        setError('Trip not found. It may have been deleted.');
+        setError('Trip config not found. It may have been deleted.');
       }
     } catch (err) {
       setError('Failed to load trip');
@@ -120,11 +93,15 @@ export function useTripData(): UseTripDataReturn {
     }
   }, []);
 
-  // Save current trip
+  // Save: overwrites the currently loaded trip config and updates the history entry numbers
   const saveTrip = useCallback(async () => {
     if (saving) return;
     if (!isSupabaseConfigured()) {
       setError('Supabase not configured. Data will not persist.');
+      return;
+    }
+    if (!loadedHistoryEntry) {
+      setError('No trip loaded. Use "Save to History" to save this new trip.');
       return;
     }
 
@@ -132,33 +109,42 @@ export function useTripData(): UseTripDataReturn {
     setError(null);
 
     try {
-      const configToSave = selectedTripId
-        ? { ...config, id: selectedTripId }
-        : config;
-
-      const saved = await saveTripConfiguration(configToSave);
-
-      if (saved) {
-        setSelectedTripId(saved.id || null);
-        setConfigState(saved);
-        setIsDirty(false);
-
-        // Refresh trips list
-        const updatedTrips = await fetchTripConfigurations();
-        setTrips(updatedTrips);
-      } else {
+      const saved = await saveTripConfiguration(config);
+      if (!saved) {
         setError('Failed to save trip');
+        return;
       }
+
+      // Recalculate at the history entry's pax and update stored numbers + sync name/notes
+      const calc = calculateForPax(loadedHistoryEntry.pax, saved);
+      await updateHistoryEntryNumbers(loadedHistoryEntry.id, {
+        revenue: calc.totalRevenue,
+        gross_profit: calc.grossProfit,
+        margin: calc.margin,
+        price_per_pax: calc.totalRevenue / loadedHistoryEntry.pax,
+        name: saved.name,
+        notes: saved.notes || '',
+      });
+
+      setConfigState(saved);
+      setIsDirty(false);
     } catch (err) {
       setError('Failed to save trip');
       console.error(err);
     } finally {
       setSaving(false);
     }
-  }, [config, selectedTripId, saving]);
+  }, [config, loadedHistoryEntry, saving]);
 
-  // Save current trip to history at a specific pax level
-  const saveTripsToHistory = useCallback(async (pax: number, category: string, year?: number, status?: string, country?: string): Promise<boolean> => {
+  // Save to History: always creates a brand-new config record + new history entry
+  // This is "Save As" — each call produces a fully independent snapshot
+  const saveTripsToHistory = useCallback(async (
+    pax: number,
+    category: string,
+    year?: number,
+    status?: string,
+    country?: string
+  ): Promise<boolean> => {
     if (saving) return false;
     if (!isSupabaseConfigured()) {
       setError('Supabase not configured.');
@@ -169,28 +155,23 @@ export function useTripData(): UseTripDataReturn {
     setError(null);
 
     try {
-      // Always save the trip config first to ensure latest changes are persisted
-      const configToSave = selectedTripId
-        ? { ...config, id: selectedTripId }
-        : config;
-
-      const saved = await saveTripConfiguration(configToSave);
-      if (!saved) {
-        setError('Failed to save trip before adding to history');
+      // Strip ID to force a fresh insert — each history entry owns its own config
+      const configForSave = { ...config, id: undefined };
+      const newConfig = await saveTripConfiguration(configForSave);
+      if (!newConfig) {
+        setError('Failed to create trip config');
         return false;
       }
-      setSelectedTripId(saved.id || null);
-      setConfigState(saved);
-      setIsDirty(false);
 
-      const updatedTrips = await fetchTripConfigurations();
-      setTrips(updatedTrips);
-
-      const success = await saveToHistory(saved, pax, category, year, status, country);
-      if (!success) {
+      const historyEntry = await saveToHistory(newConfig, pax, category, year, status, country);
+      if (!historyEntry) {
         setError('Failed to save to history');
         return false;
       }
+
+      setConfigState(newConfig);
+      setLoadedHistoryEntry(historyEntry);
+      setIsDirty(false);
       return true;
     } catch (err) {
       setError('Failed to save to history');
@@ -199,62 +180,36 @@ export function useTripData(): UseTripDataReturn {
     } finally {
       setSaving(false);
     }
-  }, [config, selectedTripId, saving]);
+  }, [config, saving]);
 
-  // Delete a trip
-  const deleteTrip = useCallback(async (id: string) => {
-    if (!isSupabaseConfigured()) return;
-
-    try {
-      const success = await deleteTripConfiguration(id);
-      if (success) {
-        // Refresh trips list
-        const updatedTrips = await fetchTripConfigurations();
-        setTrips(updatedTrips);
-
-        // If we deleted the selected trip, reset to default
-        if (selectedTripId === id) {
-          setSelectedTripId(null);
-          setConfigState(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
-          setIsDirty(false);
-        }
-      }
-    } catch (err) {
-      setError('Failed to delete trip');
-      console.error(err);
-    }
-  }, [selectedTripId]);
-
-  // Refresh the trips list and sync current config name if it was renamed externally
-  const refreshTrips = useCallback(async () => {
-    if (!isSupabaseConfigured()) return;
-    const updatedTrips = await fetchTripConfigurations();
-    setTrips(updatedTrips);
-    if (selectedTripId) {
-      const updated = updatedTrips.find(t => t.id === selectedTripId);
-      if (updated) setConfigState(prev => ({ ...prev, name: updated.name }));
-    }
-  }, [selectedTripId]);
-
-  // Create a new trip
+  // Create a new blank trip
   const createNewTrip = useCallback(() => {
-    setSelectedTripId(null);
     setConfigState({ ...JSON.parse(JSON.stringify(DEFAULT_CONFIG)), name: 'New Trip' });
+    setLoadedHistoryEntry(null);
     setIsDirty(false);
   }, []);
+
+  // Sync the loaded trip's name from DB (called after a rename on the history tab)
+  const syncLoadedTripName = useCallback(async () => {
+    if (!loadedHistoryEntry?.tripConfigId) return;
+    const trip = await fetchTripConfiguration(loadedHistoryEntry.tripConfigId);
+    if (trip) {
+      setConfigState(prev => ({ ...prev, name: trip.name }));
+      setLoadedHistoryEntry(prev => prev ? { ...prev, name: trip.name } : prev);
+    }
+  }, [loadedHistoryEntry]);
 
   return {
     config,
     setConfig,
     updateConfig,
-    trips,
-    selectedTripId,
-    selectTrip,
+    loadedHistoryEntry,
+    isNewTrip,
+    loadFromHistory,
     saveTrip,
     saveTripsToHistory,
-    deleteTrip,
     createNewTrip,
-    refreshTrips,
+    syncLoadedTripName,
     isDirty,
     loading,
     saving,

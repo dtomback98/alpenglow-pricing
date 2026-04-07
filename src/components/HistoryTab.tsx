@@ -11,7 +11,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const CATEGORIES = ['All', 'Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 
 interface HistoryTabProps {
-  onLoadTrip?: (tripConfigId: string) => void;
+  onLoadTrip?: (trip: HistoricalTrip) => void;
   refreshKey?: number;
   onTripConfigRenamed?: () => void;
 }
@@ -19,7 +19,7 @@ interface HistoryTabProps {
 function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTripConfigRenamed }: {
   trips: HistoricalTrip[];
   title: string;
-  onLoadTrip?: (id: string) => void;
+  onLoadTrip?: (trip: HistoricalTrip) => void;
   onDeleteTrip?: (id: string) => void;
   onUpdateTrip?: (id: string, updates: { status?: string; notes?: string; name?: string; country?: string }) => Promise<boolean>;
   onTripConfigRenamed?: () => void;
@@ -150,7 +150,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
                   <div className="flex gap-1">
                     {onLoadTrip && trip.tripConfigId && (
                       <button
-                        onClick={() => onLoadTrip(trip.tripConfigId!)}
+                        onClick={() => onLoadTrip(trip)}
                         className="btn btn-secondary text-xs"
                       >
                         Load
