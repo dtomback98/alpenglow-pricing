@@ -17,6 +17,8 @@ interface HeaderProps {
   saving: boolean;
   isConnected: boolean;
   error: string | null;
+  loadedHistoryEntryId?: string;
+  loading?: boolean;
 }
 
 export default function Header({
@@ -30,6 +32,8 @@ export default function Header({
   saving,
   isConnected,
   error,
+  loadedHistoryEntryId,
+  loading,
 }: HeaderProps) {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyPax, setHistoryPax] = useState(config.paxMin || 1);
@@ -51,6 +55,14 @@ export default function Header({
     setHistoryPax(paxMin);
   }, [paxMin, paxMax, paxStep]);
 
+  // Reset modal fields when a different trip is loaded
+  useEffect(() => {
+    setHistoryCategory('Beg');
+    setHistoryYear(currentYear);
+    setHistoryStatus('budgeted');
+    setHistoryCountry('Other');
+  }, [loadedHistoryEntryId, currentYear]);
+
   // Clear save warning when isDirty or isNewTrip changes
   useEffect(() => {
     setSaveWarning(false);
@@ -70,6 +82,7 @@ export default function Header({
   };
 
   const handleSaveToHistory = async () => {
+    if (paxOptions.length === 0) return;
     if (!paxOptions.includes(historyPax)) return;
     setHistorySaving(true);
     setHistorySuccess(false);
@@ -157,12 +170,19 @@ export default function Header({
               <div className="absolute right-0 top-full mt-2 w-72 bg-ag-card border border-ag-border rounded-lg shadow-lg p-4 z-50">
                 <h3 className="text-sm font-semibold text-ag-text mb-3">Save to {historyYear} History</h3>
 
+                {paxOptions.length === 0 && (
+                  <div className="mb-3 p-2 bg-ag-danger/20 border border-ag-danger rounded text-xs text-ag-danger">
+                    Invalid pax range — Min Pax must be less than or equal to Max Pax before saving.
+                  </div>
+                )}
+
                 <div className="form-group mb-3">
                   <label className="form-label">Pax Size</label>
                   <select
                     value={historyPax}
                     onChange={(e) => setHistoryPax(Number(e.target.value))}
                     className="w-full"
+                    disabled={paxOptions.length === 0}
                   >
                     {paxOptions.map(p => (
                       <option key={p} value={p}>{p} pax</option>
@@ -224,7 +244,7 @@ export default function Header({
                 <div className="flex gap-2">
                   <button
                     onClick={handleSaveToHistory}
-                    disabled={historySaving}
+                    disabled={historySaving || paxOptions.length === 0}
                     className="btn btn-primary flex-1"
                   >
                     {historySaving ? 'Saving...' : historySuccess ? 'Saved!' : 'Confirm'}

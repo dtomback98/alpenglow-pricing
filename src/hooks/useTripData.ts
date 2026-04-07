@@ -72,6 +72,7 @@ export function useTripData(): UseTripDataReturn {
       setError('This entry has no linked config and cannot be loaded.');
       return;
     }
+    if (loading) return;
 
     setLoading(true);
     setError(null);
@@ -91,7 +92,7 @@ export function useTripData(): UseTripDataReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loading]);
 
   // Save: overwrites the currently loaded trip config and updates the history entry numbers
   const saveTrip = useCallback(async () => {

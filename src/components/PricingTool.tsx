@@ -53,11 +53,16 @@ export default function PricingTool() {
         saving={tripData.saving}
         isConnected={tripData.isConnected}
         error={tripData.error}
+        loadedHistoryEntryId={tripData.loadedHistoryEntry?.id}
+        loading={tripData.loading}
       />
 
       <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <div className="mt-6">
+        {tripData.loading && (
+          <div className="text-center text-ag-text-muted text-sm py-3">Loading trip...</div>
+        )}
         {activeTab === 'summary' && (
           <SummaryTab config={tripData.config} updateConfig={tripData.updateConfig} isNewTrip={tripData.isNewTrip} />
         )}
