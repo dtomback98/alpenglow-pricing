@@ -221,6 +221,8 @@ export interface TripConfiguration {
   discountsEnabled: boolean;
   earlyBirdDiscount: number;
   earlyBirdCountByPax: { [pax: number]: number };
+  earlyBirdDiscount2?: number;
+  earlyBirdCountByPax2?: { [pax: number]: number };
   loyaltyDiscountRate: number;
   loyaltyCountByPax: { [pax: number]: number };
 

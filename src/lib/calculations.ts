@@ -248,7 +248,8 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   // Discounts (gated, clamped to pax count)
   const discountsOn = config.discountsEnabled !== false;
   const earlyBirdCount = discountsOn ? Math.min(config.earlyBirdCountByPax?.[pax] || 0, pax) : 0;
-  const earlyBirdCost = config.earlyBirdDiscount * earlyBirdCount;
+  const earlyBirdCount2 = discountsOn ? Math.min(config.earlyBirdCountByPax2?.[pax] || 0, pax) : 0;
+  const earlyBirdCost = config.earlyBirdDiscount * earlyBirdCount + (config.earlyBirdDiscount2 || 0) * earlyBirdCount2;
   const loyaltyCount = discountsOn ? Math.min(config.loyaltyCountByPax?.[pax] || 0, pax) : 0;
   const loyaltyCost = perPersonPrice * loyaltyCount * config.loyaltyDiscountRate;
 

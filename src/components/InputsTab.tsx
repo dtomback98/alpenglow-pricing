@@ -102,6 +102,12 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   }, [config.tripDays, config.staffConfig.useCustomStaffDays, updateConfig]);
   const pricingPerPax = config.uiPreferences?.pricingPerPax ?? false;
   const discountsPerPax = config.uiPreferences?.discountsPerPax ?? false;
+  const [showEarlyBird2, setShowEarlyBird2] = useState(() =>
+    (config.earlyBirdDiscount2 || 0) > 0 || Object.values(config.earlyBirdCountByPax2 || {}).some(v => v > 0)
+  );
+  useEffect(() => {
+    setShowEarlyBird2((config.earlyBirdDiscount2 || 0) > 0 || Object.values(config.earlyBirdCountByPax2 || {}).some(v => v > 0));
+  }, [config.earlyBirdDiscount2, config.earlyBirdCountByPax2]);
   const singleSuppPerPax = config.uiPreferences?.singleSuppPerPax ?? false;
   const hotelsMealsPerPax = config.uiPreferences?.hotelsMealsPerPax ?? false;
   const transportPerPax = config.uiPreferences?.transportPerPax ?? false;
@@ -382,6 +388,33 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 <NumInput type="number" step="0.01" value={config.loyaltyDiscountRate * 100} onChange={(e) => updateConfig({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
               </div>
             </div>
+
+            {/* Early Bird 2 */}
+            {showEarlyBird2 ? (
+              <div className="mt-4 pt-4 border-t border-ag-border">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium">Early Bird 2</span>
+                  <button
+                    className="btn btn-danger text-xs"
+                    onClick={() => {
+                      updateConfig({ earlyBirdDiscount2: 0, earlyBirdCountByPax2: {} });
+                      setShowEarlyBird2(false);
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Early Bird 2 Discount ($)</label>
+                  <p className="text-xs text-ag-text-muted mb-1">Amount discounted per early bird 2 guest</p>
+                  <NumInput type="number" value={config.earlyBirdDiscount2 || 0} onChange={(e) => updateConfig({ earlyBirdDiscount2: Number(e.target.value) })} className="w-full max-w-xs" />
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3">
+                <button className="btn btn-secondary text-xs" onClick={() => setShowEarlyBird2(true)}>+ Early Bird 2</button>
+              </div>
+            )}
             {!discountsPerPax ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-ag-border">
                 <div className="form-group">
@@ -389,6 +422,13 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
                   <NumInput type="number" min="0" value={config.earlyBirdCountByPax?.[paxCounts[0]] || 0} onChange={(e) => { updateConfig({ earlyBirdCountByPax: applyToAllPax(undefined, Number(e.target.value)) }); }} className="w-full" />
                 </div>
+                {showEarlyBird2 && (
+                  <div className="form-group">
+                    <label className="form-label">Early Bird 2 Count</label>
+                    <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
+                    <NumInput type="number" min="0" value={config.earlyBirdCountByPax2?.[paxCounts[0]] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig({ earlyBirdCountByPax2: applyToAllPax(undefined, val) }); }} className="w-full" />
+                  </div>
+                )}
                 <div className="form-group">
                   <label className="form-label">Loyalty Count</label>
                   <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
@@ -412,6 +452,23 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     ))}
                   </div>
                 </div>
+                {showEarlyBird2 && (
+                  <div className="mt-4 pt-4 border-t border-ag-border">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="form-label mb-0">Early Bird 2 Count by Pax</label>
+                      <button onClick={() => updateConfig({ earlyBirdCountByPax2: applyToAllPax(config.earlyBirdCountByPax2, 0) })} className="btn btn-secondary text-xs">Apply First to All</button>
+                    </div>
+                    <p className="text-xs text-ag-text-muted mb-2">How many guests get the early bird 2 discount at each group size</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                      {paxCounts.map((p) => (
+                        <div key={p} className="form-group">
+                          <label className="form-label text-center">{p} pax</label>
+                          <NumInput type="number" min="0" value={config.earlyBirdCountByPax2?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ earlyBirdCountByPax2: { ...prev.earlyBirdCountByPax2, [p]: val } })); }} className="w-full text-center" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="mt-4 pt-4 border-t border-ag-border">
                   <div className="flex items-center justify-between mb-2">
                     <label className="form-label mb-0">Loyalty Count by Pax</label>
