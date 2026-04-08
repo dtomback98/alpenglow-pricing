@@ -203,7 +203,26 @@ export const STATUS_BADGE_CLASSES: Record<string, string> = {
 };
 
 // Countries list (shared between Header and HistoryTab)
-export const COUNTRIES = ['Antarctica', 'Argentina', 'Bolivia', 'Canada', 'Chile', 'Ecuador', 'Japan', 'Kyrgyzstan', 'Mexico', 'Nepal', 'Peru', 'Tanzania', 'Other'];
+export const EXPEDITIONS = [
+  'Aconcagua',
+  'Alpamayo',
+  'Ama Dablam',
+  'Chile Volcanoes',
+  'Cotopaxi',
+  'ECS',
+  'Everest',
+  'Huayhuash',
+  'Japan Ski',
+  'Kilimanjaro',
+  'Lenin',
+  'Mexico Volcanoes',
+  'Mountains of Bolivia',
+  'Patagonia Ski',
+  'PCS',
+  'PVT Ecuador',
+  'Vinson',
+  'Other',
+];
 
 // Category labels
 export const CATEGORY_LABELS: Record<string, string> = {

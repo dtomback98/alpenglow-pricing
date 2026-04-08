@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useHistoricalData } from '@/hooks/useHistoricalData';
-import { CATEGORY_COLORS, CATEGORY_LABELS, STATUS_ORDER, STATUS_LABELS, STATUS_BADGE_CLASSES, COUNTRIES } from '@/lib/constants';
+import { CATEGORY_COLORS, CATEGORY_LABELS, STATUS_ORDER, STATUS_LABELS, STATUS_BADGE_CLASSES, EXPEDITIONS } from '@/lib/constants';
 import { formatCurrency, formatPercent, getMarginColor } from '@/lib/calculations';
 import { exportHistoricalTrips } from '@/lib/excelExport';
 import { HistoricalTrip } from '@/lib/types';
@@ -53,7 +53,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
             <th>Trip</th>
             <th>Cat</th>
             <th>Status</th>
-            <th>Country</th>
+            <th>Expedition</th>
             <th>Pax</th>
             <th>$/Pax</th>
             <th>Revenue</th>
@@ -143,8 +143,8 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
                     value={trip.country || 'Other'}
                     onChange={async (e) => { await onUpdateTrip(trip.id, { country: e.target.value }); }}
                   >
-                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-                    {trip.country && !COUNTRIES.includes(trip.country) && (
+                    {EXPEDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                    {trip.country && !EXPEDITIONS.includes(trip.country) && (
                       <option key={trip.country} value={trip.country}>{trip.country}</option>
                     )}
                   </select>
@@ -358,7 +358,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
           </div>
           {availableCountries.length > 0 && (
             <div>
-              <p className="text-xs text-ag-text-muted mb-2">Country</p>
+              <p className="text-xs text-ag-text-muted mb-2">Expedition</p>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setSelectedCountry(null)}

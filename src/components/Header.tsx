@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { TripConfiguration } from '@/lib/types';
-import { COUNTRIES } from '@/lib/constants';
+import { EXPEDITIONS } from '@/lib/constants';
 
 const CATEGORIES = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 
@@ -87,7 +87,7 @@ export default function Header({
     setHistorySaving(true);
     setHistorySuccess(false);
     const trimmed = historyCountry.trim();
-    const normalizedCountry = COUNTRIES.find(c => c.toLowerCase() === trimmed.toLowerCase()) ?? trimmed;
+    const normalizedCountry = EXPEDITIONS.find(c => c.toLowerCase() === trimmed.toLowerCase()) ?? trimmed;
     const success = await saveTripsToHistory(historyPax, historyCategory, historyYear, historyStatus, normalizedCountry);
     setHistorySaving(false);
     if (success) {
@@ -222,23 +222,14 @@ export default function Header({
                 </div>
 
                 <div className="form-group mb-4">
-                  <label className="form-label">Country</label>
-                  <input
-                    type="text"
-                    list="country-suggestions"
+                  <label className="form-label">Expedition</label>
+                  <select
                     value={historyCountry}
                     onChange={(e) => setHistoryCountry(e.target.value)}
-                    onBlur={(e) => {
-                      const trimmed = e.target.value.trim();
-                      const match = COUNTRIES.find(c => c.toLowerCase() === trimmed.toLowerCase());
-                      setHistoryCountry(match ?? trimmed);
-                    }}
                     className="w-full"
-                    placeholder="Type or select a country"
-                  />
-                  <datalist id="country-suggestions">
-                    {COUNTRIES.map(c => <option key={c} value={c} />)}
-                  </datalist>
+                  >
+                    {EXPEDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
 
                 <div className="flex gap-2">
