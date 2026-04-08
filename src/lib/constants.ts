@@ -15,8 +15,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
   earlyBirdCountByPax: Object.fromEntries(
     Array.from({ length: 16 }, (_, i) => [i + 1, 0])
   ),
-  earlyBirdDiscount2: 0,
-  earlyBirdCountByPax2: {},
+  earlyBirdTiers: [],
   loyaltyDiscountRate: 0,
   loyaltyCountByPax: Object.fromEntries(
     Array.from({ length: 16 }, (_, i) => [i + 1, 0])

@@ -149,8 +149,6 @@ function rowToConfig(row: any): TripConfiguration {
     discountsEnabled: row.discounts_enabled ?? true,
     earlyBirdDiscount: Number(row.early_bird_discount),
     earlyBirdCountByPax: row.early_bird_count_by_pax || migrateEarlyBirdTakeup(Number(row.early_bird_takeup), row.pax_max || 16),
-    earlyBirdDiscount2: row.ui_preferences?.earlyBirdDiscount2 || 0,
-    earlyBirdCountByPax2: row.ui_preferences?.earlyBirdCountByPax2 || {},
     discountsActiveMode: row.ui_preferences?.discountsActiveMode || undefined,
     // Migrate simple counts: if not stored, derive from byPax when trip was in simple mode
     earlyBirdCountSimple: row.ui_preferences?.earlyBirdCountSimple != null
@@ -158,7 +156,21 @@ function rowToConfig(row: any): TripConfiguration {
       : (!row.ui_preferences?.discountsPerPax
           ? (Object.values(row.early_bird_count_by_pax || {})[0] ?? 0)
           : 0),
-    earlyBirdCount2Simple: row.ui_preferences?.earlyBirdCount2Simple ?? 0,
+    earlyBirdTiers: (() => {
+      const stored = row.ui_preferences?.earlyBirdTiers;
+      if (stored) return stored;
+      // Migrate legacy earlyBirdDiscount2 to a tier
+      const d2 = row.ui_preferences?.earlyBirdDiscount2 || 0;
+      if (d2 > 0) {
+        return [{
+          id: `migrated-eb2-${Date.now()}`,
+          discount: d2,
+          countSimple: row.ui_preferences?.earlyBirdCount2Simple ?? 0,
+          countByPax: row.ui_preferences?.earlyBirdCountByPax2 || {},
+        }];
+      }
+      return [];
+    })(),
     loyaltyCountSimple: row.ui_preferences?.loyaltyCountSimple != null
       ? row.ui_preferences.loyaltyCountSimple
       : (!row.ui_preferences?.discountsPerPax
@@ -213,7 +225,7 @@ function configToRow(config: TripConfiguration): any {
     transport_config: config.transportConfig,
     trip_specific: config.tripSpecific,
     // Clear tripPriceMode when per-pax pricing is active to prevent mode+byPax co-persistence inflating revenue
-    ui_preferences: { ...(config.uiPreferences || {}), tripPriceMode: config.tripPriceByPax ? undefined : config.tripPriceMode, tripPriceByPax: config.tripPriceByPax, notes: config.notes || '', earlyBirdDiscount2: config.earlyBirdDiscount2 || 0, earlyBirdCountByPax2: config.earlyBirdCountByPax2 || {}, discountsActiveMode: config.discountsActiveMode, earlyBirdCountSimple: config.earlyBirdCountSimple ?? 0, earlyBirdCount2Simple: config.earlyBirdCount2Simple ?? 0, loyaltyCountSimple: config.loyaltyCountSimple ?? 0 },
+    ui_preferences: { ...(config.uiPreferences || {}), tripPriceMode: config.tripPriceByPax ? undefined : config.tripPriceMode, tripPriceByPax: config.tripPriceByPax, notes: config.notes || '', earlyBirdTiers: config.earlyBirdTiers || [], discountsActiveMode: config.discountsActiveMode, earlyBirdCountSimple: config.earlyBirdCountSimple ?? 0, loyaltyCountSimple: config.loyaltyCountSimple ?? 0 },
   };
 }
 

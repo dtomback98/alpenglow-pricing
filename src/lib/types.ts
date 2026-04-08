@@ -189,12 +189,18 @@ export interface SingleSupplementConfig {
   countByPax: { [pax: number]: number };
 }
 
+export interface EarlyBirdTier {
+  id: string;
+  discount: number;
+  countSimple?: number;
+  countByPax?: { [pax: number]: number };
+}
+
 export interface UiPreferences {
   pricingPerPax?: boolean;
   discountsPerPax?: boolean;
   discountsActiveMode?: 'simple' | 'perPax';
   earlyBirdCountSimple?: number;
-  earlyBirdCount2Simple?: number;
   loyaltyCountSimple?: number;
   singleSuppPerPax?: boolean;
   hotelsMealsPerPax?: boolean;
@@ -233,9 +239,7 @@ export interface TripConfiguration {
   earlyBirdDiscount: number;
   earlyBirdCountSimple?: number; // simple-mode count (same for all group sizes)
   earlyBirdCountByPax: { [pax: number]: number };
-  earlyBirdDiscount2?: number;
-  earlyBirdCount2Simple?: number;
-  earlyBirdCountByPax2?: { [pax: number]: number };
+  earlyBirdTiers?: EarlyBirdTier[]; // additional early bird tiers (EB2, EB3, ...)
   loyaltyDiscountRate: number;
   loyaltyCountSimple?: number;
   loyaltyCountByPax: { [pax: number]: number };

@@ -254,13 +254,16 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
     : (config.earlyBirdCountByPax?.[pax] || 0), // legacy: use byPax
     pax
   ) : 0;
-  const earlyBirdCount2 = discountsOn ? Math.min(
-    discountsAM === 'simple' ? (config.earlyBirdCount2Simple ?? 0)
-    : discountsAM === 'perPax' ? (config.earlyBirdCountByPax2?.[pax] || 0)
-    : (config.earlyBirdCountByPax2?.[pax] || 0),
-    pax
-  ) : 0;
-  const earlyBirdCost = config.earlyBirdDiscount * earlyBirdCount + (config.earlyBirdDiscount2 || 0) * earlyBirdCount2;
+  let earlyBirdCost = config.earlyBirdDiscount * earlyBirdCount;
+  for (const tier of (config.earlyBirdTiers || [])) {
+    const tierCount = discountsOn ? Math.min(
+      discountsAM === 'simple' ? (tier.countSimple ?? 0)
+      : discountsAM === 'perPax' ? (tier.countByPax?.[pax] || 0)
+      : (tier.countByPax?.[pax] || 0),
+      pax
+    ) : 0;
+    earlyBirdCost += tier.discount * tierCount;
+  }
   const loyaltyCount = discountsOn ? Math.min(
     discountsAM === 'simple' ? (config.loyaltyCountSimple ?? 0)
     : discountsAM === 'perPax' ? (config.loyaltyCountByPax?.[pax] || 0)

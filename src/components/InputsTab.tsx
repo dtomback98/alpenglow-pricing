@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TripConfiguration, StaffMember, TripSpecificCost, CustomTripCost, AdditionalHotel } from '@/lib/types';
+import { TripConfiguration, StaffMember, TripSpecificCost, CustomTripCost, AdditionalHotel, EarlyBirdTier } from '@/lib/types';
 
 interface InputsTabProps {
   config: TripConfiguration;
@@ -115,12 +115,22 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   const hmEffectiveAM: 'simple' | 'perPax' = config.hotelsMeals.activeMode ?? (config.hotelsMeals.hotelCostByPax && Object.keys(config.hotelsMeals.hotelCostByPax).length > 0 ? 'perPax' : 'simple');
   const logEffectiveAM: 'simple' | 'perPax' = config.logistics.activeMode ?? (config.logistics.simpleMode !== false ? 'simple' : 'perPax');
   const transportEffectiveAM: 'simple' | 'perPax' = config.transportConfig.activeMode ?? (config.transportConfig.groundTransportByPax && Object.keys(config.transportConfig.groundTransportByPax).length > 0 ? 'perPax' : 'simple');
-  const [showEarlyBird2, setShowEarlyBird2] = useState(() =>
-    (config.earlyBirdDiscount2 || 0) > 0 || Object.values(config.earlyBirdCountByPax2 || {}).some(v => v > 0)
-  );
-  useEffect(() => {
-    setShowEarlyBird2((config.earlyBirdDiscount2 || 0) > 0 || Object.values(config.earlyBirdCountByPax2 || {}).some(v => v > 0));
-  }, [config.earlyBirdDiscount2, config.earlyBirdCountByPax2]);
+  const earlyBirdTiers = config.earlyBirdTiers || [];
+  const addEarlyBirdTier = () => {
+    const newTier: EarlyBirdTier = {
+      id: `eb-${Date.now()}`,
+      discount: 0,
+      countSimple: 0,
+      countByPax: Object.fromEntries(paxCounts.map(p => [p, 0])),
+    };
+    updateConfig({ earlyBirdTiers: [...earlyBirdTiers, newTier] });
+  };
+  const removeEarlyBirdTier = (id: string) => {
+    updateConfig({ earlyBirdTiers: earlyBirdTiers.filter(t => t.id !== id) });
+  };
+  const updateEarlyBirdTier = (id: string, updates: Partial<EarlyBirdTier>) => {
+    updateConfig({ earlyBirdTiers: earlyBirdTiers.map(t => t.id === id ? { ...t, ...updates } : t) });
+  };
   const singleSuppPerPax = config.uiPreferences?.singleSuppPerPax ?? false;
   const hotelsMealsPerPax = config.uiPreferences?.hotelsMealsPerPax ?? false;
   const transportPerPax = config.uiPreferences?.transportPerPax ?? false;
@@ -449,31 +459,29 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     <NumInput type="number" min="0" value={config.earlyBirdCountSimple ?? 0} onChange={(e) => updateConfig({ earlyBirdCountSimple: Number(e.target.value) })} className="w-full" />
                   </div>
                 </div>
-                {showEarlyBird2 && (
-                  <div className="mt-4 pt-4 border-t border-ag-border">
+                {earlyBirdTiers.map((tier, idx) => (
+                  <div key={tier.id} className="mt-4 pt-4 border-t border-ag-border">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium">Early Bird 2</span>
-                      <button className="btn btn-danger text-xs" onClick={() => { updateConfig({ earlyBirdDiscount2: 0, earlyBirdCountByPax2: {}, earlyBirdCount2Simple: 0 }); setShowEarlyBird2(false); }}>Remove</button>
+                      <span className="text-sm font-medium">Early Bird {idx + 2}</span>
+                      <button className="btn btn-danger text-xs" onClick={() => removeEarlyBirdTier(tier.id)}>Remove</button>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="form-group">
-                        <label className="form-label">Early Bird 2 Discount ($)</label>
-                        <p className="text-xs text-ag-text-muted mb-1">Amount discounted per early bird 2 guest</p>
-                        <NumInput type="number" value={config.earlyBirdDiscount2 || 0} onChange={(e) => updateConfig({ earlyBirdDiscount2: Number(e.target.value) })} className="w-full" />
+                        <label className="form-label">Early Bird {idx + 2} Discount ($)</label>
+                        <p className="text-xs text-ag-text-muted mb-1">Amount discounted per guest</p>
+                        <NumInput type="number" value={tier.discount} onChange={(e) => updateEarlyBirdTier(tier.id, { discount: Number(e.target.value) })} className="w-full" />
                       </div>
                       <div className="form-group">
-                        <label className="form-label">Early Bird 2 Count</label>
+                        <label className="form-label">Early Bird {idx + 2} Count</label>
                         <p className="text-xs text-ag-text-muted mb-1">Same count for all group sizes</p>
-                        <NumInput type="number" min="0" value={config.earlyBirdCount2Simple ?? 0} onChange={(e) => updateConfig({ earlyBirdCount2Simple: Number(e.target.value) })} className="w-full" />
+                        <NumInput type="number" min="0" value={tier.countSimple ?? 0} onChange={(e) => updateEarlyBirdTier(tier.id, { countSimple: Number(e.target.value) })} className="w-full" />
                       </div>
                     </div>
                   </div>
-                )}
-                {!showEarlyBird2 && (
-                  <div className="mt-4">
-                    <button className="btn btn-secondary text-xs" onClick={() => setShowEarlyBird2(true)}>+ Early Bird 2</button>
-                  </div>
-                )}
+                ))}
+                <div className="mt-4">
+                  <button className="btn btn-secondary text-xs" onClick={addEarlyBirdTier}>+ Early Bird</button>
+                </div>
               </>
             ) : (
               <>
@@ -522,41 +530,39 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     </div>
                   </div>
                 </div>
-                {showEarlyBird2 && (
-                  <div className="mt-4 pt-4 border-t border-ag-border">
+                {earlyBirdTiers.map((tier, idx) => (
+                  <div key={tier.id} className="mt-4 pt-4 border-t border-ag-border">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium">Early Bird 2</span>
-                      <button className="btn btn-danger text-xs" onClick={() => { updateConfig({ earlyBirdDiscount2: 0, earlyBirdCountByPax2: {} }); setShowEarlyBird2(false); }}>Remove</button>
+                      <span className="text-sm font-medium">Early Bird {idx + 2}</span>
+                      <button className="btn btn-danger text-xs" onClick={() => removeEarlyBirdTier(tier.id)}>Remove</button>
                     </div>
                     <div className="flex gap-6 items-start">
                       <div className="form-group w-40 shrink-0">
-                        <label className="form-label">EB2 Discount ($)</label>
-                        <p className="text-xs text-ag-text-muted mb-1">Amount per early bird 2 guest</p>
-                        <NumInput type="number" value={config.earlyBirdDiscount2 || 0} onChange={(e) => updateConfig({ earlyBirdDiscount2: Number(e.target.value) })} className="w-full" />
+                        <label className="form-label">EB{idx + 2} Discount ($)</label>
+                        <p className="text-xs text-ag-text-muted mb-1">Amount per guest</p>
+                        <NumInput type="number" value={tier.discount} onChange={(e) => updateEarlyBirdTier(tier.id, { discount: Number(e.target.value) })} className="w-full" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-2">
-                          <label className="form-label mb-0">Early Bird 2 Count by Pax</label>
-                          <button onClick={() => updateConfig({ earlyBirdCountByPax2: applyToAllPax(config.earlyBirdCountByPax2, 0) })} className="btn btn-secondary text-xs">Apply First to All</button>
+                          <label className="form-label mb-0">Early Bird {idx + 2} Count by Pax</label>
+                          <button onClick={() => updateEarlyBirdTier(tier.id, { countByPax: applyToAllPax(tier.countByPax, 0) })} className="btn btn-secondary text-xs">Apply First to All</button>
                         </div>
-                        <p className="text-xs text-ag-text-muted mb-2">How many guests get the early bird 2 discount at each group size</p>
+                        <p className="text-xs text-ag-text-muted mb-2">How many guests get this discount at each group size</p>
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
                           {paxCounts.map((p) => (
                             <div key={p}>
                               <label className="text-xs text-ag-text-muted text-center block mb-1">{p} pax</label>
-                              <NumInput type="number" min="0" value={config.earlyBirdCountByPax2?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ earlyBirdCountByPax2: { ...prev.earlyBirdCountByPax2, [p]: val } })); }} className="w-full text-center" />
+                              <NumInput type="number" min="0" value={tier.countByPax?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateEarlyBirdTier(tier.id, { countByPax: { ...tier.countByPax, [p]: val } }); }} className="w-full text-center" />
                             </div>
                           ))}
                         </div>
                       </div>
                     </div>
                   </div>
-                )}
-                {!showEarlyBird2 && (
-                  <div className="mt-4">
-                    <button className="btn btn-secondary text-xs" onClick={() => setShowEarlyBird2(true)}>+ Early Bird 2</button>
-                  </div>
-                )}
+                ))}
+                <div className="mt-4">
+                  <button className="btn btn-secondary text-xs" onClick={addEarlyBirdTier}>+ Early Bird</button>
+                </div>
               </>
             )}
           </>
