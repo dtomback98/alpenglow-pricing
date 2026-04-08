@@ -391,114 +391,141 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <p className="text-sm text-ag-text-muted">Section disabled — discounts will not be applied to calculations.</p>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="form-group">
-                <label className="form-label">Early Bird Discount ($)</label>
-                <p className="text-xs text-ag-text-muted mb-1">Amount discounted per early bird guest</p>
-                <NumInput type="number" value={config.earlyBirdDiscount} onChange={(e) => updateConfig({ earlyBirdDiscount: Number(e.target.value) })} className="w-full" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Loyalty Discount Rate (%)</label>
-                <p className="text-xs text-ag-text-muted mb-1">% discount on trip price per loyalty guest</p>
-                <NumInput type="number" step="0.01" value={config.loyaltyDiscountRate * 100} onChange={(e) => updateConfig({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
-              </div>
-            </div>
-
-            {/* Early Bird 2 */}
-            {showEarlyBird2 ? (
-              <div className="mt-4 pt-4 border-t border-ag-border">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium">Early Bird 2</span>
-                  <button
-                    className="btn btn-danger text-xs"
-                    onClick={() => {
-                      updateConfig({ earlyBirdDiscount2: 0, earlyBirdCountByPax2: {} });
-                      setShowEarlyBird2(false);
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Early Bird 2 Discount ($)</label>
-                  <p className="text-xs text-ag-text-muted mb-1">Amount discounted per early bird 2 guest</p>
-                  <NumInput type="number" value={config.earlyBirdDiscount2 || 0} onChange={(e) => updateConfig({ earlyBirdDiscount2: Number(e.target.value) })} className="w-full max-w-xs" />
-                </div>
-              </div>
-            ) : (
-              <div className="mt-3">
-                <button className="btn btn-secondary text-xs" onClick={() => setShowEarlyBird2(true)}>+ Early Bird 2</button>
-              </div>
-            )}
             {!discountsPerPax ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-ag-border">
-                <div className="form-group">
-                  <label className="form-label">Early Bird Count</label>
-                  <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                  <NumInput type="number" min="0" value={config.earlyBirdCountByPax?.[paxCounts[0]] || 0} onChange={(e) => { updateConfig({ earlyBirdCountByPax: applyToAllPax(undefined, Number(e.target.value)) }); }} className="w-full" />
-                </div>
-                {showEarlyBird2 && (
-                  <div className="form-group">
-                    <label className="form-label">Early Bird 2 Count</label>
-                    <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                    <NumInput type="number" min="0" value={config.earlyBirdCountByPax2?.[paxCounts[0]] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig({ earlyBirdCountByPax2: applyToAllPax(undefined, val) }); }} className="w-full" />
-                  </div>
-                )}
-                <div className="form-group">
-                  <label className="form-label">Loyalty Count</label>
-                  <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                  <NumInput type="number" min="0" value={config.loyaltyCountByPax?.[paxCounts[0]] || 0} onChange={(e) => { updateConfig({ loyaltyCountByPax: applyToAllPax(undefined, Number(e.target.value)) }); }} className="w-full" />
-                </div>
-              </div>
-            ) : (
               <>
-                <div className="mt-4 pt-4 border-t border-ag-border">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="form-label mb-0">Early Bird Count by Pax</label>
-                    <button onClick={() => updateConfig({ earlyBirdCountByPax: applyToAllPax(config.earlyBirdCountByPax, 0) })} className="btn btn-secondary text-xs">Apply First to All</button>
+                {/* Simple mode: rate + count side by side per discount type */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="form-group">
+                    <label className="form-label">Loyalty Discount Rate (%)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">% discount on trip price per loyalty guest</p>
+                    <NumInput type="number" step="0.01" value={config.loyaltyDiscountRate * 100} onChange={(e) => updateConfig({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
                   </div>
-                  <p className="text-xs text-ag-text-muted mb-2">How many guests get the early bird discount at each group size</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-                    {paxCounts.map((p) => (
-                      <div key={p}>
-                        <label className="text-xs text-ag-text-muted text-center block mb-1">{p} pax</label>
-                        <NumInput type="number" min="0" value={config.earlyBirdCountByPax?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ earlyBirdCountByPax: { ...prev.earlyBirdCountByPax, [p]: val } })); }} className="w-full text-center" />
-                      </div>
-                    ))}
+                  <div className="form-group">
+                    <label className="form-label">Loyalty Count</label>
+                    <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
+                    <NumInput type="number" min="0" value={config.loyaltyCountByPax?.[paxCounts[0]] || 0} onChange={(e) => { updateConfig({ loyaltyCountByPax: applyToAllPax(undefined, Number(e.target.value)) }); }} className="w-full" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="form-group">
+                    <label className="form-label">Early Bird Discount ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">Amount discounted per early bird guest</p>
+                    <NumInput type="number" value={config.earlyBirdDiscount} onChange={(e) => updateConfig({ earlyBirdDiscount: Number(e.target.value) })} className="w-full" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Early Bird Count</label>
+                    <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
+                    <NumInput type="number" min="0" value={config.earlyBirdCountByPax?.[paxCounts[0]] || 0} onChange={(e) => { updateConfig({ earlyBirdCountByPax: applyToAllPax(undefined, Number(e.target.value)) }); }} className="w-full" />
                   </div>
                 </div>
                 {showEarlyBird2 && (
                   <div className="mt-4 pt-4 border-t border-ag-border">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="form-label mb-0">Early Bird 2 Count by Pax</label>
-                      <button onClick={() => updateConfig({ earlyBirdCountByPax2: applyToAllPax(config.earlyBirdCountByPax2, 0) })} className="btn btn-secondary text-xs">Apply First to All</button>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium">Early Bird 2</span>
+                      <button className="btn btn-danger text-xs" onClick={() => { updateConfig({ earlyBirdDiscount2: 0, earlyBirdCountByPax2: {} }); setShowEarlyBird2(false); }}>Remove</button>
                     </div>
-                    <p className="text-xs text-ag-text-muted mb-2">How many guests get the early bird 2 discount at each group size</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="form-group">
+                        <label className="form-label">Early Bird 2 Discount ($)</label>
+                        <p className="text-xs text-ag-text-muted mb-1">Amount discounted per early bird 2 guest</p>
+                        <NumInput type="number" value={config.earlyBirdDiscount2 || 0} onChange={(e) => updateConfig({ earlyBirdDiscount2: Number(e.target.value) })} className="w-full" />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Early Bird 2 Count</label>
+                        <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
+                        <NumInput type="number" min="0" value={config.earlyBirdCountByPax2?.[paxCounts[0]] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig({ earlyBirdCountByPax2: applyToAllPax(undefined, val) }); }} className="w-full" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {!showEarlyBird2 && (
+                  <div className="mt-4">
+                    <button className="btn btn-secondary text-xs" onClick={() => setShowEarlyBird2(true)}>+ Early Bird 2</button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {/* Per-pax mode: rate on left, count grid on right */}
+                <div className="flex gap-6 items-start">
+                  <div className="form-group w-40 shrink-0">
+                    <label className="form-label">Loyalty Rate (%)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">% discount per loyalty guest</p>
+                    <NumInput type="number" step="0.01" value={config.loyaltyDiscountRate * 100} onChange={(e) => updateConfig({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="form-label mb-0">Loyalty Count by Pax</label>
+                      <button onClick={() => updateConfig({ loyaltyCountByPax: applyToAllPax(config.loyaltyCountByPax, 0) })} className="btn btn-secondary text-xs">Apply First to All</button>
+                    </div>
+                    <p className="text-xs text-ag-text-muted mb-2">How many guests get the loyalty discount at each group size</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
                       {paxCounts.map((p) => (
                         <div key={p}>
                           <label className="text-xs text-ag-text-muted text-center block mb-1">{p} pax</label>
-                          <NumInput type="number" min="0" value={config.earlyBirdCountByPax2?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ earlyBirdCountByPax2: { ...prev.earlyBirdCountByPax2, [p]: val } })); }} className="w-full text-center" />
+                          <NumInput type="number" min="0" value={config.loyaltyCountByPax?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ loyaltyCountByPax: { ...prev.loyaltyCountByPax, [p]: val } })); }} className="w-full text-center" />
                         </div>
                       ))}
                     </div>
                   </div>
-                )}
-                <div className="mt-4 pt-4 border-t border-ag-border">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="form-label mb-0">Loyalty Count by Pax</label>
-                    <button onClick={() => updateConfig({ loyaltyCountByPax: applyToAllPax(config.loyaltyCountByPax, 0) })} className="btn btn-secondary text-xs">Apply First to All</button>
+                </div>
+                <div className="mt-4 pt-4 border-t border-ag-border flex gap-6 items-start">
+                  <div className="form-group w-40 shrink-0">
+                    <label className="form-label">Early Bird Discount ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">Amount per early bird guest</p>
+                    <NumInput type="number" value={config.earlyBirdDiscount} onChange={(e) => updateConfig({ earlyBirdDiscount: Number(e.target.value) })} className="w-full" />
                   </div>
-                  <p className="text-xs text-ag-text-muted mb-2">How many guests get the loyalty discount at each group size</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-                    {paxCounts.map((p) => (
-                      <div key={p}>
-                        <label className="text-xs text-ag-text-muted text-center block mb-1">{p} pax</label>
-                        <NumInput type="number" min="0" value={config.loyaltyCountByPax?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ loyaltyCountByPax: { ...prev.loyaltyCountByPax, [p]: val } })); }} className="w-full text-center" />
-                      </div>
-                    ))}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="form-label mb-0">Early Bird Count by Pax</label>
+                      <button onClick={() => updateConfig({ earlyBirdCountByPax: applyToAllPax(config.earlyBirdCountByPax, 0) })} className="btn btn-secondary text-xs">Apply First to All</button>
+                    </div>
+                    <p className="text-xs text-ag-text-muted mb-2">How many guests get the early bird discount at each group size</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+                      {paxCounts.map((p) => (
+                        <div key={p}>
+                          <label className="text-xs text-ag-text-muted text-center block mb-1">{p} pax</label>
+                          <NumInput type="number" min="0" value={config.earlyBirdCountByPax?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ earlyBirdCountByPax: { ...prev.earlyBirdCountByPax, [p]: val } })); }} className="w-full text-center" />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
+                {showEarlyBird2 && (
+                  <div className="mt-4 pt-4 border-t border-ag-border">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium">Early Bird 2</span>
+                      <button className="btn btn-danger text-xs" onClick={() => { updateConfig({ earlyBirdDiscount2: 0, earlyBirdCountByPax2: {} }); setShowEarlyBird2(false); }}>Remove</button>
+                    </div>
+                    <div className="flex gap-6 items-start">
+                      <div className="form-group w-40 shrink-0">
+                        <label className="form-label">EB2 Discount ($)</label>
+                        <p className="text-xs text-ag-text-muted mb-1">Amount per early bird 2 guest</p>
+                        <NumInput type="number" value={config.earlyBirdDiscount2 || 0} onChange={(e) => updateConfig({ earlyBirdDiscount2: Number(e.target.value) })} className="w-full" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="form-label mb-0">Early Bird 2 Count by Pax</label>
+                          <button onClick={() => updateConfig({ earlyBirdCountByPax2: applyToAllPax(config.earlyBirdCountByPax2, 0) })} className="btn btn-secondary text-xs">Apply First to All</button>
+                        </div>
+                        <p className="text-xs text-ag-text-muted mb-2">How many guests get the early bird 2 discount at each group size</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+                          {paxCounts.map((p) => (
+                            <div key={p}>
+                              <label className="text-xs text-ag-text-muted text-center block mb-1">{p} pax</label>
+                              <NumInput type="number" min="0" value={config.earlyBirdCountByPax2?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ earlyBirdCountByPax2: { ...prev.earlyBirdCountByPax2, [p]: val } })); }} className="w-full text-center" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {!showEarlyBird2 && (
+                  <div className="mt-4">
+                    <button className="btn btn-secondary text-xs" onClick={() => setShowEarlyBird2(true)}>+ Early Bird 2</button>
+                  </div>
+                )}
               </>
             )}
           </>
