@@ -486,9 +486,23 @@ export async function updateTripConfigurationName(id: string, name: string): Pro
 export async function updateTripConfigurationNotes(id: string, notes: string): Promise<boolean> {
   if (!supabase) return false;
 
+  // notes lives inside ui_preferences JSONB — fetch current value to merge
+  const { data: current, error: fetchError } = await supabase
+    .from('trip_configurations')
+    .select('ui_preferences')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) {
+    console.error('Error fetching trip configuration for notes update:', fetchError);
+    return false;
+  }
+
+  const updatedPrefs = { ...(current?.ui_preferences || {}), notes };
+
   const { error } = await supabase
     .from('trip_configurations')
-    .update({ notes })
+    .update({ ui_preferences: updatedPrefs })
     .eq('id', id);
 
   if (error) {
