@@ -216,6 +216,7 @@ export const EXPEDITIONS = [
   'Kilimanjaro',
   'Lenin',
   'Mexico Volcanoes',
+  'Bolivia Ski',
   'Mountains of Bolivia',
   'Patagonia Ski',
   'PCS',
