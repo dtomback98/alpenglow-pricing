@@ -53,6 +53,7 @@ export interface ExtensionLogisticsConfig {
   baseRate: number;
   guideLogistics?: {
     rates: LogisticsRate[];
+    baseRate?: number;
     mode?: 'perPaxPerDay' | 'perPax' | 'perDay' | 'total';
     simpleMode?: boolean;
   };
@@ -114,7 +115,7 @@ export interface LogisticsConfig {
   includesGuide: boolean; // Legacy — unused but kept for DB compat
   guideLogistics?: {
     rates: LogisticsRate[];
-    baseRate?: number;
+    baseRate?: number; // simple-mode value
     mode?: 'perPaxPerDay' | 'perPax' | 'perDay' | 'total';
     simpleMode?: boolean;
   };

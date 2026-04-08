@@ -124,7 +124,7 @@ export function useTripData(): UseTripDataReturn {
         revenue: calc.totalRevenue,
         gross_profit: calc.grossProfit,
         margin: calc.margin,
-        price_per_pax: calc.totalRevenue / loadedHistoryEntry.pax,
+        price_per_pax: loadedHistoryEntry.pax > 0 ? calc.totalRevenue / loadedHistoryEntry.pax : 0,
         name: saved.name,
         notes: saved.notes || '',
       });

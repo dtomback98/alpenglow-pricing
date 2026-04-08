@@ -166,7 +166,9 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     let rate = 0;
     let mode = 'perDay';
     if (lc.inheritFromMain) {
-      rate = getLogisticsRate(pax, config.logistics);
+      // Respect main logistics activeMode: simple uses baseRate, per-pax/legacy uses rates array
+      const logAM = config.logistics.activeMode;
+      rate = logAM === 'simple' ? (config.logistics.baseRate || 0) : getLogisticsRate(pax, config.logistics);
       mode = config.logistics.mode || (config.logistics.perPax ? 'perPaxPerDay' : 'perDay');
     } else {
       const match = lc.rates?.find(r => r.pax === pax);
@@ -180,8 +182,10 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     // Guide logistics rate (sub-section, gated with extension logistics)
     const gl = lc.inheritFromMain ? config.logistics.guideLogistics : lc.guideLogistics;
     if (gl) {
-      const guideRateMatch = gl.rates?.find(r => r.pax === pax);
-      const guideRate = guideRateMatch ? guideRateMatch.rate : 0;
+      // Simple mode writes to baseRate; per-pax mode uses rates array
+      const guideRate = (gl.simpleMode !== false && gl.baseRate != null)
+        ? gl.baseRate
+        : (gl.rates?.find(r => r.pax === pax)?.rate ?? 0);
       const guideMode = gl.mode || 'perDay';
       if (guideMode === 'perPaxPerDay') extensionLogisticsCost += guideRate * extension.extensionNights * extPaxCount;
       else if (guideMode === 'perPax') extensionLogisticsCost += guideRate * extPaxCount;
@@ -344,8 +348,10 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
     // Guide logistics rate (sub-section, gated with main logistics)
     const gl = config.logistics.guideLogistics;
     if (gl) {
-      const guideRateMatch = gl.rates?.find(r => r.pax === pax);
-      const guideRate = guideRateMatch ? guideRateMatch.rate : 0;
+      // Simple mode writes to baseRate; per-pax mode uses rates array
+      const guideRate = (gl.simpleMode !== false && gl.baseRate != null)
+        ? gl.baseRate
+        : (gl.rates?.find(r => r.pax === pax)?.rate ?? 0);
       const guideMode = gl.mode || 'perDay';
       if (guideMode === 'perPaxPerDay') logisticsCost += guideRate * config.tripDays * pax;
       else if (guideMode === 'perPax') logisticsCost += guideRate * pax;

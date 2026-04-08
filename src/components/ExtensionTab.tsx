@@ -328,7 +328,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   <div className="mt-4 pt-4 border-t border-ag-border">
                     <div className="flex items-center justify-between mb-2">
                       <label className="form-label mb-0">Early Bird Count by Pax</label>
-                      <button onClick={() => { const c: { [k: number]: number } = {}; const b = ext.discounts.earlyBirdCountByPax?.[paxCounts[0]] ?? 0; for (const p of paxCounts) c[p] = b; updateExtDiscounts({ earlyBirdCountByPax: c }); }} className="btn btn-secondary text-xs">Apply First to All</button>
+                      <button onClick={() => { const c: { [k: number]: number } = {}; const b = ext.discounts.earlyBirdCountByPax?.[paxCounts[0]] ?? 0; for (const p of paxCounts) c[p] = Math.min(b, ext.countByPax?.[p] ?? p); updateExtDiscounts({ earlyBirdCountByPax: c }); }} className="btn btn-secondary text-xs">Apply First to All</button>
                     </div>
                     <p className="text-xs text-ag-text-muted mb-2">How many extension guests get the early bird discount at each group size</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
@@ -343,7 +343,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   <div className="mt-4 pt-4 border-t border-ag-border">
                     <div className="flex items-center justify-between mb-2">
                       <label className="form-label mb-0">Loyalty Count by Pax</label>
-                      <button onClick={() => { const c: { [k: number]: number } = {}; const b = ext.discounts.loyaltyCountByPax?.[paxCounts[0]] ?? 0; for (const p of paxCounts) c[p] = b; updateExtDiscounts({ loyaltyCountByPax: c }); }} className="btn btn-secondary text-xs">Apply First to All</button>
+                      <button onClick={() => { const c: { [k: number]: number } = {}; const b = ext.discounts.loyaltyCountByPax?.[paxCounts[0]] ?? 0; for (const p of paxCounts) c[p] = Math.min(b, ext.countByPax?.[p] ?? p); updateExtDiscounts({ loyaltyCountByPax: c }); }} className="btn btn-secondary text-xs">Apply First to All</button>
                     </div>
                     <p className="text-xs text-ag-text-muted mb-2">How many extension guests get the loyalty discount at each group size</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
