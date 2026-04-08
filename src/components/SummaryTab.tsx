@@ -123,8 +123,8 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
               <th>Core Profit{grossMarginPerPax ? ' /pax' : ''}</th>
               <th>Core Margin</th>
               <th>Ext. Pax</th>
-              <th>Extension Profit{grossMarginPerPax ? ' /pax' : ''}</th>
-              <th>Extension Margin</th>
+              <th>Ext. Profit{grossMarginPerPax ? ' /pax' : ''}</th>
+              <th>Ext. Margin</th>
               <th>Combined Profit{grossMarginPerPax ? ' /pax' : ''}</th>
               <th>Combined Margin</th>
             </tr>
@@ -224,11 +224,7 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
               <th>Logistics{costsPerPax ? ' /pax' : ''}</th>
               <th>Trip Specific{costsPerPax ? ' /pax' : ''}</th>
               <th>Single Room{costsPerPax ? ' /pax' : ''}</th>
-              <th>Ext. Hotels{costsPerPax ? ' /pax' : ''}</th>
-              <th>Ext. Meals{costsPerPax ? ' /pax' : ''}</th>
-              <th>Ext. Staff{costsPerPax ? ' /pax' : ''}</th>
-              <th>Ext. Logistics{costsPerPax ? ' /pax' : ''}</th>
-              <th>Ext. Room{costsPerPax ? ' /pax' : ''}</th>
+              <th>Ext. Costs{costsPerPax ? ' /pax' : ''}</th>
               <th>Total Costs{costsPerPax ? ' /pax' : ''}</th>
             </tr>
           </thead>
@@ -247,11 +243,7 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
                   <td className="whitespace-nowrap">{formatCurrency(calc.logisticsCost / d)}</td>
                   <td className="whitespace-nowrap">{formatCurrency(calc.tripSpecificCost / d)}</td>
                   <td className="whitespace-nowrap">{formatCurrency(calc.singleRoomCost / d)}</td>
-                  <td className="whitespace-nowrap">{formatCurrency(calc.extensionHotelsCost / d)}</td>
-                  <td className="whitespace-nowrap">{formatCurrency(calc.extensionMealsCost / d)}</td>
-                  <td className="whitespace-nowrap">{formatCurrency(calc.extensionStaffCost / d)}</td>
-                  <td className="whitespace-nowrap">{formatCurrency(calc.extensionLogisticsCost / d)}</td>
-                  <td className="whitespace-nowrap">{formatCurrency(calc.extensionSingleRoomCost / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency((calc.extensionHotelsCost + calc.extensionMealsCost + calc.extensionStaffCost + calc.extensionLogisticsCost + calc.extensionSingleRoomCost) / d)}</td>
                   <td className="whitespace-nowrap font-bold text-ag-danger">{formatCurrency(calc.totalCosts / d)}</td>
                 </tr>
               );
