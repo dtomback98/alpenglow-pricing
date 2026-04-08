@@ -483,6 +483,22 @@ export async function updateTripConfigurationName(id: string, name: string): Pro
   return true;
 }
 
+export async function updateTripConfigurationNotes(id: string, notes: string): Promise<boolean> {
+  if (!supabase) return false;
+
+  const { error } = await supabase
+    .from('trip_configurations')
+    .update({ notes })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error updating trip configuration notes:', error);
+    return false;
+  }
+
+  return true;
+}
+
 // Update a historical trip entry (status, notes, name, country)
 export async function updateHistoricalTrip(
   id: string,

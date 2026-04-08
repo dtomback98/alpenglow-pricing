@@ -80,7 +80,9 @@ export function useTripData(): UseTripDataReturn {
     try {
       const trip = await fetchTripConfiguration(entry.tripConfigId);
       if (trip) {
-        setConfigState(trip);
+        // History entry notes may have been edited inline after the last Save —
+        // use them as the source of truth so Summary and History tabs start in sync.
+        setConfigState({ ...trip, notes: entry.notes ?? trip.notes ?? '' });
         setLoadedHistoryEntry(entry);
         setIsDirty(false);
       } else {

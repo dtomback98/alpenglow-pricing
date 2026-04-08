@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { HistoricalTrip } from '@/lib/types';
-import { fetchHistoricalTrips, deleteHistoricalTripWithConfig, updateHistoricalTrip, updateTripConfigurationName, isSupabaseConfigured } from '@/lib/supabase';
+import { fetchHistoricalTrips, deleteHistoricalTripWithConfig, updateHistoricalTrip, updateTripConfigurationName, updateTripConfigurationNotes, isSupabaseConfigured } from '@/lib/supabase';
 import historicalData from '@/lib/historical-data.json';
 
 // Type the imported JSON data
@@ -78,11 +78,12 @@ export function useHistoricalData(): UseHistoricalDataReturn {
     try {
       const success = await updateHistoricalTrip(id, updates);
       if (success) {
-        if (updates.name !== undefined) {
-          const trip = trips.find(t => t.id === id);
-          if (trip?.tripConfigId) {
-            await updateTripConfigurationName(trip.tripConfigId, updates.name);
-          }
+        const trip = trips.find(t => t.id === id);
+        if (updates.name !== undefined && trip?.tripConfigId) {
+          await updateTripConfigurationName(trip.tripConfigId, updates.name);
+        }
+        if (updates.notes !== undefined && trip?.tripConfigId) {
+          await updateTripConfigurationNotes(trip.tripConfigId, updates.notes);
         }
         await loadData();
       }
