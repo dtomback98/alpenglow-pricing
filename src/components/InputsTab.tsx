@@ -1120,7 +1120,15 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
 
             {/* Guide Logistics Rate */}
             <div className="border-t border-ag-border mt-6 pt-6">
-              <h3 className="text-sm font-semibold mb-4">Guide Logistics Rate</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">Guide Logistics Rate</h3>
+                <button
+                  onClick={() => updateGuideLogistics({ simpleMode: config.logistics.guideLogistics?.simpleMode !== false ? false : true })}
+                  className={`btn text-xs ${config.logistics.guideLogistics?.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}
+                >
+                  {config.logistics.guideLogistics?.simpleMode !== false ? 'Simple Mode' : 'Per Pax Mode'}
+                </button>
+              </div>
               <div className="mb-4">
                 <div className="flex gap-2 items-center flex-wrap">
                   {(['perPaxPerDay', 'perPax', 'perDay', 'total'] as const).map((m) => {
@@ -1136,20 +1144,6 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                       </button>
                     );
                   })}
-                  <div className="flex gap-1 ml-2">
-                    <button
-                      onClick={() => updateGuideLogistics({ simpleMode: true })}
-                      className={`btn text-xs ${config.logistics.guideLogistics?.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}
-                    >
-                      Simple
-                    </button>
-                    <button
-                      onClick={() => updateGuideLogistics({ simpleMode: false })}
-                      className={`btn text-xs ${config.logistics.guideLogistics?.simpleMode === false ? 'btn-primary' : 'btn-secondary'}`}
-                    >
-                      Per Pax
-                    </button>
-                  </div>
                 </div>
               </div>
               {config.logistics.guideLogistics?.simpleMode !== false ? (
