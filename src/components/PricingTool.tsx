@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { TabType, HistoricalTrip } from '@/lib/types';
 import { useTripData } from '@/hooks/useTripData';
 import { useExpeditions } from '@/hooks/useExpeditions';
+import { updateHistoricalTrip } from '@/lib/supabase';
 import Header from './Header';
 import Tabs from './Tabs';
 import SummaryTab from './SummaryTab';
@@ -67,7 +68,16 @@ export default function PricingTool() {
           <div className="text-center text-ag-text-muted text-sm py-3">Loading trip...</div>
         )}
         {activeTab === 'summary' && (
-          <SummaryTab config={tripData.config} updateConfig={tripData.updateConfig} isNewTrip={tripData.isNewTrip} />
+          <SummaryTab
+            config={tripData.config}
+            updateConfig={tripData.updateConfig}
+            isNewTrip={tripData.isNewTrip}
+            onNotesBlur={(notes) => {
+              if (tripData.loadedHistoryEntry) {
+                updateHistoricalTrip(tripData.loadedHistoryEntry.id, { notes });
+              }
+            }}
+          />
         )}
         {activeTab === 'inputs-core' && (
           <InputsTab
@@ -92,6 +102,11 @@ export default function PricingTool() {
             }}
             expeditions={expeditions}
             addExpedition={addExpedition}
+            onNotesUpdated={(id, notes) => {
+              if (id === tripData.loadedHistoryEntry?.id) {
+                tripData.updateConfig({ notes }, { silent: true });
+              }
+            }}
           />
         )}
         {activeTab === 'financials' && (

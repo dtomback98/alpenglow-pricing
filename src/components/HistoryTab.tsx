@@ -18,9 +18,10 @@ interface HistoryTabProps {
   onTripDeleted?: (id: string) => void;
   expeditions: string[];
   addExpedition: (name: string) => boolean;
+  onNotesUpdated?: (id: string, notes: string) => void;
 }
 
-function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted, expeditions }: {
+function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted, expeditions, onNotesUpdated }: {
   trips: HistoricalTrip[];
   title: string;
   onLoadTrip?: (trip: HistoricalTrip) => void;
@@ -30,6 +31,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
   loadedHistoryEntryId?: string;
   onTripDeleted?: (id: string) => void;
   expeditions: string[];
+  onNotesUpdated?: (id: string, notes: string) => void;
 }) {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editNoteText, setEditNoteText] = useState('');
@@ -178,6 +180,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
                     <div className="flex gap-1">
                       <button className="btn btn-primary text-xs py-0.5 px-2" onClick={async () => {
                         if (onUpdateTrip) await onUpdateTrip(trip.id, { notes: editNoteText });
+                        onNotesUpdated?.(trip.id, editNoteText);
                         setEditingNoteId(null);
                       }}>Save</button>
                       <button className="btn btn-secondary text-xs py-0.5 px-2" onClick={() => setEditingNoteId(null)}>×</button>
@@ -235,7 +238,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
   );
 }
 
-export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted, expeditions, addExpedition }: HistoryTabProps) {
+export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted, expeditions, addExpedition, onNotesUpdated }: HistoryTabProps) {
   const { trips, loading, error, selectedCategory, setSelectedCategory, deleteTrip, updateTrip, refresh } = useHistoricalData();
 
   // Re-fetch when refreshKey changes (e.g. after Save to History)
@@ -493,6 +496,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
             loadedHistoryEntryId={loadedHistoryEntryId}
             onTripDeleted={isEditable ? onTripDeleted : undefined}
             expeditions={expeditions}
+            onNotesUpdated={onNotesUpdated}
           />
         );
       })}

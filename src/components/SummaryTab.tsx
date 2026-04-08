@@ -11,9 +11,10 @@ interface SummaryTabProps {
   config: TripConfiguration;
   updateConfig: (updates: Partial<TripConfiguration>) => void;
   isNewTrip?: boolean;
+  onNotesBlur?: (notes: string) => void;
 }
 
-export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryTabProps) {
+export default function SummaryTab({ config, updateConfig, isNewTrip, onNotesBlur }: SummaryTabProps) {
   const [grossMarginPerPax, setGrossMarginPerPax] = useState(false);
   const [revenuePerPax, setRevenuePerPax] = useState(false);
   const [costsPerPax, setCostsPerPax] = useState(false);
@@ -101,6 +102,7 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
         <textarea
           value={config.notes || ''}
           onChange={(e) => updateConfig({ notes: e.target.value })}
+          onBlur={(e) => onNotesBlur?.(e.target.value)}
           className="w-full text-sm resize-y"
           rows={3}
           placeholder="Add notes for this trip..."
