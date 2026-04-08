@@ -119,44 +119,57 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
 
       {/* Filters */}
       <div className="card">
-        <h2 className="text-lg font-semibold mb-4">Filters</h2>
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => {
-              const isActive = cat === 'All' ? selectedCategory === null : selectedCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat === 'All' ? null : cat)}
-                  className={`btn ${isActive ? 'btn-primary' : 'btn-secondary'}`}
-                  style={isActive && cat !== 'All' ? { backgroundColor: CATEGORY_COLORS[cat] } : undefined}
-                >
-                  {CATEGORY_LABELS[cat] || cat}
-                </button>
-              );
-            })}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Filters</h2>
+        </div>
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-6">
+            <div>
+              <p className="text-xs text-ag-text-muted mb-1">Year</p>
+              <select
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+                className="text-sm"
+              >
+                <option value="all">All Years</option>
+                {availableYears.map(y => (
+                  <option key={y} value={String(y)}>{y}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <p className="text-xs text-ag-text-muted mb-1">Status</p>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="text-sm"
+              >
+                <option value="all">All Statuses</option>
+                <option value="run">Run</option>
+                <option value="open-enrollment">Open Enrollment</option>
+                <option value="budgeted">Budgeted</option>
+                <option value="scratch">Scratch</option>
+              </select>
+            </div>
           </div>
-          <select
-            value={yearFilter}
-            onChange={(e) => setYearFilter(e.target.value)}
-            className="text-sm"
-          >
-            <option value="all">All Years</option>
-            {availableYears.map(y => (
-              <option key={y} value={String(y)}>{y}</option>
-            ))}
-          </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-sm"
-          >
-            <option value="all">All Statuses</option>
-            <option value="run">Run</option>
-            <option value="open-enrollment">Open Enrollment</option>
-            <option value="budgeted">Budgeted</option>
-            <option value="scratch">Scratch</option>
-          </select>
+          <div>
+            <p className="text-xs text-ag-text-muted mb-2">Category</p>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((cat) => {
+                const isActive = cat === 'All' ? selectedCategory === null : selectedCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat === 'All' ? null : cat)}
+                    className={`btn ${isActive ? 'btn-primary' : 'btn-secondary'}`}
+                    style={isActive && cat !== 'All' ? { backgroundColor: CATEGORY_COLORS[cat] } : undefined}
+                  >
+                    {CATEGORY_LABELS[cat] || cat}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -173,7 +186,7 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
           )}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
             {FINANCIAL_CATEGORIES.map(({ key, label }) => (
-              <div key={key} className="bg-ag-surface rounded-lg p-3">
+              <div key={key} className="bg-ag-card-lighter rounded-lg p-3">
                 <div className="text-xs text-ag-text-muted mb-1 leading-tight">{label}</div>
                 <div className="text-lg font-bold text-ag-text">{formatCurrency(totals[key as keyof typeof totals] as number)}</div>
                 {totals.totalCosts > 0 && (
@@ -209,7 +222,7 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
         {filteredTrips.length === 0 ? (
           <p className="text-sm text-ag-text-muted">No trips match the current filters.</p>
         ) : (
-          <table className="pricing-table">
+          <table className="pricing-table history-table">
             <thead>
               <tr>
                 <th>Trip</th>
@@ -249,23 +262,23 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
                     </span>
                   </td>
                   <td>{trip.pax}</td>
-                  <td>{formatCurrency(trip.revenue)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(trip.revenue)}</td>
                   {breakdown ? (
                     <>
                       {FINANCIAL_CATEGORIES.map(({ key }) => (
-                        <td key={key}>{formatCurrency(breakdown[key] as number)}</td>
+                        <td key={key} className="whitespace-nowrap">{formatCurrency(breakdown[key] as number)}</td>
                       ))}
-                      <td>{formatCurrency(breakdown.total)}</td>
+                      <td className="whitespace-nowrap">{formatCurrency(breakdown.total)}</td>
                     </>
                   ) : (
                     <>
                       <td colSpan={FINANCIAL_CATEGORIES.length} className="text-center text-ag-text-muted text-xs italic">
                         no config data
                       </td>
-                      <td>{formatCurrency(trip.revenue - trip.grossProfit)}</td>
+                      <td className="whitespace-nowrap">{formatCurrency(trip.revenue - trip.grossProfit)}</td>
                     </>
                   )}
-                  <td className={getMarginColor(trip.margin)}>{formatPercent(trip.margin)}</td>
+                  <td className={`whitespace-nowrap ${getMarginColor(trip.margin)}`}>{formatPercent(trip.margin)}</td>
                 </tr>
               ))}
             </tbody>

@@ -33,23 +33,13 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
         </div>
       )}
 
-      {/* Export button */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => exportTripSummary(config, calculations)}
-          className="btn btn-secondary text-sm"
-        >
-          Export to Excel
-        </button>
-      </div>
-
       {/* Key metrics cards */}
       {(() => {
         const bestCalc = calculations.reduce((best, curr) => curr.margin > best.margin ? curr : best);
         const revenuePerPaxPerDay = bestCalc.pax > 0 && config.tripDays > 0 ? bestCalc.totalRevenue / bestCalc.pax / config.tripDays : 0;
         return (
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <div className="card">
+            <div className="card border-l-4 border-ag-accent">
               <div className="text-sm text-ag-text-muted mb-1">
                 {(config.tripPriceMode === 'total' || config.tripPriceByPax) ? `Price per Pax (${bestCalc.pax} pax)` : 'Base Price per Pax'}
               </div>
@@ -57,7 +47,7 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
                 {formatCurrency(bestCalc.pax > 0 ? bestCalc.baseRevenue / bestCalc.pax : config.tripPrice)}
               </div>
             </div>
-            <div className="card">
+            <div className="card border-l-4 border-ag-accent">
               <div className="text-sm text-ag-text-muted mb-1">Trip Duration</div>
               <div className="text-2xl font-bold text-ag-text">
                 {config.tripDays} days
@@ -66,7 +56,7 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
                 {config.tripNights} nights
               </div>
             </div>
-            <div className="card">
+            <div className="card border-l-4 border-ag-accent">
               <div className="text-sm text-ag-text-muted mb-1">Best Margin ({bestCalc.pax} pax)</div>
               <div className={`text-2xl font-bold ${getMarginColor(bestCalc.margin)}`}>
                 {formatPercent(bestCalc.margin)}
@@ -75,7 +65,7 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
                 Profit: {formatCurrency(bestCalc.grossProfit)}
               </div>
             </div>
-            <div className="card">
+            <div className="card border-l-4 border-ag-accent">
               <div className="text-sm text-ag-text-muted mb-1">Break-even Point</div>
               <div className="text-2xl font-bold text-ag-warning">
                 {(() => { const bp = calculations.find(c => c.grossProfit > 0)?.pax; return bp ? `${bp} pax` : 'N/A'; })()}
@@ -84,7 +74,7 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
                 Minimum for profit
               </div>
             </div>
-            <div className="card">
+            <div className="card border-l-4 border-ag-accent">
               <div className="text-sm text-ag-text-muted mb-1">Revenue/Pax/Day ({bestCalc.pax} pax)</div>
               <div className="text-2xl font-bold text-ag-text">
                 {formatCurrency(revenuePerPaxPerDay)}
@@ -114,11 +104,19 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
       <div className="card overflow-x-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Gross Margin Summary</h2>
-          <button onClick={() => setGrossMarginPerPax(!grossMarginPerPax)} className={`btn text-xs ${grossMarginPerPax ? 'btn-primary' : 'btn-secondary'}`}>
-            {grossMarginPerPax ? 'Per Pax' : 'Totals'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => exportTripSummary(config, calculations)}
+              className="btn btn-secondary text-xs"
+            >
+              Export to Excel
+            </button>
+            <button onClick={() => setGrossMarginPerPax(!grossMarginPerPax)} className={`btn text-xs ${grossMarginPerPax ? 'btn-primary' : 'btn-secondary'}`}>
+              {grossMarginPerPax ? 'Per Pax' : 'Totals'}
+            </button>
+          </div>
         </div>
-        <table className="pricing-table">
+        <table className="pricing-table history-table">
           <thead>
             <tr>
               <th>Pax</th>
@@ -148,13 +146,13 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
               return (
                 <tr key={calc.pax}>
                   <td className="font-medium">{calc.pax}</td>
-                  <td className={getProfitColor(coreProfit)}>{formatCurrency(coreProfit / d)}</td>
-                  <td className={getMarginColor(coreMargin)}>{formatPercent(coreMargin)}</td>
+                  <td className={`whitespace-nowrap ${getProfitColor(coreProfit)}`}>{formatCurrency(coreProfit / d)}</td>
+                  <td className={`whitespace-nowrap ${getMarginColor(coreMargin)}`}>{formatPercent(coreMargin)}</td>
                   <td className="text-center">{extPax}</td>
-                  <td className={getProfitColor(extProfit)}>{formatCurrency(extProfit / d)}</td>
-                  <td className={getMarginColor(extMargin)}>{formatPercent(extMargin)}</td>
-                  <td className={`font-bold ${getProfitColor(calc.grossProfit)}`}>{formatCurrency(calc.grossProfit / d)}</td>
-                  <td className={`font-bold ${getMarginColor(calc.margin)}`}>{formatPercent(calc.margin)}</td>
+                  <td className={`whitespace-nowrap ${getProfitColor(extProfit)}`}>{formatCurrency(extProfit / d)}</td>
+                  <td className={`whitespace-nowrap ${getMarginColor(extMargin)}`}>{formatPercent(extMargin)}</td>
+                  <td className={`whitespace-nowrap font-bold ${getProfitColor(calc.grossProfit)}`}>{formatCurrency(calc.grossProfit / d)}</td>
+                  <td className={`whitespace-nowrap font-bold ${getMarginColor(calc.margin)}`}>{formatPercent(calc.margin)}</td>
                 </tr>
               );
             })}
@@ -170,7 +168,7 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
             {revenuePerPax ? 'Per Pax' : 'Totals'}
           </button>
         </div>
-        <table className="pricing-table">
+        <table className="pricing-table history-table">
           <thead>
             <tr>
               <th>Pax</th>
@@ -190,14 +188,14 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
               return (
                 <tr key={calc.pax}>
                   <td className="font-medium">{calc.pax}</td>
-                  <td>{formatCurrency(calc.baseRevenue / d)}</td>
-                  <td className="text-ag-danger">-{formatCurrency(calc.earlyBirdCost / d)}</td>
-                  <td className="text-ag-danger">-{formatCurrency(calc.loyaltyCost / d)}</td>
-                  <td className="text-ag-success">+{formatCurrency(calc.extensionRevenue / d)}</td>
-                  <td className="text-ag-success">+{formatCurrency(calc.extensionSingleSuppRevenue / d)}</td>
-                  <td className="text-ag-danger">-{formatCurrency(calc.extensionDiscountCost / d)}</td>
-                  <td className="text-ag-success">+{formatCurrency(calc.singleSupplementRevenue / d)}</td>
-                  <td className="font-bold">{formatCurrency(calc.totalRevenue / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.baseRevenue / d)}</td>
+                  <td className="whitespace-nowrap text-ag-danger">-{formatCurrency(calc.earlyBirdCost / d)}</td>
+                  <td className="whitespace-nowrap text-ag-danger">-{formatCurrency(calc.loyaltyCost / d)}</td>
+                  <td className="whitespace-nowrap text-ag-success">+{formatCurrency(calc.extensionRevenue / d)}</td>
+                  <td className="whitespace-nowrap text-ag-success">+{formatCurrency(calc.extensionSingleSuppRevenue / d)}</td>
+                  <td className="whitespace-nowrap text-ag-danger">-{formatCurrency(calc.extensionDiscountCost / d)}</td>
+                  <td className="whitespace-nowrap text-ag-success">+{formatCurrency(calc.singleSupplementRevenue / d)}</td>
+                  <td className="whitespace-nowrap font-bold">{formatCurrency(calc.totalRevenue / d)}</td>
                 </tr>
               );
             })}
@@ -213,7 +211,7 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
             {costsPerPax ? 'Per Pax' : 'Totals'}
           </button>
         </div>
-        <table className="pricing-table">
+        <table className="pricing-table history-table">
           <thead>
             <tr>
               <th>Pax</th>
@@ -240,21 +238,21 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
               return (
                 <tr key={calc.pax}>
                   <td className="font-medium">{calc.pax}</td>
-                  <td>{formatCurrency(calc.hotelsCost / d)}</td>
-                  <td>{formatCurrency(calc.mealsCost / d)}</td>
-                  <td>{formatCurrency(calc.staffCost / d)}</td>
-                  <td>{formatCurrency(calc.guideFlightsCost / d)}</td>
-                  <td>{formatCurrency(calc.staffMealsCost / d)}</td>
-                  <td>{formatCurrency(calc.transportCost / d)}</td>
-                  <td>{formatCurrency(calc.logisticsCost / d)}</td>
-                  <td>{formatCurrency(calc.tripSpecificCost / d)}</td>
-                  <td>{formatCurrency(calc.singleRoomCost / d)}</td>
-                  <td>{formatCurrency(calc.extensionHotelsCost / d)}</td>
-                  <td>{formatCurrency(calc.extensionMealsCost / d)}</td>
-                  <td>{formatCurrency(calc.extensionStaffCost / d)}</td>
-                  <td>{formatCurrency(calc.extensionLogisticsCost / d)}</td>
-                  <td>{formatCurrency(calc.extensionSingleRoomCost / d)}</td>
-                  <td className="font-bold text-ag-danger">{formatCurrency(calc.totalCosts / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.hotelsCost / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.mealsCost / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.staffCost / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.guideFlightsCost / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.staffMealsCost / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.transportCost / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.logisticsCost / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.tripSpecificCost / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.singleRoomCost / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.extensionHotelsCost / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.extensionMealsCost / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.extensionStaffCost / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.extensionLogisticsCost / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.extensionSingleRoomCost / d)}</td>
+                  <td className="whitespace-nowrap font-bold text-ag-danger">{formatCurrency(calc.totalCosts / d)}</td>
                 </tr>
               );
             })}

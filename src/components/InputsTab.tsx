@@ -83,6 +83,13 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   const [selectedStaffPax, setSelectedStaffPax] = useState(paxMin);
   useEffect(() => { setSelectedStaffPax(paxMin); }, [paxMin]);
 
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const toggleSection = (key: string) => setCollapsedSections(prev => {
+    const next = new Set(prev);
+    next.has(key) ? next.delete(key) : next.add(key);
+    return next;
+  });
+
   // Auto-sync staff days with tripDays when not using custom days
   // Uses silent:true so tab mounts don't mark the config dirty when no change occurs
   useEffect(() => {
@@ -275,11 +282,15 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
       {/* Core Trip Details */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Core Trip Details</h2>
+          <div className="flex items-center">
+            <button onClick={() => toggleSection('core')} className="text-ag-text-muted hover:text-ag-text text-sm mr-2">{collapsedSections.has('core') ? '▶' : '▼'}</button>
+            <h2 className="text-lg font-semibold">Core Trip Details</h2>
+          </div>
           <button onClick={() => { if (pricingPerPax) { updateConfig({ tripPriceByPax: undefined }); } setPricingPerPax(!pricingPerPax); }} className={`btn text-xs ${pricingPerPax ? 'btn-primary' : 'btn-secondary'}`}>
             {pricingPerPax ? 'Per Pax Pricing' : 'Simple Pricing'}
           </button>
         </div>
+        {!collapsedSections.has('core') && (<>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="form-group">
             <label className="form-label">Trip Price ($)</label>
@@ -355,12 +366,16 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             <NumInput type="number" step="0.1" min="-100" max="1000" value={((config.inflationRate || 0) * 100)} onChange={(e) => updateConfig({ inflationRate: Number(e.target.value) / 100 })} className="w-full" />
           </div>
         </div>
+        </>)}
       </div>
 
       {/* Discounts */}
       <div className={`card ${config.discountsEnabled === false ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Discounts</h2>
+          <div className="flex items-center">
+            <button onClick={() => toggleSection('discounts')} className="text-ag-text-muted hover:text-ag-text text-sm mr-2">{collapsedSections.has('discounts') ? '▶' : '▼'}</button>
+            <h2 className="text-lg font-semibold">Discounts</h2>
+          </div>
           <div className="flex gap-2">
             {config.discountsEnabled !== false && (
               <button onClick={() => setDiscountsPerPax(!discountsPerPax)} className={`btn text-xs ${discountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>
@@ -372,7 +387,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             </button>
           </div>
         </div>
-        {config.discountsEnabled === false ? (
+        {!collapsedSections.has('discounts') && (config.discountsEnabled === false ? (
           <p className="text-sm text-ag-text-muted">Section disabled — discounts will not be applied to calculations.</p>
         ) : (
           <>
@@ -443,10 +458,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     <button onClick={() => updateConfig({ earlyBirdCountByPax: applyToAllPax(config.earlyBirdCountByPax, 0) })} className="btn btn-secondary text-xs">Apply First to All</button>
                   </div>
                   <p className="text-xs text-ag-text-muted mb-2">How many guests get the early bird discount at each group size</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
                     {paxCounts.map((p) => (
-                      <div key={p} className="form-group">
-                        <label className="form-label text-center">{p} pax</label>
+                      <div key={p}>
+                        <label className="text-xs text-ag-text-muted text-center block mb-1">{p} pax</label>
                         <NumInput type="number" min="0" value={config.earlyBirdCountByPax?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ earlyBirdCountByPax: { ...prev.earlyBirdCountByPax, [p]: val } })); }} className="w-full text-center" />
                       </div>
                     ))}
@@ -459,10 +474,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                       <button onClick={() => updateConfig({ earlyBirdCountByPax2: applyToAllPax(config.earlyBirdCountByPax2, 0) })} className="btn btn-secondary text-xs">Apply First to All</button>
                     </div>
                     <p className="text-xs text-ag-text-muted mb-2">How many guests get the early bird 2 discount at each group size</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
                       {paxCounts.map((p) => (
-                        <div key={p} className="form-group">
-                          <label className="form-label text-center">{p} pax</label>
+                        <div key={p}>
+                          <label className="text-xs text-ag-text-muted text-center block mb-1">{p} pax</label>
                           <NumInput type="number" min="0" value={config.earlyBirdCountByPax2?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ earlyBirdCountByPax2: { ...prev.earlyBirdCountByPax2, [p]: val } })); }} className="w-full text-center" />
                         </div>
                       ))}
@@ -475,10 +490,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     <button onClick={() => updateConfig({ loyaltyCountByPax: applyToAllPax(config.loyaltyCountByPax, 0) })} className="btn btn-secondary text-xs">Apply First to All</button>
                   </div>
                   <p className="text-xs text-ag-text-muted mb-2">How many guests get the loyalty discount at each group size</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
                     {paxCounts.map((p) => (
-                      <div key={p} className="form-group">
-                        <label className="form-label text-center">{p} pax</label>
+                      <div key={p}>
+                        <label className="text-xs text-ag-text-muted text-center block mb-1">{p} pax</label>
                         <NumInput type="number" min="0" value={config.loyaltyCountByPax?.[p] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ loyaltyCountByPax: { ...prev.loyaltyCountByPax, [p]: val } })); }} className="w-full text-center" />
                       </div>
                     ))}
@@ -487,13 +502,16 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               </>
             )}
           </>
-        )}
+        ))}
       </div>
 
       {/* Single Supplement */}
       <div className={`card ${config.singleSupplement.enabled === false ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Single Supplement</h2>
+          <div className="flex items-center">
+            <button onClick={() => toggleSection('singleSupp')} className="text-ag-text-muted hover:text-ag-text text-sm mr-2">{collapsedSections.has('singleSupp') ? '▶' : '▼'}</button>
+            <h2 className="text-lg font-semibold">Single Supplement</h2>
+          </div>
           <div className="flex gap-2">
             {config.singleSupplement.enabled !== false && (
               <button onClick={() => setSingleSuppPerPax(!singleSuppPerPax)} className={`btn text-xs ${singleSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>
@@ -505,7 +523,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             </button>
           </div>
         </div>
-        {config.singleSupplement.enabled === false ? (
+        {!collapsedSections.has('singleSupp') && (config.singleSupplement.enabled === false ? (
           <p className="text-sm text-ag-text-muted">Section disabled — single supplement will not be applied to calculations.</p>
         ) : (
           <>
@@ -547,13 +565,16 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               </div>
             )}
           </>
-        )}
+        ))}
       </div>
 
       {/* Hotels & Meals */}
       <div className={`card ${config.hotelsMeals.enabled === false ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Hotels & Meals</h2>
+          <div className="flex items-center">
+            <button onClick={() => toggleSection('hotels')} className="text-ag-text-muted hover:text-ag-text text-sm mr-2">{collapsedSections.has('hotels') ? '▶' : '▼'}</button>
+            <h2 className="text-lg font-semibold">Hotels & Meals</h2>
+          </div>
           <div className="flex gap-2">
             {config.hotelsMeals.enabled !== false && (
               <button onClick={() => toggleHotelsMealsPerPax(!hotelsMealsPerPax)} className={`btn text-xs ${hotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>
@@ -565,7 +586,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             </button>
           </div>
         </div>
-        {config.hotelsMeals.enabled === false ? (
+        {!collapsedSections.has('hotels') && (config.hotelsMeals.enabled === false ? (
           <p className="text-sm text-ag-text-muted">Section disabled — hotels & meals will not be applied to calculations.</p>
         ) : (
           <>
@@ -718,13 +739,16 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               </>
             )}
           </>
-        )}
+        ))}
       </div>
 
       {/* Staff Configuration */}
       <div className={`card ${config.staffConfig.enabled === false ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Staff Configuration</h2>
+          <div className="flex items-center">
+            <button onClick={() => toggleSection('staff')} className="text-ag-text-muted hover:text-ag-text text-sm mr-2">{collapsedSections.has('staff') ? '▶' : '▼'}</button>
+            <h2 className="text-lg font-semibold">Staff Configuration</h2>
+          </div>
           <div className="flex gap-2">
             {config.staffConfig.enabled !== false && (
               <button
@@ -739,7 +763,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             </button>
           </div>
         </div>
-        {config.staffConfig.enabled === false ? (
+        {!collapsedSections.has('staff') && (config.staffConfig.enabled === false ? (
           <p className="text-sm text-ag-text-muted">Section disabled — staff costs will not be applied to calculations.</p>
         ) : (
           <>
@@ -834,13 +858,16 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <NumInput type="number" value={config.staffConfig.staffMealsCost || 0} onChange={(e) => updateNestedConfig('staffConfig', { staffMealsCost: Number(e.target.value) })} className="w-48" />
             </div>
           </>
-        )}
+        ))}
       </div>
 
       {/* Transport */}
       <div className={`card ${config.transportConfig.enabled === false ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Transport</h2>
+          <div className="flex items-center">
+            <button onClick={() => toggleSection('transport')} className="text-ag-text-muted hover:text-ag-text text-sm mr-2">{collapsedSections.has('transport') ? '▶' : '▼'}</button>
+            <h2 className="text-lg font-semibold">Transport</h2>
+          </div>
           <div className="flex gap-2">
             {config.transportConfig.enabled !== false && (
               <button onClick={() => toggleTransportPerPax(!transportPerPax)} className={`btn text-xs ${transportPerPax ? 'btn-primary' : 'btn-secondary'}`}>
@@ -852,7 +879,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             </button>
           </div>
         </div>
-        {config.transportConfig.enabled === false ? (
+        {!collapsedSections.has('transport') && (config.transportConfig.enabled === false ? (
           <p className="text-sm text-ag-text-muted">Section disabled — transport costs will not be applied to calculations.</p>
         ) : !transportPerPax ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -938,18 +965,21 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               </div>
             </div>
           </>
-        )}
+        ))}
       </div>
 
       {/* Trip-Specific Costs */}
       <div className={`card ${config.tripSpecific.enabled === false ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Trip-Specific Costs</h2>
+          <div className="flex items-center">
+            <button onClick={() => toggleSection('tripSpecific')} className="text-ag-text-muted hover:text-ag-text text-sm mr-2">{collapsedSections.has('tripSpecific') ? '▶' : '▼'}</button>
+            <h2 className="text-lg font-semibold">Trip-Specific Costs</h2>
+          </div>
           <button onClick={() => updateNestedConfig('tripSpecific', { enabled: config.tripSpecific.enabled === false })} className={`btn text-xs ${config.tripSpecific.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
             {config.tripSpecific.enabled === false ? 'Inactive' : 'Active'}
           </button>
         </div>
-        {config.tripSpecific.enabled === false ? (
+        {!collapsedSections.has('tripSpecific') && (config.tripSpecific.enabled === false ? (
           <p className="text-sm text-ag-text-muted">Section disabled — trip-specific costs will not be applied to calculations.</p>
         ) : (
           <>
@@ -1045,13 +1075,16 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               ))}
             </div>
           </>
-        )}
+        ))}
       </div>
 
       {/* Logistics Rates */}
       <div className={`card ${config.logistics.enabled === false ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Logistics Rates</h2>
+          <div className="flex items-center">
+            <button onClick={() => toggleSection('logistics')} className="text-ag-text-muted hover:text-ag-text text-sm mr-2">{collapsedSections.has('logistics') ? '▶' : '▼'}</button>
+            <h2 className="text-lg font-semibold">Logistics Rates</h2>
+          </div>
           <div className="flex gap-2">
             {config.logistics.enabled !== false && (
               <button
@@ -1066,7 +1099,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             </button>
           </div>
         </div>
-        {config.logistics.enabled === false ? (
+        {!collapsedSections.has('logistics') && (config.logistics.enabled === false ? (
           <p className="text-sm text-ag-text-muted">Section disabled — logistics costs will not be applied to calculations.</p>
         ) : (
           <>
@@ -1178,7 +1211,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               )}
             </div>
           </>
-        )}
+        ))}
       </div>
     </div>
   );

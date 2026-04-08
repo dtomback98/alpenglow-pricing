@@ -23,7 +23,7 @@ export default function Tabs({ activeTab, setActiveTab }: TabsProps) {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`tab ${activeTab === tab.id ? 'active' : ''}`}
+            className={activeTab === tab.id ? 'tab active font-semibold text-ag-accent' : 'tab'}
           >
             {tab.label}
           </button>
