@@ -109,6 +109,12 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   }, [config.tripDays, config.staffConfig.useCustomStaffDays, updateConfig]);
   const pricingPerPax = config.uiPreferences?.pricingPerPax ?? false;
   const discountsPerPax = config.uiPreferences?.discountsPerPax ?? false;
+  // Effective active modes: explicit setting wins; otherwise derive from existing data/view state
+  const discountsEffectiveAM: 'simple' | 'perPax' = config.discountsActiveMode ?? (discountsPerPax ? 'perPax' : 'simple');
+  const ssEffectiveAM: 'simple' | 'perPax' = config.singleSupplement.activeMode ?? 'simple';
+  const hmEffectiveAM: 'simple' | 'perPax' = config.hotelsMeals.activeMode ?? (config.hotelsMeals.hotelCostByPax && Object.keys(config.hotelsMeals.hotelCostByPax).length > 0 ? 'perPax' : 'simple');
+  const logEffectiveAM: 'simple' | 'perPax' = config.logistics.activeMode ?? (config.logistics.simpleMode !== false ? 'simple' : 'perPax');
+  const transportEffectiveAM: 'simple' | 'perPax' = config.transportConfig.activeMode ?? (config.transportConfig.groundTransportByPax && Object.keys(config.transportConfig.groundTransportByPax).length > 0 ? 'perPax' : 'simple');
   const [showEarlyBird2, setShowEarlyBird2] = useState(() =>
     (config.earlyBirdDiscount2 || 0) > 0 || Object.values(config.earlyBirdCountByPax2 || {}).some(v => v > 0)
   );
@@ -150,10 +156,8 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
         };
       });
     } else {
-      updateConfig(prev => ({
-        uiPreferences: { ...prev.uiPreferences, transportPerPax: false },
-        transportConfig: { ...prev.transportConfig, groundTransportByPax: undefined, airportTransfersByPax: undefined, localTransportByPax: undefined },
-      }));
+      // View-only switch: preserve byPax data, just change which editor is shown
+      updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, transportPerPax: false } }));
     }
   };
 
@@ -199,11 +203,8 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
         };
       });
     } else {
-      // Switching to simple: clear byPax data
-      updateConfig(prev => ({
-        uiPreferences: { ...prev.uiPreferences, hotelsMealsPerPax: false },
-        hotelsMeals: { ...prev.hotelsMeals, hotelCostByPax: undefined, lunchCostByPax: undefined, dinnerCostByPax: undefined, additionalMealCostsByPax: undefined },
-      }));
+      // View-only switch: preserve byPax data, just change which editor is shown
+      updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, hotelsMealsPerPax: false } }));
     }
   };
 
@@ -229,6 +230,29 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
     });
   };
 
+
+  // Logistics simple-view toggle: migrate baseRate from rates[0] on first switch if baseRate is 0
+  const setLogisticsSimpleView = (simple: boolean) => {
+    if (simple && (config.logistics.baseRate === 0) && (config.logistics.rates[0]?.rate ?? 0) > 0) {
+      updateNestedConfig('logistics', { simpleMode: true, baseRate: config.logistics.rates[0].rate });
+    } else {
+      updateNestedConfig('logistics', { simpleMode: simple });
+    }
+  };
+  const setGuideLogisticsSimpleView = (simple: boolean) => {
+    const gl = config.logistics.guideLogistics;
+    if (simple && (gl?.rates[0]?.rate ?? 0) > 0 && !gl?.baseRate) {
+      updateConfig(prev => {
+        const g = prev.logistics.guideLogistics ?? { rates: [], mode: 'perDay' as const };
+        return { logistics: { ...prev.logistics, guideLogistics: { ...g, simpleMode: true, baseRate: g.rates[0]?.rate ?? 0 } } };
+      });
+    } else {
+      updateConfig(prev => {
+        const g = prev.logistics.guideLogistics ?? { rates: [], mode: 'perDay' as const };
+        return { logistics: { ...prev.logistics, guideLogistics: { ...g, simpleMode: simple } } };
+      });
+    }
+  };
 
   const effectiveStaffPax = paxCounts.includes(selectedStaffPax) ? selectedStaffPax : paxCounts[0] || 1;
 
@@ -378,9 +402,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           </div>
           <div className="flex gap-2">
             {config.discountsEnabled !== false && (
-              <button onClick={() => setDiscountsPerPax(!discountsPerPax)} className={`btn text-xs ${discountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>
-                {discountsPerPax ? 'Per Pax Mode' : 'Simple Mode'}
-              </button>
+              <>
+                <button onClick={() => setDiscountsPerPax(false)} className={`btn text-xs ${!discountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+                <button onClick={() => setDiscountsPerPax(true)} className={`btn text-xs ${discountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+              </>
             )}
             <button onClick={() => updateConfig({ discountsEnabled: config.discountsEnabled === false })} className={`btn text-xs ${config.discountsEnabled === false ? 'btn-danger' : 'btn-primary'}`}>
               {config.discountsEnabled === false ? 'Inactive' : 'Active'}
@@ -391,9 +416,15 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <p className="text-sm text-ag-text-muted">Section disabled — discounts will not be applied to calculations.</p>
         ) : (
           <>
+            {/* Calculating from selector */}
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-ag-border">
+              <span className="text-xs text-ag-text-muted font-medium">Calculating from:</span>
+              <button onClick={() => updateConfig({ discountsActiveMode: 'simple' })} className={`btn text-xs ${discountsEffectiveAM === 'simple' ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+              <button onClick={() => updateConfig({ discountsActiveMode: 'perPax' })} className={`btn text-xs ${discountsEffectiveAM === 'perPax' ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+            </div>
             {!discountsPerPax ? (
               <>
-                {/* Simple mode: rate + count side by side per discount type */}
+                {/* Simple mode: rate + count side by side — counts write to scalar fields */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="form-group">
                     <label className="form-label">Loyalty Discount Rate (%)</label>
@@ -402,8 +433,8 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Loyalty Count</label>
-                    <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                    <NumInput type="number" min="0" value={config.loyaltyCountByPax?.[paxCounts[0]] || 0} onChange={(e) => { updateConfig({ loyaltyCountByPax: applyToAllPax(undefined, Number(e.target.value)) }); }} className="w-full" />
+                    <p className="text-xs text-ag-text-muted mb-1">Same count for all group sizes</p>
+                    <NumInput type="number" min="0" value={config.loyaltyCountSimple ?? 0} onChange={(e) => updateConfig({ loyaltyCountSimple: Number(e.target.value) })} className="w-full" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mt-4">
@@ -414,15 +445,15 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Early Bird Count</label>
-                    <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                    <NumInput type="number" min="0" value={config.earlyBirdCountByPax?.[paxCounts[0]] || 0} onChange={(e) => { updateConfig({ earlyBirdCountByPax: applyToAllPax(undefined, Number(e.target.value)) }); }} className="w-full" />
+                    <p className="text-xs text-ag-text-muted mb-1">Same count for all group sizes</p>
+                    <NumInput type="number" min="0" value={config.earlyBirdCountSimple ?? 0} onChange={(e) => updateConfig({ earlyBirdCountSimple: Number(e.target.value) })} className="w-full" />
                   </div>
                 </div>
                 {showEarlyBird2 && (
                   <div className="mt-4 pt-4 border-t border-ag-border">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-medium">Early Bird 2</span>
-                      <button className="btn btn-danger text-xs" onClick={() => { updateConfig({ earlyBirdDiscount2: 0, earlyBirdCountByPax2: {} }); setShowEarlyBird2(false); }}>Remove</button>
+                      <button className="btn btn-danger text-xs" onClick={() => { updateConfig({ earlyBirdDiscount2: 0, earlyBirdCountByPax2: {}, earlyBirdCount2Simple: 0 }); setShowEarlyBird2(false); }}>Remove</button>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="form-group">
@@ -432,8 +463,8 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                       </div>
                       <div className="form-group">
                         <label className="form-label">Early Bird 2 Count</label>
-                        <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                        <NumInput type="number" min="0" value={config.earlyBirdCountByPax2?.[paxCounts[0]] || 0} onChange={(e) => { const val = Number(e.target.value); updateConfig({ earlyBirdCountByPax2: applyToAllPax(undefined, val) }); }} className="w-full" />
+                        <p className="text-xs text-ag-text-muted mb-1">Same count for all group sizes</p>
+                        <NumInput type="number" min="0" value={config.earlyBirdCount2Simple ?? 0} onChange={(e) => updateConfig({ earlyBirdCount2Simple: Number(e.target.value) })} className="w-full" />
                       </div>
                     </div>
                   </div>
@@ -541,9 +572,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           </div>
           <div className="flex gap-2">
             {config.singleSupplement.enabled !== false && (
-              <button onClick={() => setSingleSuppPerPax(!singleSuppPerPax)} className={`btn text-xs ${singleSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>
-                {singleSuppPerPax ? 'Per Pax Mode' : 'Simple Mode'}
-              </button>
+              <>
+                <button onClick={() => setSingleSuppPerPax(false)} className={`btn text-xs ${!singleSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+                <button onClick={() => setSingleSuppPerPax(true)} className={`btn text-xs ${singleSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+              </>
             )}
             <button onClick={() => updateNestedConfig('singleSupplement', { enabled: config.singleSupplement.enabled === false })} className={`btn text-xs ${config.singleSupplement.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
               {config.singleSupplement.enabled === false ? 'Inactive' : 'Active'}
@@ -554,6 +586,13 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <p className="text-sm text-ag-text-muted">Section disabled — single supplement will not be applied to calculations.</p>
         ) : (
           <>
+
+            {/* Calculating from selector */}
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-ag-border">
+              <span className="text-xs text-ag-text-muted font-medium">Calculating from:</span>
+              <button onClick={() => updateNestedConfig('singleSupplement', { activeMode: 'simple' })} className={`btn text-xs ${ssEffectiveAM === 'simple' ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+              <button onClick={() => updateNestedConfig('singleSupplement', { activeMode: 'perPax' })} className={`btn text-xs ${ssEffectiveAM === 'perPax' ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="form-group">
                 <label className="form-label">Single Supplement Price ($)</label>
@@ -570,8 +609,8 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <div className="mt-4 pt-4 border-t border-ag-border">
                 <div className="form-group w-48">
                   <label className="form-label">Number of Guests</label>
-                  <p className="text-xs text-ag-text-muted mb-1">Same count applied to all group sizes</p>
-                  <NumInput type="number" min="0" value={config.singleSupplement.countByPax?.[paxCounts[0]] ?? 0} onChange={(e) => { const val = Number(e.target.value); const c: { [k: number]: number } = {}; for (const p of paxCounts) c[p] = val; updateNestedConfig('singleSupplement', { countByPax: c }); }} className="w-full" />
+                  <p className="text-xs text-ag-text-muted mb-1">Same count for all group sizes</p>
+                  <NumInput type="number" min="0" value={config.singleSupplement.countSimple ?? 0} onChange={(e) => updateNestedConfig('singleSupplement', { countSimple: Number(e.target.value) })} className="w-full" />
                 </div>
               </div>
             ) : (
@@ -604,9 +643,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           </div>
           <div className="flex gap-2">
             {config.hotelsMeals.enabled !== false && (
-              <button onClick={() => toggleHotelsMealsPerPax(!hotelsMealsPerPax)} className={`btn text-xs ${hotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>
-                {hotelsMealsPerPax ? 'Per Pax Mode' : 'Simple Mode'}
-              </button>
+              <>
+                <button onClick={() => toggleHotelsMealsPerPax(false)} className={`btn text-xs ${!hotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+                <button onClick={() => toggleHotelsMealsPerPax(true)} className={`btn text-xs ${hotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+              </>
             )}
             <button onClick={() => updateNestedConfig('hotelsMeals', { enabled: config.hotelsMeals.enabled === false })} className={`btn text-xs ${config.hotelsMeals.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
               {config.hotelsMeals.enabled === false ? 'Inactive' : 'Active'}
@@ -617,6 +657,12 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <p className="text-sm text-ag-text-muted">Section disabled — hotels & meals will not be applied to calculations.</p>
         ) : (
           <>
+            {/* Calculating from selector */}
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-ag-border">
+              <span className="text-xs text-ag-text-muted font-medium">Calculating from:</span>
+              <button onClick={() => updateNestedConfig('hotelsMeals', { activeMode: 'simple' })} className={`btn text-xs ${hmEffectiveAM === 'simple' ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+              <button onClick={() => updateNestedConfig('hotelsMeals', { activeMode: 'perPax' })} className={`btn text-xs ${hmEffectiveAM === 'perPax' ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+            </div>
             <div className="mb-4">
               <div className="flex gap-2 items-center">
                 {(['perPaxPerNight', 'perNight', 'perPax', 'total'] as const).map((m) => {
@@ -897,9 +943,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           </div>
           <div className="flex gap-2">
             {config.transportConfig.enabled !== false && (
-              <button onClick={() => toggleTransportPerPax(!transportPerPax)} className={`btn text-xs ${transportPerPax ? 'btn-primary' : 'btn-secondary'}`}>
-                {transportPerPax ? 'Per Pax Mode' : 'Simple Mode'}
-              </button>
+              <>
+                <button onClick={() => toggleTransportPerPax(false)} className={`btn text-xs ${!transportPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+                <button onClick={() => toggleTransportPerPax(true)} className={`btn text-xs ${transportPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+              </>
             )}
             <button onClick={() => updateNestedConfig('transportConfig', { enabled: config.transportConfig.enabled === false })} className={`btn text-xs ${config.transportConfig.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
               {config.transportConfig.enabled === false ? 'Inactive' : 'Active'}
@@ -908,7 +955,15 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
         </div>
         {!collapsedSections.has('transport') && (config.transportConfig.enabled === false ? (
           <p className="text-sm text-ag-text-muted">Section disabled — transport costs will not be applied to calculations.</p>
-        ) : !transportPerPax ? (
+        ) : (
+          <>
+            {/* Calculating from selector */}
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-ag-border">
+              <span className="text-xs text-ag-text-muted font-medium">Calculating from:</span>
+              <button onClick={() => updateNestedConfig('transportConfig', { activeMode: 'simple' })} className={`btn text-xs ${transportEffectiveAM === 'simple' ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+              <button onClick={() => updateNestedConfig('transportConfig', { activeMode: 'perPax' })} className={`btn text-xs ${transportEffectiveAM === 'perPax' ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+            </div>
+            {!transportPerPax ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="form-group">
               <label className="form-label">Ground Transport ($)</label>
@@ -991,6 +1046,8 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 </div>
               </div>
             </div>
+          </>
+            )}
           </>
         ))}
       </div>
@@ -1114,12 +1171,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           </div>
           <div className="flex gap-2">
             {config.logistics.enabled !== false && (
-              <button
-                onClick={() => updateNestedConfig('logistics', { simpleMode: config.logistics.simpleMode !== false ? false : true })}
-                className={`btn text-xs ${config.logistics.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}
-              >
-                {config.logistics.simpleMode !== false ? 'Simple Mode' : 'Per Pax Mode'}
-              </button>
+              <>
+                <button onClick={() => setLogisticsSimpleView(true)} className={`btn text-xs ${config.logistics.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+                <button onClick={() => setLogisticsSimpleView(false)} className={`btn text-xs ${config.logistics.simpleMode === false ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+              </>
             )}
             <button onClick={() => updateNestedConfig('logistics', { enabled: config.logistics.enabled === false })} className={`btn text-xs ${config.logistics.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
               {config.logistics.enabled === false ? 'Inactive' : 'Active'}
@@ -1130,6 +1185,12 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <p className="text-sm text-ag-text-muted">Section disabled — logistics costs will not be applied to calculations.</p>
         ) : (
           <>
+            {/* Calculating from selector */}
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-ag-border">
+              <span className="text-xs text-ag-text-muted font-medium">Calculating from:</span>
+              <button onClick={() => updateNestedConfig('logistics', { activeMode: 'simple' })} className={`btn text-xs ${logEffectiveAM === 'simple' ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+              <button onClick={() => updateNestedConfig('logistics', { activeMode: 'perPax' })} className={`btn text-xs ${logEffectiveAM === 'perPax' ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+            </div>
             <div className="mb-4">
               <div className="flex gap-2 items-center flex-wrap">
                 {(['perPaxPerDay', 'perPax', 'perDay', 'total'] as const).map((m) => {
@@ -1152,11 +1213,8 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 <label className="form-label">Rate (all pax)</label>
                 <NumInput
                   type="number"
-                  value={config.logistics.rates[0]?.rate ?? 0}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    updateNestedConfig('logistics', { rates: paxCounts.map(p => ({ pax: p, rate: val })) });
-                  }}
+                  value={config.logistics.baseRate}
+                  onChange={(e) => updateNestedConfig('logistics', { baseRate: Number(e.target.value) })}
                   className="w-full"
                 />
               </div>
@@ -1183,10 +1241,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold">Guide Logistics Rate</h3>
                 <button
-                  onClick={() => updateGuideLogistics({ simpleMode: config.logistics.guideLogistics?.simpleMode !== false ? false : true })}
+                  onClick={() => setGuideLogisticsSimpleView(config.logistics.guideLogistics?.simpleMode !== false ? false : true)}
                   className={`btn text-xs ${config.logistics.guideLogistics?.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}
                 >
-                  {config.logistics.guideLogistics?.simpleMode !== false ? 'Simple Mode' : 'Per Pax Mode'}
+                  {config.logistics.guideLogistics?.simpleMode !== false ? 'Simple' : 'Per Pax'}
                 </button>
               </div>
               <div className="mb-4">
@@ -1211,10 +1269,13 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   <label className="form-label">Rate (all pax)</label>
                   <NumInput
                     type="number"
-                    value={config.logistics.guideLogistics?.rates[0]?.rate ?? 0}
+                    value={config.logistics.guideLogistics?.baseRate ?? 0}
                     onChange={(e) => {
                       const val = Number(e.target.value);
-                      updateGuideLogistics({ rates: paxCounts.map(p => ({ pax: p, rate: val })) });
+                      updateConfig(prev => {
+                        const gl = prev.logistics.guideLogistics ?? { rates: [], mode: 'perDay' as const };
+                        return { logistics: { ...prev.logistics, guideLogistics: { ...gl, baseRate: val } } };
+                      });
                     }}
                     className="w-full"
                   />

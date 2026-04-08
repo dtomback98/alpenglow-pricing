@@ -26,6 +26,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
     enabled: true,
     singleSupplement: 950,
     singleRoomExtra: 300,
+    countSimple: 0,
     countByPax: Object.fromEntries(
       Array.from({ length: 16 }, (_, i) => [i + 1, 0])
     ),

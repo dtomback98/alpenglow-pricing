@@ -83,6 +83,7 @@ export interface AdditionalHotel {
 
 export interface HotelsMealsConfig {
   enabled: boolean;
+  activeMode?: 'simple' | 'perPax'; // which dataset feeds calculations; undefined = legacy (byPax ?? flat)
   mode?: 'perPaxPerNight' | 'perNight' | 'total' | 'perPax';
   hotelLabel?: string; // display name for primary hotel
   hotelNights?: number; // nights for primary hotel; defaults to tripNights
@@ -104,14 +105,16 @@ export interface LogisticsRate {
 
 export interface LogisticsConfig {
   enabled: boolean;
-  baseRate: number; // Legacy — unused but kept for DB compat
+  activeMode?: 'simple' | 'perPax'; // which dataset feeds calculations; undefined = legacy (rates array)
+  baseRate: number; // simple-mode value (previously legacy/unused — now the simple dataset)
   rates: LogisticsRate[];
   perPax: boolean; // Legacy — mode is authoritative, perPax used as fallback
   mode?: 'perPaxPerDay' | 'perPax' | 'perDay' | 'total';
-  simpleMode?: boolean; // true = single rate for all pax; false/undefined = per-pax grid
+  simpleMode?: boolean; // true = show simple editor; false = show per-pax grid (view-only flag)
   includesGuide: boolean; // Legacy — unused but kept for DB compat
   guideLogistics?: {
     rates: LogisticsRate[];
+    baseRate?: number;
     mode?: 'perPaxPerDay' | 'perPax' | 'perDay' | 'total';
     simpleMode?: boolean;
   };
@@ -138,6 +141,7 @@ export interface StaffConfig {
 
 export interface TransportConfig {
   enabled: boolean;
+  activeMode?: 'simple' | 'perPax'; // which dataset feeds calculations; undefined = legacy (byPax ?? flat)
   flightCostPerPerson: number; // Legacy — flights now in StaffConfig, kept for migration
   groundTransportTotal: number;
   groundTransportPerPax?: boolean;
@@ -178,14 +182,20 @@ export interface TripSpecificConfig {
 
 export interface SingleSupplementConfig {
   enabled: boolean;
+  activeMode?: 'simple' | 'perPax'; // which dataset feeds calculations; undefined = legacy (countByPax)
   singleSupplement: number;
   singleRoomExtra: number;
+  countSimple?: number; // simple-mode guest count (same for all group sizes)
   countByPax: { [pax: number]: number };
 }
 
 export interface UiPreferences {
   pricingPerPax?: boolean;
   discountsPerPax?: boolean;
+  discountsActiveMode?: 'simple' | 'perPax';
+  earlyBirdCountSimple?: number;
+  earlyBirdCount2Simple?: number;
+  loyaltyCountSimple?: number;
   singleSuppPerPax?: boolean;
   hotelsMealsPerPax?: boolean;
   transportPerPax?: boolean;
@@ -219,11 +229,15 @@ export interface TripConfiguration {
 
   // Discounts
   discountsEnabled: boolean;
+  discountsActiveMode?: 'simple' | 'perPax'; // which dataset feeds calculations
   earlyBirdDiscount: number;
+  earlyBirdCountSimple?: number; // simple-mode count (same for all group sizes)
   earlyBirdCountByPax: { [pax: number]: number };
   earlyBirdDiscount2?: number;
+  earlyBirdCount2Simple?: number;
   earlyBirdCountByPax2?: { [pax: number]: number };
   loyaltyDiscountRate: number;
+  loyaltyCountSimple?: number;
   loyaltyCountByPax: { [pax: number]: number };
 
   // Single supplement

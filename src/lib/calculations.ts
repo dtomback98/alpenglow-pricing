@@ -247,15 +247,37 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
 
   // Discounts (gated, clamped to pax count)
   const discountsOn = config.discountsEnabled !== false;
-  const earlyBirdCount = discountsOn ? Math.min(config.earlyBirdCountByPax?.[pax] || 0, pax) : 0;
-  const earlyBirdCount2 = discountsOn ? Math.min(config.earlyBirdCountByPax2?.[pax] || 0, pax) : 0;
+  const discountsAM = config.discountsActiveMode;
+  const earlyBirdCount = discountsOn ? Math.min(
+    discountsAM === 'simple' ? (config.earlyBirdCountSimple ?? 0)
+    : discountsAM === 'perPax' ? (config.earlyBirdCountByPax?.[pax] || 0)
+    : (config.earlyBirdCountByPax?.[pax] || 0), // legacy: use byPax
+    pax
+  ) : 0;
+  const earlyBirdCount2 = discountsOn ? Math.min(
+    discountsAM === 'simple' ? (config.earlyBirdCount2Simple ?? 0)
+    : discountsAM === 'perPax' ? (config.earlyBirdCountByPax2?.[pax] || 0)
+    : (config.earlyBirdCountByPax2?.[pax] || 0),
+    pax
+  ) : 0;
   const earlyBirdCost = config.earlyBirdDiscount * earlyBirdCount + (config.earlyBirdDiscount2 || 0) * earlyBirdCount2;
-  const loyaltyCount = discountsOn ? Math.min(config.loyaltyCountByPax?.[pax] || 0, pax) : 0;
+  const loyaltyCount = discountsOn ? Math.min(
+    discountsAM === 'simple' ? (config.loyaltyCountSimple ?? 0)
+    : discountsAM === 'perPax' ? (config.loyaltyCountByPax?.[pax] || 0)
+    : (config.loyaltyCountByPax?.[pax] || 0),
+    pax
+  ) : 0;
   const loyaltyCost = perPersonPrice * loyaltyCount * config.loyaltyDiscountRate;
 
   // Single supplement (gated, clamped to pax count)
   const singleSuppOn = config.singleSupplement.enabled !== false;
-  const singleSupplementGuests = singleSuppOn ? Math.min(config.singleSupplement.countByPax?.[pax] ?? 0, pax) : 0;
+  const ssAM = config.singleSupplement.activeMode;
+  const singleSupplementGuests = singleSuppOn ? Math.min(
+    ssAM === 'simple' ? (config.singleSupplement.countSimple ?? 0)
+    : ssAM === 'perPax' ? (config.singleSupplement.countByPax?.[pax] ?? 0)
+    : (config.singleSupplement.countByPax?.[pax] ?? 0), // legacy: use byPax
+    pax
+  ) : 0;
   const singleSupplementRevenue = singleSuppOn ? config.singleSupplement.singleSupplement * singleSupplementGuests : 0;
 
   // Extension
@@ -264,13 +286,22 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   const totalRevenue = baseRevenue - earlyBirdCost - loyaltyCost + singleSupplementRevenue
     + ext.extensionRevenue + ext.extensionSingleSuppRevenue - ext.extensionDiscountCost;
 
-  // Hotels & meals (gated, with mode, with byPax resolution)
+  // Hotels & meals (gated, with mode, with activeMode-controlled dataset selection)
   const hotelsMealsOn = config.hotelsMeals.enabled !== false;
+  const hmAM = config.hotelsMeals.activeMode;
   const hmMode = config.hotelsMeals.mode || 'perPaxPerNight';
-  const hmHotelRate = config.hotelsMeals.hotelCostByPax?.[pax] ?? config.hotelsMeals.hotelCostPerNight;
-  const hmLunchRate = config.hotelsMeals.lunchCostByPax?.[pax] ?? config.hotelsMeals.lunchCostPerDay;
-  const hmDinnerRate = config.hotelsMeals.dinnerCostByPax?.[pax] ?? config.hotelsMeals.dinnerCostPerNight;
-  const hmAdditional = config.hotelsMeals.additionalMealCostsByPax?.[pax] ?? config.hotelsMeals.additionalMealCosts;
+  const hmHotelRate = hmAM === 'simple' ? config.hotelsMeals.hotelCostPerNight
+    : hmAM === 'perPax' ? (config.hotelsMeals.hotelCostByPax?.[pax] ?? config.hotelsMeals.hotelCostPerNight)
+    : (config.hotelsMeals.hotelCostByPax?.[pax] ?? config.hotelsMeals.hotelCostPerNight); // legacy
+  const hmLunchRate = hmAM === 'simple' ? config.hotelsMeals.lunchCostPerDay
+    : hmAM === 'perPax' ? (config.hotelsMeals.lunchCostByPax?.[pax] ?? config.hotelsMeals.lunchCostPerDay)
+    : (config.hotelsMeals.lunchCostByPax?.[pax] ?? config.hotelsMeals.lunchCostPerDay);
+  const hmDinnerRate = hmAM === 'simple' ? config.hotelsMeals.dinnerCostPerNight
+    : hmAM === 'perPax' ? (config.hotelsMeals.dinnerCostByPax?.[pax] ?? config.hotelsMeals.dinnerCostPerNight)
+    : (config.hotelsMeals.dinnerCostByPax?.[pax] ?? config.hotelsMeals.dinnerCostPerNight);
+  const hmAdditional = hmAM === 'simple' ? config.hotelsMeals.additionalMealCosts
+    : hmAM === 'perPax' ? (config.hotelsMeals.additionalMealCostsByPax?.[pax] ?? config.hotelsMeals.additionalMealCosts)
+    : (config.hotelsMeals.additionalMealCostsByPax?.[pax] ?? config.hotelsMeals.additionalMealCosts);
   const hmHotelNights = config.hotelsMeals.hotelNights ?? config.tripNights;
   const hmAdditionalHotels = config.hotelsMeals.additionalHotels || [];
   let hotelsCost = 0;
@@ -297,7 +328,9 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
 
   // Logistics (gated)
   const logisticsOn = config.logistics.enabled !== false;
-  const logisticsRate = getLogisticsRate(pax, config.logistics);
+  const logAM = config.logistics.activeMode;
+  const logisticsRate = logAM === 'simple' ? config.logistics.baseRate
+    : getLogisticsRate(pax, config.logistics); // per-pax or legacy: use rates array
   const logisticsMode = config.logistics.mode || (config.logistics.perPax ? 'perPaxPerDay' : 'perDay');
   let logisticsCost = 0;
   if (logisticsOn) {
@@ -341,11 +374,18 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
 
   // Transport (gated — flights removed, now in staff section)
   const transportOn = config.transportConfig.enabled !== false;
+  const tAM = config.transportConfig.activeMode;
   let transportCost = 0;
   if (transportOn) {
-    const groundRate = (config.transportConfig.groundTransportByPax?.[pax] ?? config.transportConfig.groundTransportTotal) || 0;
-    const airportRate = (config.transportConfig.airportTransfersByPax?.[pax] ?? config.transportConfig.airportTransfers) || 0;
-    const localRate = (config.transportConfig.localTransportByPax?.[pax] ?? config.transportConfig.localTransport) || 0;
+    const groundRate = tAM === 'simple'
+      ? (config.transportConfig.groundTransportTotal || 0)
+      : ((config.transportConfig.groundTransportByPax?.[pax] ?? config.transportConfig.groundTransportTotal) || 0);
+    const airportRate = tAM === 'simple'
+      ? (config.transportConfig.airportTransfers || 0)
+      : ((config.transportConfig.airportTransfersByPax?.[pax] ?? config.transportConfig.airportTransfers) || 0);
+    const localRate = tAM === 'simple'
+      ? (config.transportConfig.localTransport || 0)
+      : ((config.transportConfig.localTransportByPax?.[pax] ?? config.transportConfig.localTransport) || 0);
     transportCost += config.transportConfig.groundTransportPerPax ? groundRate * pax : groundRate;
     transportCost += config.transportConfig.airportTransfersPerPax ? airportRate * pax : airportRate;
     transportCost += config.transportConfig.localTransportPerPax ? localRate * pax : localRate;
