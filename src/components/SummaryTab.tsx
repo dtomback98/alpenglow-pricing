@@ -26,12 +26,20 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
 
   return (
     <div className="space-y-6">
-      {/* Startup hint for new trips */}
-      {isNewTrip && (
-        <div className="card border border-ag-border text-sm text-ag-text-muted text-center py-4">
-          Load an existing trip from the <strong className="text-ag-text">History</strong> tab, or fill in the inputs above to build a new one — then hit <strong className="text-ag-text">Save to History</strong> to save it.
-        </div>
-      )}
+      {/* Top bar — startup hint (new trips) + Export button */}
+      <div className="flex items-center justify-between gap-4">
+        {isNewTrip ? (
+          <div className="flex-1 card border border-ag-border text-sm text-ag-text-muted text-center py-4">
+            Load an existing trip from the <strong className="text-ag-text">History</strong> tab, or fill in the inputs above to build a new one — then hit <strong className="text-ag-text">Save to History</strong> to save it.
+          </div>
+        ) : <div />}
+        <button
+          onClick={() => exportTripSummary(config, calculations)}
+          className="btn btn-secondary text-sm shrink-0"
+        >
+          Export to Excel
+        </button>
+      </div>
 
       {/* Key metrics cards */}
       {(() => {
@@ -104,17 +112,9 @@ export default function SummaryTab({ config, updateConfig, isNewTrip }: SummaryT
       <div className="card overflow-x-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Gross Margin Summary</h2>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => exportTripSummary(config, calculations)}
-              className="btn btn-secondary text-xs"
-            >
-              Export to Excel
-            </button>
-            <button onClick={() => setGrossMarginPerPax(!grossMarginPerPax)} className={`btn text-xs ${grossMarginPerPax ? 'btn-primary' : 'btn-secondary'}`}>
-              {grossMarginPerPax ? 'Per Pax' : 'Totals'}
-            </button>
-          </div>
+          <button onClick={() => setGrossMarginPerPax(!grossMarginPerPax)} className={`btn text-xs ${grossMarginPerPax ? 'btn-primary' : 'btn-secondary'}`}>
+            {grossMarginPerPax ? 'Per Pax' : 'Totals'}
+          </button>
         </div>
         <table className="pricing-table history-table">
           <thead>
