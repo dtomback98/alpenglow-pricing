@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useHistoricalData } from '@/hooks/useHistoricalData';
-import { CATEGORY_COLORS, CATEGORY_LABELS, STATUS_ORDER, STATUS_LABELS, STATUS_BADGE_CLASSES, EXPEDITIONS } from '@/lib/constants';
+import { CATEGORY_COLORS, CATEGORY_LABELS, STATUS_ORDER, STATUS_LABELS, STATUS_BADGE_CLASSES } from '@/lib/constants';
 import { formatCurrency, formatPercent, getMarginColor } from '@/lib/calculations';
 import { exportHistoricalTrips } from '@/lib/excelExport';
 import { HistoricalTrip } from '@/lib/types';
@@ -16,9 +16,11 @@ interface HistoryTabProps {
   onTripConfigRenamed?: () => void;
   loadedHistoryEntryId?: string;
   onTripDeleted?: (id: string) => void;
+  expeditions: string[];
+  addExpedition: (name: string) => boolean;
 }
 
-function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted }: {
+function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted, expeditions }: {
   trips: HistoricalTrip[];
   title: string;
   onLoadTrip?: (trip: HistoricalTrip) => void;
@@ -27,6 +29,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
   onTripConfigRenamed?: () => void;
   loadedHistoryEntryId?: string;
   onTripDeleted?: (id: string) => void;
+  expeditions: string[];
 }) {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editNoteText, setEditNoteText] = useState('');
@@ -143,8 +146,8 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
                     value={trip.country || 'Other'}
                     onChange={async (e) => { await onUpdateTrip(trip.id, { country: e.target.value }); }}
                   >
-                    {EXPEDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
-                    {trip.country && !EXPEDITIONS.includes(trip.country) && (
+                    {expeditions.map(c => <option key={c} value={c}>{c}</option>)}
+                    {trip.country && !expeditions.includes(trip.country) && (
                       <option key={trip.country} value={trip.country}>{trip.country}</option>
                     )}
                   </select>
@@ -232,7 +235,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
   );
 }
 
-export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted }: HistoryTabProps) {
+export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted, expeditions, addExpedition }: HistoryTabProps) {
   const { trips, loading, error, selectedCategory, setSelectedCategory, deleteTrip, updateTrip, refresh } = useHistoricalData();
 
   // Re-fetch when refreshKey changes (e.g. after Save to History)
@@ -245,6 +248,8 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
   const [yearFilter, setYearFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [showNewExpedition, setShowNewExpedition] = useState(false);
+  const [newExpeditionName, setNewExpeditionName] = useState('');
 
   // Derive sorted country list from loaded trips
   const countryMap: Record<string, true> = {};
@@ -375,6 +380,54 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
                     {country}
                   </button>
                 ))}
+                {showNewExpedition ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={newExpeditionName}
+                      autoFocus
+                      onChange={(e) => setNewExpeditionName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const added = addExpedition(newExpeditionName);
+                          if (added) setSelectedCountry(newExpeditionName.trim());
+                          setShowNewExpedition(false);
+                          setNewExpeditionName('');
+                        }
+                        if (e.key === 'Escape') {
+                          setShowNewExpedition(false);
+                          setNewExpeditionName('');
+                        }
+                      }}
+                      placeholder="Expedition name"
+                      className="text-sm w-36"
+                    />
+                    <button
+                      className="btn btn-primary text-xs py-0.5 px-2"
+                      onClick={() => {
+                        const added = addExpedition(newExpeditionName);
+                        if (added) setSelectedCountry(newExpeditionName.trim());
+                        setShowNewExpedition(false);
+                        setNewExpeditionName('');
+                      }}
+                    >
+                      Add
+                    </button>
+                    <button
+                      className="btn btn-secondary text-xs py-0.5 px-2"
+                      onClick={() => { setShowNewExpedition(false); setNewExpeditionName(''); }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowNewExpedition(true)}
+                    className="btn btn-secondary text-xs"
+                  >
+                    + New Expedition
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -439,6 +492,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
             onTripConfigRenamed={isEditable ? onTripConfigRenamed : undefined}
             loadedHistoryEntryId={loadedHistoryEntryId}
             onTripDeleted={isEditable ? onTripDeleted : undefined}
+            expeditions={expeditions}
           />
         );
       })}

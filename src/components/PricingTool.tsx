@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { TabType, HistoricalTrip } from '@/lib/types';
 import { useTripData } from '@/hooks/useTripData';
+import { useExpeditions } from '@/hooks/useExpeditions';
 import Header from './Header';
 import Tabs from './Tabs';
 import SummaryTab from './SummaryTab';
@@ -15,6 +16,7 @@ export default function PricingTool() {
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const tripData = useTripData();
+  const { expeditions, addExpedition } = useExpeditions();
 
   const handleSaveTrip = async () => {
     await tripData.saveTrip();
@@ -55,6 +57,7 @@ export default function PricingTool() {
         error={tripData.error}
         loadedHistoryEntryId={tripData.loadedHistoryEntry?.id}
         loading={tripData.loading}
+        expeditions={expeditions}
       />
 
       <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -87,6 +90,8 @@ export default function PricingTool() {
             onTripDeleted={(id) => {
               if (tripData.loadedHistoryEntry?.id === id) tripData.createNewTrip();
             }}
+            expeditions={expeditions}
+            addExpedition={addExpedition}
           />
         )}
         {activeTab === 'financials' && (

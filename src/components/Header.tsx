@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { TripConfiguration } from '@/lib/types';
-import { EXPEDITIONS } from '@/lib/constants';
 
 const CATEGORIES = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 
@@ -19,6 +18,7 @@ interface HeaderProps {
   error: string | null;
   loadedHistoryEntryId?: string;
   loading?: boolean;
+  expeditions: string[];
 }
 
 export default function Header({
@@ -34,6 +34,7 @@ export default function Header({
   error,
   loadedHistoryEntryId,
   loading,
+  expeditions,
 }: HeaderProps) {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyPax, setHistoryPax] = useState(config.paxMin || 1);
@@ -87,7 +88,7 @@ export default function Header({
     setHistorySaving(true);
     setHistorySuccess(false);
     const trimmed = historyCountry.trim();
-    const normalizedCountry = EXPEDITIONS.find(c => c.toLowerCase() === trimmed.toLowerCase()) ?? trimmed;
+    const normalizedCountry = expeditions.find(c => c.toLowerCase() === trimmed.toLowerCase()) ?? trimmed;
     const success = await saveTripsToHistory(historyPax, historyCategory, historyYear, historyStatus, normalizedCountry);
     setHistorySaving(false);
     if (success) {
@@ -228,7 +229,7 @@ export default function Header({
                     onChange={(e) => setHistoryCountry(e.target.value)}
                     className="w-full"
                   >
-                    {EXPEDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                    {expeditions.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
 
