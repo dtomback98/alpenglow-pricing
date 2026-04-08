@@ -221,6 +221,7 @@ export const EXPEDITIONS = [
   'PCS',
   'PVT Ecuador',
   'Vinson',
+  'Privates - Other',
   'Other',
 ];
 
