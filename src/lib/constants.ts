@@ -1,31 +1,31 @@
 import { TripConfiguration } from './types';
 
-// Default trip configuration
+// Default trip configuration — all financial values are zero; structural fields kept
 export const DEFAULT_CONFIG: TripConfiguration = {
   name: 'New Trip',
-  tripPrice: 5495,
-  tripDays: 9,
-  tripNights: 8,
+  tripPrice: 0,
+  tripDays: 0,
+  tripNights: 0,
   paxMin: 1,
   paxMax: 16,
   paxStep: 1,
   inflationRate: 0,
   discountsEnabled: true,
-  earlyBirdDiscount: 200,
+  earlyBirdDiscount: 0,
   earlyBirdCountByPax: Object.fromEntries(
-    Array.from({ length: 16 }, (_, i) => [i + 1, Math.round((i + 1) * 0.3)])
+    Array.from({ length: 16 }, (_, i) => [i + 1, 0])
   ),
   earlyBirdDiscount2: 0,
   earlyBirdCountByPax2: {},
-  loyaltyDiscountRate: 0.05, // 5%
+  loyaltyDiscountRate: 0,
   loyaltyCountByPax: Object.fromEntries(
-    Array.from({ length: 16 }, (_, i) => [i + 1, Math.round((i + 1) * 0.05)])
+    Array.from({ length: 16 }, (_, i) => [i + 1, 0])
   ),
 
   singleSupplement: {
     enabled: true,
-    singleSupplement: 950,
-    singleRoomExtra: 300,
+    singleSupplement: 0,
+    singleRoomExtra: 0,
     countSimple: 0,
     countByPax: Object.fromEntries(
       Array.from({ length: 16 }, (_, i) => [i + 1, 0])
@@ -34,16 +34,16 @@ export const DEFAULT_CONFIG: TripConfiguration = {
 
   extension: {
     enabled: true,
-    extensionPrice: 350,
-    extensionNights: 1,
+    extensionPrice: 0,
+    extensionNights: 0,
     countByPax: Object.fromEntries(
       Array.from({ length: 16 }, (_, i) => [i + 1, 0])
     ),
     singleSupplement: {
       enabled: true,
       inheritFromMain: true,
-      singleSupplement: 950,
-      singleRoomExtra: 300,
+      singleSupplement: 0,
+      singleRoomExtra: 0,
       countByPax: Object.fromEntries(
         Array.from({ length: 16 }, (_, i) => [i + 1, 0])
       ),
@@ -51,35 +51,30 @@ export const DEFAULT_CONFIG: TripConfiguration = {
     hotelsMeals: {
       enabled: true,
       inheritFromMain: true,
-      hotelCostPerNight: 120,
-      lunchCostPerDay: 25,
-      dinnerCostPerNight: 45,
+      hotelCostPerNight: 0,
+      lunchCostPerDay: 0,
+      dinnerCostPerNight: 0,
       additionalMealCosts: 0,
     },
     staffConfig: {
       enabled: true,
       inheritFromMain: true,
       staffByPax: Object.fromEntries(
-        Array.from({ length: 16 }, (_, i) => [
-          i + 1,
-          [
-            { role: 'Lead Guide', dailyRate: 400, days: 1, quantity: 1 },
-          ],
-        ])
+        Array.from({ length: 16 }, (_, i) => [i + 1, []])
       ),
       travelDays: 0,
-      travelDayRate: 150,
+      travelDayRate: 0,
       staffMealsCost: 0,
       staffMealsMode: 'perDay' as const,
     },
     discounts: {
       enabled: true,
       inheritFromMain: true,
-      earlyBirdDiscount: 200,
+      earlyBirdDiscount: 0,
       earlyBirdCountByPax: Object.fromEntries(
         Array.from({ length: 16 }, (_, i) => [i + 1, 0])
       ),
-      loyaltyDiscountRate: 0.05,
+      loyaltyDiscountRate: 0,
       loyaltyCountByPax: Object.fromEntries(
         Array.from({ length: 16 }, (_, i) => [i + 1, 0])
       ),
@@ -102,16 +97,16 @@ export const DEFAULT_CONFIG: TripConfiguration = {
   hotelsMeals: {
     enabled: true,
     mode: 'perPaxPerNight' as const,
-    hotelCostPerNight: 120,
-    lunchCostPerDay: 25,
-    dinnerCostPerNight: 45,
+    hotelCostPerNight: 0,
+    lunchCostPerDay: 0,
+    dinnerCostPerNight: 0,
     additionalMealCosts: 0,
   },
 
   logistics: {
     enabled: true,
-    baseRate: 500,
-    rates: Array.from({ length: 16 }, (_, i) => ({ pax: i + 1, rate: 500 })),
+    baseRate: 0,
+    rates: Array.from({ length: 16 }, (_, i) => ({ pax: i + 1, rate: 0 })),
     perPax: false,
     mode: 'perDay' as const,
     simpleMode: true,
@@ -127,19 +122,13 @@ export const DEFAULT_CONFIG: TripConfiguration = {
     enabled: true,
     useCustomStaffDays: false,
     staffByPax: Object.fromEntries(
-      Array.from({ length: 16 }, (_, i) => [
-        i + 1,
-        [
-          { role: 'Lead Guide', dailyRate: 400, days: 9, quantity: 1 },
-          { role: 'Assistant Guide', dailyRate: 300, days: 9, quantity: 1 },
-        ],
-      ])
+      Array.from({ length: 16 }, (_, i) => [i + 1, []])
     ),
-    travelDays: 2,
-    travelDayRate: 150,
-    guideFlightCost: 800,
+    travelDays: 0,
+    travelDayRate: 0,
+    guideFlightCost: 0,
     guideFlightCountByPax: Object.fromEntries(
-      Array.from({ length: 16 }, (_, i) => [i + 1, 2])
+      Array.from({ length: 16 }, (_, i) => [i + 1, 0])
     ),
     staffMealsCost: 0,
     staffMealsMode: 'perDay' as const,
@@ -147,19 +136,19 @@ export const DEFAULT_CONFIG: TripConfiguration = {
 
   transportConfig: {
     enabled: true,
-    flightCostPerPerson: 0, // Legacy — flights now in staffConfig
-    groundTransportTotal: 2000,
-    airportTransfers: 500,
-    localTransport: 300,
+    flightCostPerPerson: 0,
+    groundTransportTotal: 0,
+    airportTransfers: 0,
+    localTransport: 0,
   },
 
   tripSpecific: {
     enabled: true,
-    permits: { amount: 500, perPax: false },
-    equipment: { amount: 300, perPax: false },
-    jacketsApparel: { amount: 150, perPax: true },
-    insurance: { amount: 200, perPax: true },
-    contingency: { amount: 1000, perPax: false },
+    permits: { amount: 0, perPax: false },
+    equipment: { amount: 0, perPax: false },
+    jacketsApparel: { amount: 0, perPax: true },
+    insurance: { amount: 0, perPax: true },
+    contingency: { amount: 0, perPax: false },
     hypoxico: { amount: 0, perPax: false },
     otherCosts: { amount: 0, perPax: false },
     customCosts: [],
