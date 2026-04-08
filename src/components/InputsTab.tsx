@@ -15,6 +15,36 @@ const NumInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
   <input {...props} type="number" value={(props.value as number) || ''} />
 );
 
+interface ActiveDropdownProps {
+  id: string;
+  value: 'simple' | 'perPax';
+  onChange: (v: 'simple' | 'perPax') => void;
+  openId: string | null;
+  setOpenId: (id: string | null) => void;
+}
+const ActiveDropdown = ({ id, value, onChange, openId, setOpenId }: ActiveDropdownProps) => (
+  <div className="relative" onClick={e => e.stopPropagation()}>
+    <button
+      className="btn btn-secondary text-xs flex items-center gap-1"
+      onClick={() => setOpenId(openId === id ? null : id)}
+    >
+      Active: {value === 'simple' ? 'Simple' : 'Per Pax'} <span className="opacity-50">▾</span>
+    </button>
+    {openId === id && (
+      <div className="absolute right-0 top-full mt-1 z-50 min-w-[110px] rounded-md border border-ag-border bg-ag-card shadow-lg">
+        <button
+          className={`block w-full text-left px-3 py-2 text-xs rounded-t-md hover:bg-white/5 ${value === 'simple' ? 'text-blue-400 font-medium' : 'text-ag-text'}`}
+          onClick={() => { onChange('simple'); setOpenId(null); }}
+        >Simple</button>
+        <button
+          className={`block w-full text-left px-3 py-2 text-xs rounded-b-md hover:bg-white/5 ${value === 'perPax' ? 'text-blue-400 font-medium' : 'text-ag-text'}`}
+          onClick={() => { onChange('perPax'); setOpenId(null); }}
+        >Per Pax</button>
+      </div>
+    )}
+  </div>
+);
+
 const TRIP_SPECIFIC_FIELDS: { key: keyof Omit<TripConfiguration['tripSpecific'], 'enabled' | 'customCosts'>; label: string }[] = [
   { key: 'permits', label: 'Permits' },
   { key: 'equipment', label: 'Equipment' },
@@ -82,6 +112,14 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
 
   const [selectedStaffPax, setSelectedStaffPax] = useState(paxMin);
   useEffect(() => { setSelectedStaffPax(paxMin); }, [paxMin]);
+
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  useEffect(() => {
+    if (!openDropdown) return;
+    const close = () => setOpenDropdown(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [openDropdown]);
 
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const toggleSection = (key: string) => setCollapsedSections(prev => {
@@ -415,6 +453,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <>
                 <button onClick={() => setDiscountsPerPax(false)} className={`btn text-xs ${!discountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
                 <button onClick={() => setDiscountsPerPax(true)} className={`btn text-xs ${discountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+                <ActiveDropdown id="discounts" value={discountsEffectiveAM} onChange={v => updateConfig({ discountsActiveMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateConfig({ discountsEnabled: config.discountsEnabled === false })} className={`btn text-xs ${config.discountsEnabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -426,12 +465,6 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <p className="text-sm text-ag-text-muted">Section disabled — discounts will not be applied to calculations.</p>
         ) : (
           <>
-            {/* Calculating from selector */}
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-ag-border">
-              <span className="text-xs text-ag-text-muted font-medium">Calculating from:</span>
-              <button onClick={() => updateConfig({ discountsActiveMode: 'simple' })} className={`btn text-xs ${discountsEffectiveAM === 'simple' ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-              <button onClick={() => updateConfig({ discountsActiveMode: 'perPax' })} className={`btn text-xs ${discountsEffectiveAM === 'perPax' ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-            </div>
             {!discountsPerPax ? (
               <>
                 {/* Simple mode: rate + count side by side — counts write to scalar fields */}
@@ -581,6 +614,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <>
                 <button onClick={() => setSingleSuppPerPax(false)} className={`btn text-xs ${!singleSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
                 <button onClick={() => setSingleSuppPerPax(true)} className={`btn text-xs ${singleSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+                <ActiveDropdown id="singleSupp" value={ssEffectiveAM} onChange={v => updateNestedConfig('singleSupplement', { activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateNestedConfig('singleSupplement', { enabled: config.singleSupplement.enabled === false })} className={`btn text-xs ${config.singleSupplement.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -592,13 +626,6 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <p className="text-sm text-ag-text-muted">Section disabled — single supplement will not be applied to calculations.</p>
         ) : (
           <>
-
-            {/* Calculating from selector */}
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-ag-border">
-              <span className="text-xs text-ag-text-muted font-medium">Calculating from:</span>
-              <button onClick={() => updateNestedConfig('singleSupplement', { activeMode: 'simple' })} className={`btn text-xs ${ssEffectiveAM === 'simple' ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-              <button onClick={() => updateNestedConfig('singleSupplement', { activeMode: 'perPax' })} className={`btn text-xs ${ssEffectiveAM === 'perPax' ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="form-group">
                 <label className="form-label">Single Supplement Price ($)</label>
@@ -652,6 +679,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <>
                 <button onClick={() => toggleHotelsMealsPerPax(false)} className={`btn text-xs ${!hotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
                 <button onClick={() => toggleHotelsMealsPerPax(true)} className={`btn text-xs ${hotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+                <ActiveDropdown id="hotels" value={hmEffectiveAM} onChange={v => updateNestedConfig('hotelsMeals', { activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateNestedConfig('hotelsMeals', { enabled: config.hotelsMeals.enabled === false })} className={`btn text-xs ${config.hotelsMeals.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -663,12 +691,6 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <p className="text-sm text-ag-text-muted">Section disabled — hotels & meals will not be applied to calculations.</p>
         ) : (
           <>
-            {/* Calculating from selector */}
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-ag-border">
-              <span className="text-xs text-ag-text-muted font-medium">Calculating from:</span>
-              <button onClick={() => updateNestedConfig('hotelsMeals', { activeMode: 'simple' })} className={`btn text-xs ${hmEffectiveAM === 'simple' ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-              <button onClick={() => updateNestedConfig('hotelsMeals', { activeMode: 'perPax' })} className={`btn text-xs ${hmEffectiveAM === 'perPax' ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-            </div>
             <div className="mb-4">
               <div className="flex gap-2 items-center">
                 {(['perPaxPerNight', 'perNight', 'perPax', 'total'] as const).map((m) => {
@@ -952,6 +974,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <>
                 <button onClick={() => toggleTransportPerPax(false)} className={`btn text-xs ${!transportPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
                 <button onClick={() => toggleTransportPerPax(true)} className={`btn text-xs ${transportPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+                <ActiveDropdown id="transport" value={transportEffectiveAM} onChange={v => updateNestedConfig('transportConfig', { activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateNestedConfig('transportConfig', { enabled: config.transportConfig.enabled === false })} className={`btn text-xs ${config.transportConfig.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -963,12 +986,6 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <p className="text-sm text-ag-text-muted">Section disabled — transport costs will not be applied to calculations.</p>
         ) : (
           <>
-            {/* Calculating from selector */}
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-ag-border">
-              <span className="text-xs text-ag-text-muted font-medium">Calculating from:</span>
-              <button onClick={() => updateNestedConfig('transportConfig', { activeMode: 'simple' })} className={`btn text-xs ${transportEffectiveAM === 'simple' ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-              <button onClick={() => updateNestedConfig('transportConfig', { activeMode: 'perPax' })} className={`btn text-xs ${transportEffectiveAM === 'perPax' ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-            </div>
             {!transportPerPax ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="form-group">
@@ -1180,6 +1197,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <>
                 <button onClick={() => setLogisticsSimpleView(true)} className={`btn text-xs ${config.logistics.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
                 <button onClick={() => setLogisticsSimpleView(false)} className={`btn text-xs ${config.logistics.simpleMode === false ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+                <ActiveDropdown id="logistics" value={logEffectiveAM} onChange={v => updateNestedConfig('logistics', { activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateNestedConfig('logistics', { enabled: config.logistics.enabled === false })} className={`btn text-xs ${config.logistics.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -1191,12 +1209,6 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <p className="text-sm text-ag-text-muted">Section disabled — logistics costs will not be applied to calculations.</p>
         ) : (
           <>
-            {/* Calculating from selector */}
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-ag-border">
-              <span className="text-xs text-ag-text-muted font-medium">Calculating from:</span>
-              <button onClick={() => updateNestedConfig('logistics', { activeMode: 'simple' })} className={`btn text-xs ${logEffectiveAM === 'simple' ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-              <button onClick={() => updateNestedConfig('logistics', { activeMode: 'perPax' })} className={`btn text-xs ${logEffectiveAM === 'perPax' ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-            </div>
             <div className="mb-4">
               <div className="flex gap-2 items-center flex-wrap">
                 {(['perPaxPerDay', 'perPax', 'perDay', 'total'] as const).map((m) => {
