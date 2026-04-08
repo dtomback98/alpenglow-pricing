@@ -99,11 +99,16 @@ function migrateSingleSupplementConfig(config: any): any {
 
 // Convert database row to TripConfiguration
 function rowToConfig(row: any): TripConfiguration {
-  const singleSupplement = migrateSingleSupplementConfig(row.single_supplement_config || {
+  const rawSingleSupplement = migrateSingleSupplementConfig(row.single_supplement_config || {
     singleSupplement: Number(row.single_supplement) || 950,
     singleRoomExtra: Number(row.single_room_extra) || 300,
     singleSupplementCount: 2,
   });
+  // Migrate countSimple: if not stored, derive from countByPax when trip was in simple mode
+  const wasSSSimple = !row.ui_preferences?.singleSuppPerPax;
+  const singleSupplement = (rawSingleSupplement.countSimple != null)
+    ? rawSingleSupplement
+    : { ...rawSingleSupplement, countSimple: wasSSSimple ? (Object.values(rawSingleSupplement.countByPax || {})[0] ?? 0) : 0 };
 
   // Handle extension: new format or migrate from old pre_post, merged with defaults
   const rawExtension = row.extension_config
@@ -147,15 +152,31 @@ function rowToConfig(row: any): TripConfiguration {
     earlyBirdDiscount2: row.ui_preferences?.earlyBirdDiscount2 || 0,
     earlyBirdCountByPax2: row.ui_preferences?.earlyBirdCountByPax2 || {},
     discountsActiveMode: row.ui_preferences?.discountsActiveMode || undefined,
-    earlyBirdCountSimple: row.ui_preferences?.earlyBirdCountSimple ?? 0,
+    // Migrate simple counts: if not stored, derive from byPax when trip was in simple mode
+    earlyBirdCountSimple: row.ui_preferences?.earlyBirdCountSimple != null
+      ? row.ui_preferences.earlyBirdCountSimple
+      : (!row.ui_preferences?.discountsPerPax
+          ? (Object.values(row.early_bird_count_by_pax || {})[0] ?? 0)
+          : 0),
     earlyBirdCount2Simple: row.ui_preferences?.earlyBirdCount2Simple ?? 0,
-    loyaltyCountSimple: row.ui_preferences?.loyaltyCountSimple ?? 0,
+    loyaltyCountSimple: row.ui_preferences?.loyaltyCountSimple != null
+      ? row.ui_preferences.loyaltyCountSimple
+      : (!row.ui_preferences?.discountsPerPax
+          ? (Object.values(row.loyalty_count_by_pax || {})[0] ?? 0)
+          : 0),
     loyaltyDiscountRate: Number(row.loyalty_discount_rate),
     loyaltyCountByPax: row.loyalty_count_by_pax || migrateDefaultCountByPax(row.pax_max || 16, 0.05),
     singleSupplement,
     extension,
     hotelsMeals: { ...DEFAULT_CONFIG.hotelsMeals, ...(typeof row.hotels_meals === 'object' && row.hotels_meals !== null ? row.hotels_meals : {}) },
-    logistics: migrateLogistics({ ...DEFAULT_CONFIG.logistics, ...(typeof row.logistics === 'object' && row.logistics !== null ? row.logistics : {}) }),
+    logistics: (() => {
+      const lg = migrateLogistics({ ...DEFAULT_CONFIG.logistics, ...(typeof row.logistics === 'object' && row.logistics !== null ? row.logistics : {}) });
+      // Migrate baseRate: existing trips stored simple-mode rate in the rates array; populate baseRate from rates[0] when in simple view
+      if ((lg.baseRate === 0 || lg.baseRate == null) && lg.simpleMode !== false && (lg.rates[0]?.rate ?? 0) > 0) {
+        return { ...lg, baseRate: lg.rates[0].rate };
+      }
+      return lg;
+    })(),
     staffConfig: { ...DEFAULT_CONFIG.staffConfig, ...staffConfig },
     transportConfig: { ...DEFAULT_CONFIG.transportConfig, ...(typeof row.transport_config === 'object' && row.transport_config !== null ? row.transport_config : {}) },
     tripSpecific: migrateTripSpecific({ ...DEFAULT_CONFIG.tripSpecific, ...(typeof row.trip_specific === 'object' && row.trip_specific !== null ? row.trip_specific : {}) }),

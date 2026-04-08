@@ -110,8 +110,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
 
   logistics: {
     enabled: true,
-    baseRate: 0,
-    // All rates uniform so simpleMode display matches calculations for new trips
+    baseRate: 500,
     rates: Array.from({ length: 16 }, (_, i) => ({ pax: i + 1, rate: 500 })),
     perPax: false,
     mode: 'perDay' as const,
