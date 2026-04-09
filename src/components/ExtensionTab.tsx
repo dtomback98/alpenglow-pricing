@@ -130,9 +130,10 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
         };
       });
     } else {
+      // Switching back to Simple view: clear per-pax data and reset activeMode so dropdown reads correctly
       updateConfig(prev => ({
         uiPreferences: { ...prev.uiPreferences, extHotelsMealsPerPax: false },
-        extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, hotelCostByPax: undefined, lunchCostByPax: undefined, dinnerCostByPax: undefined, additionalMealCostsByPax: undefined } },
+        extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, activeMode: undefined, hotelCostByPax: undefined, lunchCostByPax: undefined, dinnerCostByPax: undefined, additionalMealCostsByPax: undefined } },
       }));
     }
   };

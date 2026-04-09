@@ -20,16 +20,19 @@ const FINANCIAL_CATEGORIES: { key: keyof FinancialBreakdown; label: string; shor
 
 interface FinancialsTabProps {
   refreshKey?: number;
+  expeditions: string[];
+  addExpedition: (name: string) => boolean;
 }
 
-export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
+export default function FinancialsTab({ refreshKey, expeditions, addExpedition }: FinancialsTabProps) {
   const { trips, loading, error, selectedCategory, setSelectedCategory, refresh } = useHistoricalData();
   const [yearFilter, setYearFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [showNewExpedition, setShowNewExpedition] = useState(false);
+  const [newExpeditionName, setNewExpeditionName] = useState('');
   const [configMap, setConfigMap] = useState<Map<string, TripConfiguration>>(new Map());
   const [configsLoading, setConfigsLoading] = useState(false);
-
-  const currentYear = new Date().getFullYear();
 
   // Re-fetch when refreshKey changes (after Save to History)
   useEffect(() => {
@@ -38,11 +41,14 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
     }
   }, [refreshKey, refresh]);
 
+  // Hard-exclude 2025 reference trips — financials tab shows current operations only
+  const nonRefTrips = trips.filter(t => (t.year || 2025) !== 2025);
+
   // Fetch trip configs whenever the trips list changes
   useEffect(() => {
     const seen = new Set<string>();
     const ids: string[] = [];
-    for (const t of trips) {
+    for (const t of nonRefTrips) {
       if (t.tripConfigId && !seen.has(t.tripConfigId)) {
         seen.add(t.tripConfigId);
         ids.push(t.tripConfigId);
@@ -57,18 +63,26 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
       setConfigMap(map);
       setConfigsLoading(false);
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trips]);
 
-  // Derive unique years from loaded trips for the year dropdown
+  // Derive sorted country list from non-reference trips for the expedition filter
+  const countryMap: Record<string, true> = {};
+  for (const t of nonRefTrips) { countryMap[t.country || 'Other'] = true; }
+  const availableCountries = Object.keys(countryMap).sort();
+
+  const countryFiltered = selectedCountry
+    ? nonRefTrips.filter(t => (t.country || 'Other') === selectedCountry)
+    : nonRefTrips;
+
+  // Derive unique years from non-reference trips for the year dropdown
   const yearMap: Record<number, true> = {};
-  for (const t of trips) { yearMap[t.year || 2025] = true; }
+  for (const t of nonRefTrips) { yearMap[t.year || new Date().getFullYear()] = true; }
   const availableYears = Object.keys(yearMap).map(Number).sort((a, b) => b - a);
 
   // Apply year + status filters (category already filtered by the hook)
-  const filteredTrips = trips.filter(t => {
-    if (yearFilter !== 'all') {
-      if (yearFilter === '2025' ? (t.year || 2025) !== 2025 : t.year !== Number(yearFilter)) return false;
-    }
+  const filteredTrips = countryFiltered.filter(t => {
+    if (yearFilter !== 'all' && t.year !== Number(yearFilter)) return false;
     if (statusFilter !== 'all' && t.status !== statusFilter) return false;
     return true;
   });
@@ -124,26 +138,18 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
         </div>
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-6">
-            <div>
-              <p className="text-xs text-ag-text-muted mb-1">Year</p>
-              <select
-                value={yearFilter}
-                onChange={(e) => setYearFilter(e.target.value)}
-                className="text-sm"
-              >
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-ag-text-muted">Year</p>
+              <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="text-sm">
                 <option value="all">All Years</option>
                 {availableYears.map(y => (
                   <option key={y} value={String(y)}>{y}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <p className="text-xs text-ag-text-muted mb-1">Status</p>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="text-sm"
-              >
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-ag-text-muted">Status</p>
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="text-sm">
                 <option value="all">All Statuses</option>
                 <option value="run">Run</option>
                 <option value="open-enrollment">Open Enrollment</option>
@@ -170,6 +176,76 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
               })}
             </div>
           </div>
+          {availableCountries.length > 0 && (
+            <div>
+              <p className="text-xs text-ag-text-muted mb-2">Expedition</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedCountry(null)}
+                  className={`btn ${selectedCountry === null ? 'btn-primary' : 'btn-secondary'}`}
+                >
+                  All
+                </button>
+                {availableCountries.map((country) => (
+                  <button
+                    key={country}
+                    onClick={() => setSelectedCountry(country)}
+                    className={`btn ${selectedCountry === country ? 'btn-primary' : 'btn-secondary'}`}
+                  >
+                    {country}
+                  </button>
+                ))}
+                {showNewExpedition ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={newExpeditionName}
+                      autoFocus
+                      onChange={(e) => setNewExpeditionName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const added = addExpedition(newExpeditionName);
+                          if (added) setSelectedCountry(newExpeditionName.trim());
+                          setShowNewExpedition(false);
+                          setNewExpeditionName('');
+                        }
+                        if (e.key === 'Escape') {
+                          setShowNewExpedition(false);
+                          setNewExpeditionName('');
+                        }
+                      }}
+                      placeholder="Expedition name"
+                      className="text-sm w-36"
+                    />
+                    <button
+                      className="btn btn-primary text-xs py-0.5 px-2"
+                      onClick={() => {
+                        const added = addExpedition(newExpeditionName);
+                        if (added) setSelectedCountry(newExpeditionName.trim());
+                        setShowNewExpedition(false);
+                        setNewExpeditionName('');
+                      }}
+                    >
+                      Add
+                    </button>
+                    <button
+                      className="btn btn-secondary text-xs py-0.5 px-2"
+                      onClick={() => { setShowNewExpedition(false); setNewExpeditionName(''); }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowNewExpedition(true)}
+                    className="btn btn-secondary text-xs"
+                  >
+                    + New Expedition
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -255,7 +331,7 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
                       </span>
                     )}
                   </td>
-                  <td>{trip.year || 2025}</td>
+                  <td>{trip.year || new Date().getFullYear()}</td>
                   <td>
                     <span className={`px-2 py-1 rounded text-xs font-medium ${STATUS_BADGE_CLASSES[trip.status || 'budgeted'] || STATUS_BADGE_CLASSES['budgeted']}`}>
                       {STATUS_LABELS[trip.status || 'budgeted'] || 'Budgeted'}
@@ -298,7 +374,7 @@ export default function FinancialsTab({ refreshKey }: FinancialsTabProps) {
               {key === 'tripSupplies' && 'Equipment · Jackets / apparel · Hypoxico'}
               {key === 'commercialLicensing' && 'Permits'}
               {key === 'tripCommunications' && '—'}
-              {key === 'otherTripCosts' && 'Insurance · Contingency · Other costs · Custom costs'}
+              {key === 'otherTripCosts' && 'Contingency · Other costs · Custom costs'}
             </span>
           </div>
         ))}

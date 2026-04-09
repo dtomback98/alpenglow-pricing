@@ -110,7 +110,11 @@ export default function PricingTool() {
           />
         )}
         {activeTab === 'financials' && (
-          <FinancialsTab refreshKey={historyRefreshKey} />
+          <FinancialsTab
+            refreshKey={historyRefreshKey}
+            expeditions={expeditions}
+            addExpedition={addExpedition}
+          />
         )}
       </div>
     </div>

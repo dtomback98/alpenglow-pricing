@@ -1,13 +1,18 @@
 import { TripConfiguration, PaxCalculation, LogisticsConfig, StaffMember, FinancialBreakdown } from './types';
 
-// Get logistics rate based on pax count; falls back to nearest defined rate
-export function getLogisticsRate(pax: number, logistics: LogisticsConfig): number {
-  const exact = logistics.rates.find((r) => r.pax === pax);
+// Nearest-match lookup on any LogisticsRate array; returns 0 when empty
+function rateFromArray(pax: number, rates: { pax: number; rate: number }[]): number {
+  if (rates.length === 0) return 0;
+  const exact = rates.find((r) => r.pax === pax);
   if (exact) return exact.rate;
-  if (logistics.rates.length === 0) return 0;
-  return logistics.rates.reduce((best, r) =>
+  return rates.reduce((best, r) =>
     Math.abs(r.pax - pax) < Math.abs(best.pax - pax) ? r : best
   ).rate;
+}
+
+// Get logistics rate based on pax count; falls back to nearest defined rate
+export function getLogisticsRate(pax: number, logistics: LogisticsConfig): number {
+  return rateFromArray(pax, logistics.rates);
 }
 
 // Calculate staff costs for a given pax count
@@ -178,8 +183,7 @@ function calculateExtension(pax: number, config: TripConfiguration) {
       rate = logAM === 'simple' ? (config.logistics.baseRate || 0) : getLogisticsRate(pax, config.logistics);
       mode = config.logistics.mode || (config.logistics.perPax ? 'perPaxPerDay' : 'perDay');
     } else {
-      const match = lc.rates?.find(r => r.pax === pax);
-      rate = match ? match.rate : 0;
+      rate = rateFromArray(pax, lc.rates ?? []);
       mode = lc.mode || 'perDay';
     }
     if (mode === 'perPaxPerDay') extensionLogisticsCost = rate * extension.extensionNights * extPaxCount;
@@ -190,7 +194,7 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     const gl = lc.inheritFromMain ? config.logistics.guideLogistics : lc.guideLogistics;
     if (gl && gl.enabled !== false) {
       const glAM = gl.activeMode ?? (gl.simpleMode !== false ? 'simple' : 'perPax');
-      const guideRate = glAM === 'simple' ? (gl.baseRate ?? 0) : (gl.rates?.find(r => r.pax === pax)?.rate ?? 0);
+      const guideRate = glAM === 'simple' ? (gl.baseRate ?? 0) : rateFromArray(pax, gl.rates ?? []);
       const guideMode = gl.mode || 'perDay';
       if (guideMode === 'perPaxPerDay') extensionLogisticsCost += guideRate * extension.extensionNights * extPaxCount;
       else if (guideMode === 'perPax') extensionLogisticsCost += guideRate * extPaxCount;
@@ -358,7 +362,7 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
     const gl = config.logistics.guideLogistics;
     if (gl && gl.enabled !== false) {
       const glAM = gl.activeMode ?? (gl.simpleMode !== false ? 'simple' : 'perPax');
-      const guideRate = glAM === 'simple' ? (gl.baseRate ?? 0) : (gl.rates?.find(r => r.pax === pax)?.rate ?? 0);
+      const guideRate = glAM === 'simple' ? (gl.baseRate ?? 0) : rateFromArray(pax, gl.rates ?? []);
       const guideMode = gl.mode || 'perDay';
       if (guideMode === 'perPaxPerDay') logisticsCost += guideRate * config.tripDays * pax;
       else if (guideMode === 'perPax') logisticsCost += guideRate * pax;
