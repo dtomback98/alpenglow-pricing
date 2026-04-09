@@ -139,6 +139,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
     groundTransportTotal: 0,
     airportTransfers: 0,
     localTransport: 0,
+    transportBands: [],
   },
 
   tripSpecific: {

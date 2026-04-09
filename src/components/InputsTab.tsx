@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TripConfiguration, StaffMember, TripSpecificCost, CustomTripCost, AdditionalHotel, EarlyBirdTier } from '@/lib/types';
+import { TripConfiguration, StaffMember, TripSpecificCost, CustomTripCost, AdditionalHotel, EarlyBirdTier, TransportBand } from '@/lib/types';
 
 interface InputsTabProps {
   config: TripConfiguration;
@@ -17,29 +17,36 @@ const NumInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
 
 interface ActiveDropdownProps {
   id: string;
-  value: 'simple' | 'perPax';
-  onChange: (v: 'simple' | 'perPax') => void;
+  value: 'simple' | 'perPax' | 'bands';
+  onChange: (v: 'simple' | 'perPax' | 'bands') => void;
   openId: string | null;
   setOpenId: (id: string | null) => void;
+  showBands?: boolean;
 }
-const ActiveDropdown = ({ id, value, onChange, openId, setOpenId }: ActiveDropdownProps) => (
+const ActiveDropdown = ({ id, value, onChange, openId, setOpenId, showBands }: ActiveDropdownProps) => (
   <div className="relative" onClick={e => e.stopPropagation()}>
     <button
       className="btn btn-secondary text-xs flex items-center gap-1"
       onClick={() => setOpenId(openId === id ? null : id)}
     >
-      Active: {value === 'simple' ? 'Simple' : 'Per Pax'} <span className="opacity-50">▾</span>
+      Active: {value === 'simple' ? 'Simple' : value === 'bands' ? 'Bands' : 'Per Pax'} <span className="opacity-50">▾</span>
     </button>
     {openId === id && (
       <div className="absolute right-0 top-full mt-1 z-50 min-w-[110px] rounded-md border border-ag-border bg-ag-card shadow-lg">
         <button
-          className={`block w-full text-left px-3 py-2 text-xs rounded-t-md hover:bg-white/5 ${value === 'simple' ? 'text-blue-400 font-medium' : 'text-ag-text'}`}
+          className={`block w-full text-left px-3 py-2 text-xs ${showBands ? '' : 'rounded-t-md'} hover:bg-white/5 ${value === 'simple' ? 'text-blue-400 font-medium' : 'text-ag-text'}`}
           onClick={() => { onChange('simple'); setOpenId(null); }}
         >Simple</button>
         <button
-          className={`block w-full text-left px-3 py-2 text-xs rounded-b-md hover:bg-white/5 ${value === 'perPax' ? 'text-blue-400 font-medium' : 'text-ag-text'}`}
+          className={`block w-full text-left px-3 py-2 text-xs ${!showBands ? 'rounded-b-md' : ''} hover:bg-white/5 ${value === 'perPax' ? 'text-blue-400 font-medium' : 'text-ag-text'}`}
           onClick={() => { onChange('perPax'); setOpenId(null); }}
         >Per Pax</button>
+        {showBands && (
+          <button
+            className={`block w-full text-left px-3 py-2 text-xs rounded-b-md hover:bg-white/5 ${value === 'bands' ? 'text-blue-400 font-medium' : 'text-ag-text'}`}
+            onClick={() => { onChange('bands'); setOpenId(null); }}
+          >Bands</button>
+        )}
       </div>
     )}
   </div>
@@ -152,7 +159,8 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   const ssEffectiveAM: 'simple' | 'perPax' = config.singleSupplement.activeMode ?? 'simple';
   const hmEffectiveAM: 'simple' | 'perPax' = config.hotelsMeals.activeMode ?? (config.hotelsMeals.hotelCostByPax && Object.keys(config.hotelsMeals.hotelCostByPax).length > 0 ? 'perPax' : 'simple');
   const logEffectiveAM: 'simple' | 'perPax' = config.logistics.activeMode ?? (config.logistics.simpleMode !== false ? 'simple' : 'perPax');
-  const transportEffectiveAM: 'simple' | 'perPax' = config.transportConfig.activeMode ?? (config.transportConfig.groundTransportByPax && Object.keys(config.transportConfig.groundTransportByPax).length > 0 ? 'perPax' : 'simple');
+  const glEffectiveAM: 'simple' | 'perPax' = config.logistics.guideLogistics?.activeMode ?? (config.logistics.guideLogistics?.simpleMode !== false ? 'simple' : 'perPax');
+  const transportEffectiveAM: 'simple' | 'perPax' | 'bands' = config.transportConfig.activeMode ?? (config.transportConfig.groundTransportByPax && Object.keys(config.transportConfig.groundTransportByPax).length > 0 ? 'perPax' : 'simple');
   const earlyBirdTiers = config.earlyBirdTiers || [];
   const addEarlyBirdTier = () => {
     const newTier: EarlyBirdTier = {
@@ -172,6 +180,8 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   const singleSuppPerPax = config.uiPreferences?.singleSuppPerPax ?? false;
   const hotelsMealsPerPax = config.uiPreferences?.hotelsMealsPerPax ?? false;
   const transportPerPax = config.uiPreferences?.transportPerPax ?? false;
+  const transportBandsView = config.uiPreferences?.transportBandsView ?? false;
+  const transportViewMode = transportBandsView ? 'bands' : (transportPerPax ? 'perPax' : 'simple');
   const setPricingPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, pricingPerPax: val } }));
   const setDiscountsPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, discountsPerPax: val } }));
   const setSingleSuppPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, singleSuppPerPax: val } }));
@@ -184,12 +194,12 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   useEffect(() => { setSelectedTransportPax(paxMin); }, [paxMin]);
   const effectiveTransportPax = paxCounts.includes(selectedTransportPax) ? selectedTransportPax : paxCounts[0] || 1;
 
-  const toggleTransportPerPax = (val: boolean) => {
-    if (val) {
+  const toggleTransportView = (mode: 'simple' | 'perPax' | 'bands') => {
+    if (mode === 'perPax') {
       updateConfig(prev => {
         const t = prev.transportConfig;
         const needsInit = !t.groundTransportByPax || Object.keys(t.groundTransportByPax).length === 0;
-        if (!needsInit) return { uiPreferences: { ...prev.uiPreferences, transportPerPax: true } };
+        if (!needsInit) return { uiPreferences: { ...prev.uiPreferences, transportPerPax: true, transportBandsView: false } };
         const groundByPax: { [k: number]: number } = {};
         const airportByPax: { [k: number]: number } = {};
         const localByPax: { [k: number]: number } = {};
@@ -199,14 +209,32 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           localByPax[p] = t.localTransport;
         }
         return {
-          uiPreferences: { ...prev.uiPreferences, transportPerPax: true },
+          uiPreferences: { ...prev.uiPreferences, transportPerPax: true, transportBandsView: false },
           transportConfig: { ...t, groundTransportByPax: groundByPax, airportTransfersByPax: airportByPax, localTransportByPax: localByPax },
         };
       });
+    } else if (mode === 'bands') {
+      updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, transportPerPax: false, transportBandsView: true } }));
     } else {
-      // View-only switch: preserve byPax data, just change which editor is shown
-      updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, transportPerPax: false } }));
+      updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, transportPerPax: false, transportBandsView: false } }));
     }
+  };
+
+  const addTransportBand = () => {
+    updateConfig(prev => {
+      const bands = prev.transportConfig.transportBands || [];
+      const lastMax = bands.length > 0 ? (bands[bands.length - 1].maxPax ?? null) : null;
+      const newMin = lastMax !== null ? lastMax + 1 : paxMin;
+      return { transportConfig: { ...prev.transportConfig, transportBands: [...bands, { id: crypto.randomUUID(), minPax: newMin, maxPax: null, groundTransport: 0, airportTransfers: 0, localTransport: 0 } as TransportBand] } };
+    });
+  };
+
+  const removeTransportBand = (id: string) => {
+    updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, transportBands: (prev.transportConfig.transportBands || []).filter(b => b.id !== id) } }));
+  };
+
+  const updateTransportBand = (id: string, updates: Partial<TransportBand>) => {
+    updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, transportBands: (prev.transportConfig.transportBands || []).map(b => b.id === id ? { ...b, ...updates } : b) } }));
   };
 
   const copyTransportToAllPax = () => {
@@ -336,9 +364,14 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   const copyStaffToAll = () => {
     updateConfig(prev => {
       const staff = prev.staffConfig.staffByPax[effectiveStaffPax] || [{ role: 'Lead Guide', dailyRate: 400, days: prev.tripDays, quantity: 1 }];
+      const flightCount = prev.staffConfig.guideFlightCountByPax?.[effectiveStaffPax] ?? 0;
       const newStaffByPax: { [pax: number]: StaffMember[] } = {};
-      for (const p of paxCounts) newStaffByPax[p] = staff.map((s: StaffMember) => ({ ...s }));
-      return { staffConfig: { ...prev.staffConfig, staffByPax: newStaffByPax } };
+      const newFlightCountByPax: { [pax: number]: number } = {};
+      for (const p of paxCounts) {
+        newStaffByPax[p] = staff.map((s: StaffMember) => ({ ...s }));
+        newFlightCountByPax[p] = flightCount;
+      }
+      return { staffConfig: { ...prev.staffConfig, staffByPax: newStaffByPax, guideFlightCountByPax: newFlightCountByPax } };
     });
   };
 
@@ -453,7 +486,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <>
                 <button onClick={() => setDiscountsPerPax(false)} className={`btn text-xs ${!discountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
                 <button onClick={() => setDiscountsPerPax(true)} className={`btn text-xs ${discountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                <ActiveDropdown id="discounts" value={discountsEffectiveAM} onChange={v => updateConfig({ discountsActiveMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                <ActiveDropdown id="discounts" value={discountsEffectiveAM} onChange={v => updateConfig({ discountsActiveMode: v as 'simple' | 'perPax' })} openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateConfig({ discountsEnabled: config.discountsEnabled === false })} className={`btn text-xs ${config.discountsEnabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -614,7 +647,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <>
                 <button onClick={() => setSingleSuppPerPax(false)} className={`btn text-xs ${!singleSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
                 <button onClick={() => setSingleSuppPerPax(true)} className={`btn text-xs ${singleSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                <ActiveDropdown id="singleSupp" value={ssEffectiveAM} onChange={v => updateNestedConfig('singleSupplement', { activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                <ActiveDropdown id="singleSupp" value={ssEffectiveAM} onChange={v => updateNestedConfig('singleSupplement', { activeMode: v as 'simple' | 'perPax' })} openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateNestedConfig('singleSupplement', { enabled: config.singleSupplement.enabled === false })} className={`btn text-xs ${config.singleSupplement.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -679,7 +712,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <>
                 <button onClick={() => toggleHotelsMealsPerPax(false)} className={`btn text-xs ${!hotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
                 <button onClick={() => toggleHotelsMealsPerPax(true)} className={`btn text-xs ${hotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                <ActiveDropdown id="hotels" value={hmEffectiveAM} onChange={v => updateNestedConfig('hotelsMeals', { activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                <ActiveDropdown id="hotels" value={hmEffectiveAM} onChange={v => updateNestedConfig('hotelsMeals', { activeMode: v as 'simple' | 'perPax' })} openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateNestedConfig('hotelsMeals', { enabled: config.hotelsMeals.enabled === false })} className={`btn text-xs ${config.hotelsMeals.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -852,12 +885,15 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           </div>
           <div className="flex gap-2">
             {config.staffConfig.enabled !== false && (
-              <button
-                onClick={() => updateNestedConfig('staffConfig', { useCustomStaffDays: !config.staffConfig.useCustomStaffDays })}
-                className={`btn text-xs ${config.staffConfig.useCustomStaffDays ? 'btn-primary' : 'btn-secondary'}`}
-              >
-                {config.staffConfig.useCustomStaffDays ? 'Custom Days' : 'Trip Days'}
-              </button>
+              <>
+                <button onClick={copyStaffToAll} className="btn btn-secondary text-xs">Copy to All Pax</button>
+                <button
+                  onClick={() => updateNestedConfig('staffConfig', { useCustomStaffDays: !config.staffConfig.useCustomStaffDays })}
+                  className={`btn text-xs ${config.staffConfig.useCustomStaffDays ? 'btn-primary' : 'btn-secondary'}`}
+                >
+                  {config.staffConfig.useCustomStaffDays ? 'Custom Days' : 'Trip Days'}
+                </button>
+              </>
             )}
             <button onClick={() => updateNestedConfig('staffConfig', { enabled: config.staffConfig.enabled === false })} className={`btn text-xs ${config.staffConfig.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
               {config.staffConfig.enabled === false ? 'Inactive' : 'Active'}
@@ -906,7 +942,6 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               ))}
               <div className="flex gap-2">
                 <button onClick={addStaffMember} className="btn btn-secondary">+ Add Staff Member</button>
-                <button onClick={copyStaffToAll} className="btn btn-secondary">Copy to All Pax</button>
               </div>
               {/* Guide flights count — embedded in pax tab */}
               <div className="mt-4 pt-4 border-t border-ag-border">
@@ -972,9 +1007,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <div className="flex gap-2">
             {config.transportConfig.enabled !== false && (
               <>
-                <button onClick={() => toggleTransportPerPax(false)} className={`btn text-xs ${!transportPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-                <button onClick={() => toggleTransportPerPax(true)} className={`btn text-xs ${transportPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                <ActiveDropdown id="transport" value={transportEffectiveAM} onChange={v => updateNestedConfig('transportConfig', { activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                <button onClick={() => toggleTransportView('simple')} className={`btn text-xs ${transportViewMode === 'simple' ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+                <button onClick={() => toggleTransportView('perPax')} className={`btn text-xs ${transportViewMode === 'perPax' ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+                <button onClick={() => toggleTransportView('bands')} className={`btn text-xs ${transportViewMode === 'bands' ? 'btn-primary' : 'btn-secondary'}`}>Bands</button>
+                <ActiveDropdown id="transport" value={transportEffectiveAM} onChange={v => updateNestedConfig('transportConfig', { activeMode: v })} showBands openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateNestedConfig('transportConfig', { enabled: config.transportConfig.enabled === false })} className={`btn text-xs ${config.transportConfig.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -986,90 +1022,145 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <p className="text-sm text-ag-text-muted">Section disabled — transport costs will not be applied to calculations.</p>
         ) : (
           <>
-            {!transportPerPax ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="form-group">
-              <label className="form-label">Ground Transport ($)</label>
-              <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.groundTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
-              <div className="flex gap-3 items-center">
-                <NumInput type="number" value={config.transportConfig.groundTransportTotal} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportTotal: Number(e.target.value) })} className="flex-1 min-w-0" />
-                <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                  <input type="checkbox" checked={config.transportConfig.groundTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                  <span>Per Pax</span>
-                </label>
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Helicopters ($)</label>
-              <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.airportTransfersPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
-              <div className="flex gap-3 items-center">
-                <NumInput type="number" value={config.transportConfig.airportTransfers} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfers: Number(e.target.value) })} className="flex-1 min-w-0" />
-                <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                  <input type="checkbox" checked={config.transportConfig.airportTransfersPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfersPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                  <span>Per Pax</span>
-                </label>
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Local Transport ($)</label>
-              <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.localTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
-              <div className="flex gap-3 items-center">
-                <NumInput type="number" value={config.transportConfig.localTransport} onChange={(e) => updateNestedConfig('transportConfig', { localTransport: Number(e.target.value) })} className="flex-1 min-w-0" />
-                <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                  <input type="checkbox" checked={config.transportConfig.localTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { localTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                  <span>Per Pax</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex gap-2 flex-wrap">
-                {paxCounts.map((p) => (
-                  <button key={p} onClick={() => setSelectedTransportPax(p)} className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${selectedTransportPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-lighter text-ag-text-muted hover:text-ag-text'}`}>
-                    {p} pax
-                  </button>
-                ))}
-              </div>
-              <button onClick={copyTransportToAllPax} className="btn btn-secondary text-xs ml-2">Copy to All Pax</button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-              <div className="form-group">
-                <label className="form-label">Ground Transport ($)</label>
-                <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.groundTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
-                <div className="flex gap-3 items-center">
-                  <NumInput type="number" value={config.transportConfig.groundTransportByPax?.[effectiveTransportPax] ?? config.transportConfig.groundTransportTotal} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, groundTransportByPax: { ...prev.transportConfig.groundTransportByPax, [effectiveTransportPax]: val } } })); }} className="flex-1 min-w-0" />
-                  <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                    <input type="checkbox" checked={config.transportConfig.groundTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                    <span>Per Pax</span>
-                  </label>
+            {transportViewMode === 'simple' ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="form-group">
+                  <label className="form-label">Ground Transport ($)</label>
+                  <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.groundTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
+                  <div className="flex gap-3 items-center">
+                    <NumInput type="number" value={config.transportConfig.groundTransportTotal} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportTotal: Number(e.target.value) })} className="flex-1 min-w-0" />
+                    <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                      <input type="checkbox" checked={config.transportConfig.groundTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                      <span>Per Pax</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Helicopters ($)</label>
+                  <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.airportTransfersPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
+                  <div className="flex gap-3 items-center">
+                    <NumInput type="number" value={config.transportConfig.airportTransfers} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfers: Number(e.target.value) })} className="flex-1 min-w-0" />
+                    <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                      <input type="checkbox" checked={config.transportConfig.airportTransfersPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfersPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                      <span>Per Pax</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Local Transport ($)</label>
+                  <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.localTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
+                  <div className="flex gap-3 items-center">
+                    <NumInput type="number" value={config.transportConfig.localTransport} onChange={(e) => updateNestedConfig('transportConfig', { localTransport: Number(e.target.value) })} className="flex-1 min-w-0" />
+                    <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                      <input type="checkbox" checked={config.transportConfig.localTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { localTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                      <span>Per Pax</span>
+                    </label>
+                  </div>
                 </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Helicopters ($)</label>
-                <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.airportTransfersPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
-                <div className="flex gap-3 items-center">
-                  <NumInput type="number" value={config.transportConfig.airportTransfersByPax?.[effectiveTransportPax] ?? config.transportConfig.airportTransfers} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, airportTransfersByPax: { ...prev.transportConfig.airportTransfersByPax, [effectiveTransportPax]: val } } })); }} className="flex-1 min-w-0" />
-                  <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                    <input type="checkbox" checked={config.transportConfig.airportTransfersPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfersPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                    <span>Per Pax</span>
-                  </label>
+            ) : transportViewMode === 'perPax' ? (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex gap-2 flex-wrap">
+                    {paxCounts.map((p) => (
+                      <button key={p} onClick={() => setSelectedTransportPax(p)} className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${selectedTransportPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-lighter text-ag-text-muted hover:text-ag-text'}`}>
+                        {p} pax
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={copyTransportToAllPax} className="btn btn-secondary text-xs ml-2">Copy to All Pax</button>
                 </div>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Local Transport ($)</label>
-                <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.localTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
-                <div className="flex gap-3 items-center">
-                  <NumInput type="number" value={config.transportConfig.localTransportByPax?.[effectiveTransportPax] ?? config.transportConfig.localTransport} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, localTransportByPax: { ...prev.transportConfig.localTransportByPax, [effectiveTransportPax]: val } } })); }} className="flex-1 min-w-0" />
-                  <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                    <input type="checkbox" checked={config.transportConfig.localTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { localTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                    <span>Per Pax</span>
-                  </label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                  <div className="form-group">
+                    <label className="form-label">Ground Transport ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.groundTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
+                    <div className="flex gap-3 items-center">
+                      <NumInput type="number" value={config.transportConfig.groundTransportByPax?.[effectiveTransportPax] ?? config.transportConfig.groundTransportTotal} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, groundTransportByPax: { ...prev.transportConfig.groundTransportByPax, [effectiveTransportPax]: val } } })); }} className="flex-1 min-w-0" />
+                      <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                        <input type="checkbox" checked={config.transportConfig.groundTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                        <span>Per Pax</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Helicopters ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.airportTransfersPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
+                    <div className="flex gap-3 items-center">
+                      <NumInput type="number" value={config.transportConfig.airportTransfersByPax?.[effectiveTransportPax] ?? config.transportConfig.airportTransfers} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, airportTransfersByPax: { ...prev.transportConfig.airportTransfersByPax, [effectiveTransportPax]: val } } })); }} className="flex-1 min-w-0" />
+                      <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                        <input type="checkbox" checked={config.transportConfig.airportTransfersPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfersPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                        <span>Per Pax</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Local Transport ($)</label>
+                    <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.localTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
+                    <div className="flex gap-3 items-center">
+                      <NumInput type="number" value={config.transportConfig.localTransportByPax?.[effectiveTransportPax] ?? config.transportConfig.localTransport} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, localTransportByPax: { ...prev.transportConfig.localTransportByPax, [effectiveTransportPax]: val } } })); }} className="flex-1 min-w-0" />
+                      <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                        <input type="checkbox" checked={config.transportConfig.localTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { localTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                        <span>Per Pax</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </>
+              </>
+            ) : (
+              /* Bands editor */
+              <>
+                <p className="text-xs text-ag-text-muted mb-3">Define cost tiers by group size. The first band whose range contains the pax count will be used.</p>
+                {(config.transportConfig.transportBands || []).length === 0 ? (
+                  <p className="text-sm text-ag-text-muted mb-3">No bands defined. Add one below.</p>
+                ) : (
+                  <div className="overflow-x-auto mb-3">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-ag-text-muted text-xs">
+                          <th className="text-left pb-2 pr-3 font-medium">Min Pax</th>
+                          <th className="text-left pb-2 pr-3 font-medium">Max Pax</th>
+                          <th className="text-left pb-2 pr-3 font-medium">Ground Transport ($)</th>
+                          <th className="text-left pb-2 pr-3 font-medium">Helicopters ($)</th>
+                          <th className="text-left pb-2 pr-3 font-medium">Local Transport ($)</th>
+                          <th className="pb-2"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(config.transportConfig.transportBands || []).map((band) => (
+                          <tr key={band.id} className="border-t border-ag-border">
+                            <td className="py-2 pr-3">
+                              <NumInput type="number" min="1" value={band.minPax} onChange={(e) => updateTransportBand(band.id, { minPax: Number(e.target.value) })} className="w-20" />
+                            </td>
+                            <td className="py-2 pr-3">
+                              <input
+                                type="number"
+                                min="1"
+                                placeholder="∞"
+                                value={band.maxPax ?? ''}
+                                onChange={(e) => updateTransportBand(band.id, { maxPax: e.target.value === '' ? null : Number(e.target.value) })}
+                                className="w-20"
+                              />
+                            </td>
+                            <td className="py-2 pr-3">
+                              <NumInput type="number" value={band.groundTransport} onChange={(e) => updateTransportBand(band.id, { groundTransport: Number(e.target.value) })} className="w-28" />
+                            </td>
+                            <td className="py-2 pr-3">
+                              <NumInput type="number" value={band.airportTransfers} onChange={(e) => updateTransportBand(band.id, { airportTransfers: Number(e.target.value) })} className="w-28" />
+                            </td>
+                            <td className="py-2 pr-3">
+                              <NumInput type="number" value={band.localTransport} onChange={(e) => updateTransportBand(band.id, { localTransport: Number(e.target.value) })} className="w-28" />
+                            </td>
+                            <td className="py-2">
+                              <button onClick={() => removeTransportBand(band.id)} className="btn btn-danger text-xs">Remove</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <button onClick={addTransportBand} className="btn btn-secondary text-xs">+ Add Band</button>
+              </>
             )}
           </>
         ))}
@@ -1197,7 +1288,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <>
                 <button onClick={() => setLogisticsSimpleView(true)} className={`btn text-xs ${config.logistics.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
                 <button onClick={() => setLogisticsSimpleView(false)} className={`btn text-xs ${config.logistics.simpleMode === false ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                <ActiveDropdown id="logistics" value={logEffectiveAM} onChange={v => updateNestedConfig('logistics', { activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                <ActiveDropdown id="logistics" value={logEffectiveAM} onChange={v => updateNestedConfig('logistics', { activeMode: v as 'simple' | 'perPax' })} openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateNestedConfig('logistics', { enabled: config.logistics.enabled === false })} className={`btn text-xs ${config.logistics.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -1258,61 +1349,73 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             <div className="border-t border-ag-border mt-6 pt-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold">Guide Logistics Rate</h3>
-                <button
-                  onClick={() => setGuideLogisticsSimpleView(config.logistics.guideLogistics?.simpleMode !== false ? false : true)}
-                  className={`btn text-xs ${config.logistics.guideLogistics?.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}
-                >
-                  {config.logistics.guideLogistics?.simpleMode !== false ? 'Simple' : 'Per Pax'}
-                </button>
-              </div>
-              <div className="mb-4">
-                <div className="flex gap-2 items-center flex-wrap">
-                  {(['perPaxPerDay', 'perPax', 'perDay', 'total'] as const).map((m) => {
-                    const guideMode = config.logistics.guideLogistics?.mode || 'perDay';
-                    const labels = { perPaxPerDay: 'Rate × Pax × Days', perPax: 'Rate × Pax', perDay: 'Rate × Days', total: 'Total Cost' };
-                    return (
-                      <button
-                        key={m}
-                        onClick={() => updateGuideLogistics({ mode: m })}
-                        className={`btn text-xs ${guideMode === m ? 'btn-primary' : 'btn-secondary'}`}
-                      >
-                        {labels[m]}
-                      </button>
-                    );
-                  })}
+                <div className="flex gap-2">
+                  {config.logistics.guideLogistics?.enabled !== false && (
+                    <>
+                      <button onClick={() => setGuideLogisticsSimpleView(true)} className={`btn text-xs ${config.logistics.guideLogistics?.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+                      <button onClick={() => setGuideLogisticsSimpleView(false)} className={`btn text-xs ${config.logistics.guideLogistics?.simpleMode === false ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+                      <ActiveDropdown id="guideLogistics" value={glEffectiveAM} onChange={v => updateGuideLogistics({ activeMode: v as 'simple' | 'perPax' })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                    </>
+                  )}
+                  <button onClick={() => updateGuideLogistics({ enabled: config.logistics.guideLogistics?.enabled === false })} className={`btn text-xs ${config.logistics.guideLogistics?.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
+                    {config.logistics.guideLogistics?.enabled === false ? 'Inactive' : 'Active'}
+                  </button>
                 </div>
               </div>
-              {config.logistics.guideLogistics?.simpleMode !== false ? (
-                <div className="max-w-xs">
-                  <label className="form-label">Rate (all pax)</label>
-                  <NumInput
-                    type="number"
-                    value={config.logistics.guideLogistics?.baseRate ?? 0}
-                    onChange={(e) => {
-                      const val = Number(e.target.value);
-                      updateConfig(prev => {
-                        const gl = prev.logistics.guideLogistics ?? { rates: [], mode: 'perDay' as const };
-                        return { logistics: { ...prev.logistics, guideLogistics: { ...gl, baseRate: val } } };
-                      });
-                    }}
-                    className="w-full"
-                  />
-                </div>
+              {config.logistics.guideLogistics?.enabled === false ? (
+                <p className="text-sm text-ag-text-muted">Guide logistics disabled — guide logistics costs will not be applied to calculations.</p>
               ) : (
                 <>
-                  <p className="text-xs text-ag-text-muted mb-3">Rate per pax level — use mode buttons above to control how it&apos;s applied</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-                    {paxCounts.map((p) => {
-                      const existing = config.logistics.guideLogistics?.rates.find(r => r.pax === p);
-                      const rateValue = existing ? existing.rate : 0;
-                      return (
-                        <div key={p} className="form-group">
-                          <label className="form-label text-center">{p} pax</label>
-                          <NumInput type="number" value={rateValue} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => { const gl = prev.logistics.guideLogistics || { rates: [], mode: 'perDay' as const, simpleMode: true }; const newRates = (gl.rates || []).filter(r => r.pax !== p); newRates.push({ pax: p, rate: val }); return { logistics: { ...prev.logistics, guideLogistics: { ...gl, rates: newRates } } }; }); }} className="w-full text-center" />
-                        </div>
-                      );
-                    })}
+                  <div className="mb-4">
+                    <div className="flex gap-2 items-center flex-wrap">
+                      {(['perPaxPerDay', 'perPax', 'perDay', 'total'] as const).map((m) => {
+                        const guideMode = config.logistics.guideLogistics?.mode || 'perDay';
+                        const labels = { perPaxPerDay: 'Rate × Pax × Days', perPax: 'Rate × Pax', perDay: 'Rate × Days', total: 'Total Cost' };
+                        return (
+                          <button
+                            key={m}
+                            onClick={() => updateGuideLogistics({ mode: m })}
+                            className={`btn text-xs ${guideMode === m ? 'btn-primary' : 'btn-secondary'}`}
+                          >
+                            {labels[m]}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
+                  {config.logistics.guideLogistics?.simpleMode !== false ? (
+                    <div className="max-w-xs">
+                      <label className="form-label">Rate (all pax)</label>
+                      <NumInput
+                        type="number"
+                        value={config.logistics.guideLogistics?.baseRate ?? 0}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          updateConfig(prev => {
+                            const gl = prev.logistics.guideLogistics ?? { rates: [], mode: 'perDay' as const };
+                            return { logistics: { ...prev.logistics, guideLogistics: { ...gl, baseRate: val } } };
+                          });
+                        }}
+                        className="w-full"
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-xs text-ag-text-muted mb-3">Rate per pax level — use mode buttons above to control how it&apos;s applied</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                        {paxCounts.map((p) => {
+                          const existing = config.logistics.guideLogistics?.rates.find(r => r.pax === p);
+                          const rateValue = existing ? existing.rate : 0;
+                          return (
+                            <div key={p} className="form-group">
+                              <label className="form-label text-center">{p} pax</label>
+                              <NumInput type="number" value={rateValue} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => { const gl = prev.logistics.guideLogistics || { rates: [], mode: 'perDay' as const, simpleMode: true }; const newRates = (gl.rates || []).filter(r => r.pax !== p); newRates.push({ pax: p, rate: val }); return { logistics: { ...prev.logistics, guideLogistics: { ...gl, rates: newRates } } }; }); }} className="w-full text-center" />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>

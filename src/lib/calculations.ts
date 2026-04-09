@@ -181,11 +181,9 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     else extensionLogisticsCost = rate * extension.extensionNights;
     // Guide logistics rate (sub-section, gated with extension logistics)
     const gl = lc.inheritFromMain ? config.logistics.guideLogistics : lc.guideLogistics;
-    if (gl) {
-      // Simple mode writes to baseRate; per-pax mode uses rates array
-      const guideRate = (gl.simpleMode !== false && gl.baseRate != null)
-        ? gl.baseRate
-        : (gl.rates?.find(r => r.pax === pax)?.rate ?? 0);
+    if (gl && gl.enabled !== false) {
+      const glAM = gl.activeMode ?? (gl.simpleMode !== false ? 'simple' : 'perPax');
+      const guideRate = glAM === 'simple' ? (gl.baseRate ?? 0) : (gl.rates?.find(r => r.pax === pax)?.rate ?? 0);
       const guideMode = gl.mode || 'perDay';
       if (guideMode === 'perPaxPerDay') extensionLogisticsCost += guideRate * extension.extensionNights * extPaxCount;
       else if (guideMode === 'perPax') extensionLogisticsCost += guideRate * extPaxCount;
@@ -347,11 +345,9 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
     else logisticsCost = logisticsRate * config.tripDays;
     // Guide logistics rate (sub-section, gated with main logistics)
     const gl = config.logistics.guideLogistics;
-    if (gl) {
-      // Simple mode writes to baseRate; per-pax mode uses rates array
-      const guideRate = (gl.simpleMode !== false && gl.baseRate != null)
-        ? gl.baseRate
-        : (gl.rates?.find(r => r.pax === pax)?.rate ?? 0);
+    if (gl && gl.enabled !== false) {
+      const glAM = gl.activeMode ?? (gl.simpleMode !== false ? 'simple' : 'perPax');
+      const guideRate = glAM === 'simple' ? (gl.baseRate ?? 0) : (gl.rates?.find(r => r.pax === pax)?.rate ?? 0);
       const guideMode = gl.mode || 'perDay';
       if (guideMode === 'perPaxPerDay') logisticsCost += guideRate * config.tripDays * pax;
       else if (guideMode === 'perPax') logisticsCost += guideRate * pax;
@@ -386,18 +382,27 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   const tAM = config.transportConfig.activeMode;
   let transportCost = 0;
   if (transportOn) {
-    const groundRate = tAM === 'simple'
-      ? (config.transportConfig.groundTransportTotal || 0)
-      : ((config.transportConfig.groundTransportByPax?.[pax] ?? config.transportConfig.groundTransportTotal) || 0);
-    const airportRate = tAM === 'simple'
-      ? (config.transportConfig.airportTransfers || 0)
-      : ((config.transportConfig.airportTransfersByPax?.[pax] ?? config.transportConfig.airportTransfers) || 0);
-    const localRate = tAM === 'simple'
-      ? (config.transportConfig.localTransport || 0)
-      : ((config.transportConfig.localTransportByPax?.[pax] ?? config.transportConfig.localTransport) || 0);
-    transportCost += config.transportConfig.groundTransportPerPax ? groundRate * pax : groundRate;
-    transportCost += config.transportConfig.airportTransfersPerPax ? airportRate * pax : airportRate;
-    transportCost += config.transportConfig.localTransportPerPax ? localRate * pax : localRate;
+    if (tAM === 'bands') {
+      const band = (config.transportConfig.transportBands || []).find(b => pax >= b.minPax && (b.maxPax === null || pax <= b.maxPax));
+      if (band) {
+        transportCost += band.groundTransport;
+        transportCost += band.airportTransfers;
+        transportCost += band.localTransport;
+      }
+    } else {
+      const groundRate = tAM === 'simple'
+        ? (config.transportConfig.groundTransportTotal || 0)
+        : ((config.transportConfig.groundTransportByPax?.[pax] ?? config.transportConfig.groundTransportTotal) || 0);
+      const airportRate = tAM === 'simple'
+        ? (config.transportConfig.airportTransfers || 0)
+        : ((config.transportConfig.airportTransfersByPax?.[pax] ?? config.transportConfig.airportTransfers) || 0);
+      const localRate = tAM === 'simple'
+        ? (config.transportConfig.localTransport || 0)
+        : ((config.transportConfig.localTransportByPax?.[pax] ?? config.transportConfig.localTransport) || 0);
+      transportCost += config.transportConfig.groundTransportPerPax ? groundRate * pax : groundRate;
+      transportCost += config.transportConfig.airportTransfersPerPax ? airportRate * pax : airportRate;
+      transportCost += config.transportConfig.localTransportPerPax ? localRate * pax : localRate;
+    }
   }
 
   // Trip-specific (gated)

@@ -52,6 +52,8 @@ export interface ExtensionLogisticsConfig {
   rates: LogisticsRate[];
   baseRate: number;
   guideLogistics?: {
+    enabled?: boolean; // undefined = active (backward-compat)
+    activeMode?: 'simple' | 'perPax';
     rates: LogisticsRate[];
     baseRate?: number;
     mode?: 'perPaxPerDay' | 'perPax' | 'perDay' | 'total';
@@ -114,6 +116,8 @@ export interface LogisticsConfig {
   simpleMode?: boolean; // true = show simple editor; false = show per-pax grid (view-only flag)
   includesGuide: boolean; // Legacy — unused but kept for DB compat
   guideLogistics?: {
+    enabled?: boolean; // undefined = active (backward-compat)
+    activeMode?: 'simple' | 'perPax'; // which dataset feeds calculations
     rates: LogisticsRate[];
     baseRate?: number; // simple-mode value
     mode?: 'perPaxPerDay' | 'perPax' | 'perDay' | 'total';
@@ -140,9 +144,18 @@ export interface StaffConfig {
   staffMealsMode?: 'perDayPerGuide' | 'perDay' | 'total';
 }
 
+export interface TransportBand {
+  id: string;
+  minPax: number;
+  maxPax: number | null; // null = no upper limit
+  groundTransport: number;
+  airportTransfers: number;
+  localTransport: number;
+}
+
 export interface TransportConfig {
   enabled: boolean;
-  activeMode?: 'simple' | 'perPax'; // which dataset feeds calculations; undefined = legacy (byPax ?? flat)
+  activeMode?: 'simple' | 'perPax' | 'bands'; // which dataset feeds calculations; undefined = legacy (byPax ?? flat)
   flightCostPerPerson: number; // Legacy — flights now in StaffConfig, kept for migration
   groundTransportTotal: number;
   groundTransportPerPax?: boolean;
@@ -153,6 +166,7 @@ export interface TransportConfig {
   localTransport: number;
   localTransportPerPax?: boolean;
   localTransportByPax?: { [pax: number]: number };
+  transportBands?: TransportBand[];
 }
 
 export interface TripSpecificCost {
@@ -206,6 +220,7 @@ export interface UiPreferences {
   singleSuppPerPax?: boolean;
   hotelsMealsPerPax?: boolean;
   transportPerPax?: boolean;
+  transportBandsView?: boolean;
   extPerPax?: boolean;
   extSuppPerPax?: boolean;
   extDiscountsPerPax?: boolean;
