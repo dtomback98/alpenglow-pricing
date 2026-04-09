@@ -51,7 +51,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
 
   const updateExtGuideLogistics = (updates: Partial<NonNullable<TripConfiguration['extension']['logisticsConfig']['guideLogistics']>>) => {
     updateConfig(prev => {
-      const gl = prev.extension.logisticsConfig.guideLogistics ?? { rates: [], mode: 'perDay' as const, simpleMode: true };
+      const gl = prev.extension.logisticsConfig.guideLogistics ?? { baseRate: 0, rates: [], mode: 'perDay' as const, simpleMode: true };
       return { extension: { ...prev.extension, logisticsConfig: { ...prev.extension.logisticsConfig, guideLogistics: { ...gl, ...updates } } } } as Partial<TripConfiguration>;
     });
   };
@@ -864,15 +864,17 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               {/* Guide Logistics Rate — inherited read-only */}
               <div className="border-t border-ag-border mt-6 pt-6">
                 <h3 className="text-sm font-semibold mb-3">Guide Logistics Rate</h3>
-                {config.logistics.guideLogistics?.simpleMode !== false ? (
+                {config.logistics.guideLogistics?.enabled === false ? (
+                  <p className="text-sm text-ag-text-muted">Core guide logistics is disabled.</p>
+                ) : config.logistics.guideLogistics?.simpleMode !== false ? (
                   <div className="max-w-xs">
                     <label className="form-label">Rate (all pax)</label>
-                    <NumInput type="number" value={config.logistics.guideLogistics?.rates[0]?.rate ?? 0} disabled className="w-full opacity-50 cursor-not-allowed" />
+                    <NumInput type="number" value={config.logistics.guideLogistics?.baseRate ?? 0} disabled className="w-full opacity-50 cursor-not-allowed" />
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
                     {paxCounts.map((p) => {
-                      const existing = config.logistics.guideLogistics?.rates.find(r => r.pax === p);
+                      const existing = config.logistics.guideLogistics?.rates?.find(r => r.pax === p);
                       const rateValue = existing ? existing.rate : 0;
                       return (
                         <div key={p} className="form-group">
@@ -1019,7 +1021,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                                 <label className="form-label text-center">{p} pax</label>
                                 <NumInput type="number" value={rateValue} onChange={(e) => {
                                   updateConfig(prev => {
-                                    const gl = prev.extension.logisticsConfig.guideLogistics ?? { rates: [], mode: 'perDay' as const, simpleMode: true };
+                                    const gl = prev.extension.logisticsConfig.guideLogistics ?? { baseRate: 0, rates: [], mode: 'perDay' as const, simpleMode: true };
                                     const rates = (gl.rates || []).filter((r: { pax: number; rate: number }) => r.pax !== p);
                                     rates.push({ pax: p, rate: Number(e.target.value) });
                                     return { extension: { ...prev.extension, logisticsConfig: { ...prev.extension.logisticsConfig, guideLogistics: { ...gl, rates } } } } as Partial<TripConfiguration>;

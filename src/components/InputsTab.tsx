@@ -73,7 +73,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
 
   const updateGuideLogistics = (updates: Partial<NonNullable<TripConfiguration['logistics']['guideLogistics']>>) => {
     updateConfig(prev => {
-      const gl = prev.logistics.guideLogistics ?? { rates: [], mode: 'perDay' as const, simpleMode: true };
+      const gl = prev.logistics.guideLogistics ?? { baseRate: 0, rates: [], mode: 'perDay' as const, simpleMode: true };
       return { logistics: { ...prev.logistics, guideLogistics: { ...gl, ...updates } } } as Partial<TripConfiguration>;
     });
   };
@@ -319,12 +319,12 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
     const gl = config.logistics.guideLogistics;
     if (simple && (gl?.rates[0]?.rate ?? 0) > 0 && !gl?.baseRate) {
       updateConfig(prev => {
-        const g = prev.logistics.guideLogistics ?? { rates: [], mode: 'perDay' as const };
+        const g = prev.logistics.guideLogistics ?? { baseRate: 0, rates: [], mode: 'perDay' as const };
         return { logistics: { ...prev.logistics, guideLogistics: { ...g, simpleMode: true, baseRate: g.rates[0]?.rate ?? 0 } } };
       });
     } else {
       updateConfig(prev => {
-        const g = prev.logistics.guideLogistics ?? { rates: [], mode: 'perDay' as const };
+        const g = prev.logistics.guideLogistics ?? { baseRate: 0, rates: [], mode: 'perDay' as const };
         return { logistics: { ...prev.logistics, guideLogistics: { ...g, simpleMode: simple } } };
       });
     }
@@ -1404,12 +1404,12 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                       <p className="text-xs text-ag-text-muted mb-3">Rate per pax level — use mode buttons above to control how it&apos;s applied</p>
                       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
                         {paxCounts.map((p) => {
-                          const existing = config.logistics.guideLogistics?.rates.find(r => r.pax === p);
+                          const existing = config.logistics.guideLogistics?.rates?.find(r => r.pax === p);
                           const rateValue = existing ? existing.rate : 0;
                           return (
                             <div key={p} className="form-group">
                               <label className="form-label text-center">{p} pax</label>
-                              <NumInput type="number" value={rateValue} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => { const gl = prev.logistics.guideLogistics || { rates: [], mode: 'perDay' as const, simpleMode: true }; const newRates = (gl.rates || []).filter(r => r.pax !== p); newRates.push({ pax: p, rate: val }); return { logistics: { ...prev.logistics, guideLogistics: { ...gl, rates: newRates } } }; }); }} className="w-full text-center" />
+                              <NumInput type="number" value={rateValue} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => { const gl = prev.logistics.guideLogistics || { baseRate: 0, rates: [], mode: 'perDay' as const, simpleMode: true }; const newRates = (gl.rates || []).filter(r => r.pax !== p); newRates.push({ pax: p, rate: val }); return { logistics: { ...prev.logistics, guideLogistics: { ...gl, rates: newRates } } }; }); }} className="w-full text-center" />
                             </div>
                           );
                         })}

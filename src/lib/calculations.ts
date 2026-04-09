@@ -385,9 +385,15 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
     if (tAM === 'bands') {
       const band = (config.transportConfig.transportBands || []).find(b => pax >= b.minPax && (b.maxPax === null || pax <= b.maxPax));
       if (band) {
-        transportCost += band.groundTransport;
-        transportCost += band.airportTransfers;
-        transportCost += band.localTransport;
+        transportCost += band.groundTransport + band.airportTransfers + band.localTransport;
+      } else {
+        // Fallback to simple values when no band matches (avoids silent $0)
+        const g = config.transportConfig.groundTransportTotal || 0;
+        const a = config.transportConfig.airportTransfers || 0;
+        const l = config.transportConfig.localTransport || 0;
+        transportCost += config.transportConfig.groundTransportPerPax ? g * pax : g;
+        transportCost += config.transportConfig.airportTransfersPerPax ? a * pax : a;
+        transportCost += config.transportConfig.localTransportPerPax ? l * pax : l;
       }
     } else {
       const groundRate = tAM === 'simple'

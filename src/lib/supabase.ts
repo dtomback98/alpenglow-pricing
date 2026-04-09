@@ -125,7 +125,11 @@ function rowToConfig(row: any): TripConfiguration {
       staffByPax: { ...DEFAULT_CONFIG.extension.staffConfig.staffByPax, ...rawExtension?.staffConfig?.staffByPax },
     },
     discounts: { ...DEFAULT_CONFIG.extension.discounts, ...rawExtension?.discounts },
-    logisticsConfig: { ...DEFAULT_CONFIG.extension.logisticsConfig, ...rawExtension?.logisticsConfig },
+    logisticsConfig: {
+      ...DEFAULT_CONFIG.extension.logisticsConfig,
+      ...rawExtension?.logisticsConfig,
+      guideLogistics: { ...DEFAULT_CONFIG.extension.logisticsConfig.guideLogistics, ...rawExtension?.logisticsConfig?.guideLogistics },
+    },
   };
 
   // Migrate guide flights from transport to staff config (immutable — no direct mutation)
@@ -184,10 +188,15 @@ function rowToConfig(row: any): TripConfiguration {
     logistics: (() => {
       const lg = migrateLogistics({ ...DEFAULT_CONFIG.logistics, ...(typeof row.logistics === 'object' && row.logistics !== null ? row.logistics : {}) });
       // Migrate baseRate: existing trips stored simple-mode rate in the rates array; populate baseRate from rates[0] when in simple view
+      let result = lg;
       if ((lg.baseRate === 0 || lg.baseRate == null) && lg.simpleMode !== false && (lg.rates[0]?.rate ?? 0) > 0) {
-        return { ...lg, baseRate: lg.rates[0].rate };
+        result = { ...lg, baseRate: lg.rates[0].rate };
       }
-      return lg;
+      // Migrate guideLogistics baseRate from rates[0] if in simple mode and baseRate not set
+      if (result.guideLogistics && (result.guideLogistics.baseRate === 0 || result.guideLogistics.baseRate == null) && result.guideLogistics.simpleMode !== false && (result.guideLogistics.rates?.[0]?.rate ?? 0) > 0) {
+        result = { ...result, guideLogistics: { ...result.guideLogistics, baseRate: result.guideLogistics.rates[0].rate } };
+      }
+      return result;
     })(),
     staffConfig: { ...DEFAULT_CONFIG.staffConfig, ...staffConfig },
     transportConfig: { ...DEFAULT_CONFIG.transportConfig, ...(typeof row.transport_config === 'object' && row.transport_config !== null ? row.transport_config : {}) },
