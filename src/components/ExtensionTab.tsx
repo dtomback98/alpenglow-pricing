@@ -845,7 +845,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               {config.logistics.simpleMode !== false ? (
                 <div className="max-w-xs">
                   <label className="form-label">Rate (all pax)</label>
-                  <NumInput type="number" value={config.logistics.rates[0]?.rate ?? 0} disabled className="w-full opacity-50 cursor-not-allowed" />
+                  <NumInput type="number" value={config.logistics.baseRate ?? config.logistics.rates[0]?.rate ?? 0} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">

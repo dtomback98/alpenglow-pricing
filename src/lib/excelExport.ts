@@ -41,7 +41,7 @@ export function exportTripSummary(config: TripConfiguration, calculations: PaxCa
   const ws1 = XLSX.utils.json_to_sheet(marginData);
   XLSX.utils.book_append_sheet(wb, ws1, 'Gross Margin Summary');
 
-  // Sheet 2: Revenue Breakdown
+  // Sheet 3: Revenue Breakdown
   const revenueData = calculations.map((calc) => ({
     'Pax': calc.pax,
     'Base Revenue': round2(calc.baseRevenue),

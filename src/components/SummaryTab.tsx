@@ -245,7 +245,7 @@ export default function SummaryTab({ config, updateConfig, isNewTrip, onNotesBlu
                   <td className="whitespace-nowrap">{formatCurrency(calc.logisticsCost / d)}</td>
                   <td className="whitespace-nowrap">{formatCurrency(calc.tripSpecificCost / d)}</td>
                   <td className="whitespace-nowrap">{formatCurrency(calc.singleRoomCost / d)}</td>
-                  <td className="whitespace-nowrap">{formatCurrency((calc.extensionHotelsCost + calc.extensionMealsCost + calc.extensionStaffCost + calc.extensionLogisticsCost + calc.extensionSingleRoomCost) / d)}</td>
+                  <td className="whitespace-nowrap">{formatCurrency(calc.extensionTotalCost / d)}</td>
                   <td className="whitespace-nowrap font-bold text-ag-danger">{formatCurrency(calc.totalCosts / d)}</td>
                 </tr>
               );
