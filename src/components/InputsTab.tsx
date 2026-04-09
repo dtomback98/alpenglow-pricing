@@ -56,7 +56,6 @@ const TRIP_SPECIFIC_FIELDS: { key: keyof Omit<TripConfiguration['tripSpecific'],
   { key: 'permits', label: 'Permits' },
   { key: 'equipment', label: 'Equipment' },
   { key: 'jacketsApparel', label: 'Jackets & Apparel' },
-  { key: 'insurance', label: 'Insurance' },
   { key: 'contingency', label: 'Contingency' },
   { key: 'hypoxico', label: 'Hypoxico' },
   { key: 'otherCosts', label: 'Other Costs' },
@@ -154,6 +153,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
     }, { silent: true });
   }, [config.tripDays, config.staffConfig.useCustomStaffDays, updateConfig]);
   const pricingPerPax = config.uiPreferences?.pricingPerPax ?? false;
+  const pricingEffectiveAM: 'simple' | 'perPax' = config.tripPriceActiveMode ?? (config.tripPriceByPax != null ? 'perPax' : 'simple');
   const discountsPerPax = config.uiPreferences?.discountsPerPax ?? false;
   // Effective active modes: explicit setting wins; otherwise derive from existing data/view state
   const discountsEffectiveAM: 'simple' | 'perPax' = config.discountsActiveMode ?? (discountsPerPax ? 'perPax' : 'simple');
@@ -184,6 +184,15 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   const transportBandsView = config.uiPreferences?.transportBandsView ?? false;
   const transportViewMode = transportBandsView ? 'bands' : (transportPerPax ? 'perPax' : 'simple');
   const setPricingPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, pricingPerPax: val } }));
+  const switchToPricingPerPax = () => updateConfig(prev => {
+    const byPax = prev.tripPriceByPax;
+    if (!byPax || Object.keys(byPax).length === 0) {
+      const newPrices: { [pax: number]: number } = {};
+      for (const p of paxCounts) newPrices[p] = prev.tripPrice;
+      return { uiPreferences: { ...prev.uiPreferences, pricingPerPax: true }, tripPriceByPax: newPrices };
+    }
+    return { uiPreferences: { ...prev.uiPreferences, pricingPerPax: true } };
+  });
   const setDiscountsPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, discountsPerPax: val } }));
   const setSingleSuppPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, singleSuppPerPax: val } }));
 
@@ -392,9 +401,11 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             <button onClick={() => toggleSection('core')} className="text-ag-text-muted hover:text-ag-text text-sm mr-2">{collapsedSections.has('core') ? '▶' : '▼'}</button>
             <h2 className="text-lg font-semibold">Core Trip Details</h2>
           </div>
-          <button onClick={() => { if (pricingPerPax) { updateConfig({ tripPriceByPax: undefined }); } setPricingPerPax(!pricingPerPax); }} className={`btn text-xs ${pricingPerPax ? 'btn-primary' : 'btn-secondary'}`}>
-            {pricingPerPax ? 'Per Pax Pricing' : 'Simple Pricing'}
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setPricingPerPax(false)} className={`btn text-xs ${!pricingPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+            <button onClick={switchToPricingPerPax} className={`btn text-xs ${pricingPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+            <ActiveDropdown id="pricing" value={pricingEffectiveAM} onChange={v => updateConfig({ tripPriceActiveMode: v as 'simple' | 'perPax' })} openId={openDropdown} setOpenId={setOpenDropdown} />
+          </div>
         </div>
         {!collapsedSections.has('core') && (<>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1187,51 +1198,26 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {TRIP_SPECIFIC_FIELDS.filter(({ key }) => (config.tripSpecific[key] as TripSpecificCost).active !== false).map(({ key, label }) => {
-                const isInsurance = key === 'insurance';
-                const ins = config.tripSpecific.insurance;
-                const isPercentMode = isInsurance && ins.percentOfRevenue;
                 return (
                   <div key={key} className="form-group flex flex-col">
                     <div className="flex items-center justify-between gap-1 mb-1">
-                      <label className="form-label mb-0">{label} {isPercentMode ? '(%)' : '($)'}</label>
+                      <label className="form-label mb-0">{label} ($)</label>
                       <div className="flex gap-1 shrink-0">
-                        {isInsurance && (
-                          <>
-                            <button
-                              onClick={() => updateTripSpecificCost('insurance', { percentOfRevenue: false, perPax: false })}
-                              className={`btn text-xs ${!isPercentMode ? 'btn-primary' : 'btn-secondary'}`}
-                            >
-                              Flat $
-                            </button>
-                            <button
-                              onClick={() => updateTripSpecificCost('insurance', { percentOfRevenue: true, perPax: false, amount: 0.03 })}
-                              className={`btn text-xs ${isPercentMode ? 'btn-primary' : 'btn-secondary'}`}
-                            >
-                              % of Rev
-                            </button>
-                          </>
-                        )}
                         <button onClick={() => updateTripSpecificCost(key, { active: false })} className="btn btn-danger text-xs">×</button>
                       </div>
                     </div>
                     <div className="flex gap-3 items-center">
                       <NumInput
                         type="number"
-                        step={isPercentMode ? '0.01' : undefined}
-                        value={isPercentMode ? parseFloat((ins.amount * 100).toFixed(2)) : config.tripSpecific[key].amount}
-                        onChange={(e) => updateTripSpecificCost(key, { amount: isPercentMode ? Number(e.target.value) / 100 : Number(e.target.value) })}
+                        value={config.tripSpecific[key].amount}
+                        onChange={(e) => updateTripSpecificCost(key, { amount: Number(e.target.value) })}
                         className="flex-1 min-w-0"
                       />
-                      {!isPercentMode && (
-                        <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                          <input type="checkbox" checked={config.tripSpecific[key].perPax} onChange={(e) => updateTripSpecificCost(key, { perPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                          <span>Per Pax</span>
-                        </label>
-                      )}
+                      <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                        <input type="checkbox" checked={config.tripSpecific[key].perPax} onChange={(e) => updateTripSpecificCost(key, { perPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                        <span>Per Pax</span>
+                      </label>
                     </div>
-                    {isPercentMode && (
-                      <p className="text-xs text-ag-text-muted mt-1">Calculated as % of total revenue</p>
-                    )}
                   </div>
                 );
               })}

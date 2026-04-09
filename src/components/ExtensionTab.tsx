@@ -3,6 +3,36 @@
 import React, { useState, useEffect } from 'react';
 import { TripConfiguration, StaffMember, AdditionalHotel } from '@/lib/types';
 
+interface ActiveDropdownProps {
+  id: string;
+  value: 'simple' | 'perPax';
+  onChange: (v: 'simple' | 'perPax') => void;
+  openId: string | null;
+  setOpenId: (id: string | null) => void;
+}
+const ActiveDropdown = ({ id, value, onChange, openId, setOpenId }: ActiveDropdownProps) => (
+  <div className="relative" onClick={e => e.stopPropagation()}>
+    <button
+      className="btn btn-secondary text-xs flex items-center gap-1"
+      onClick={() => setOpenId(openId === id ? null : id)}
+    >
+      Active: {value === 'simple' ? 'Simple' : 'Per Pax'} <span className="opacity-50">▾</span>
+    </button>
+    {openId === id && (
+      <div className="absolute right-0 top-full mt-1 z-50 min-w-[110px] rounded-md border border-ag-border bg-ag-card shadow-lg">
+        <button
+          className={`block w-full text-left px-3 py-2 text-xs rounded-t-md hover:bg-white/5 ${value === 'simple' ? 'text-blue-400 font-medium' : 'text-ag-text'}`}
+          onClick={() => { onChange('simple'); setOpenId(null); }}
+        >Simple</button>
+        <button
+          className={`block w-full text-left px-3 py-2 text-xs rounded-b-md hover:bg-white/5 ${value === 'perPax' ? 'text-blue-400 font-medium' : 'text-ag-text'}`}
+          onClick={() => { onChange('perPax'); setOpenId(null); }}
+        >Per Pax</button>
+      </div>
+    )}
+  </div>
+);
+
 interface ExtensionTabProps {
   config: TripConfiguration;
   updateConfig: (updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>)) => void;
@@ -59,8 +89,18 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
   const extSuppPerPax = config.uiPreferences?.extSuppPerPax ?? false;
   const extDiscountsPerPax = config.uiPreferences?.extDiscountsPerPax ?? false;
   const extHotelsMealsPerPax = config.uiPreferences?.extHotelsMealsPerPax ?? false;
+  const extHmEffectiveAM: 'simple' | 'perPax' = ext.hotelsMeals.activeMode
+    ?? (ext.hotelsMeals.hotelCostByPax && Object.keys(ext.hotelsMeals.hotelCostByPax).length > 0 ? 'perPax' : 'simple');
   const setExtSuppPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extSuppPerPax: val } }));
   const setExtDiscountsPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extDiscountsPerPax: val } }));
+
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  useEffect(() => {
+    if (!openDropdown) return;
+    const close = () => setOpenDropdown(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [openDropdown]);
 
   const [extPercent, setExtPercent] = useState(100);
 
@@ -257,9 +297,10 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                     {ext.discounts.inheritFromMain ? 'Match Core Inputs' : 'Custom'}
                   </button>
                   {!ext.discounts.inheritFromMain && (
-                    <button onClick={() => setExtDiscountsPerPax(!extDiscountsPerPax)} className={`btn text-xs ${extDiscountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>
-                      {extDiscountsPerPax ? 'Per Pax Mode' : 'Simple Mode'}
-                    </button>
+                    <>
+                      <button onClick={() => setExtDiscountsPerPax(false)} className={`btn text-xs ${!extDiscountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+                      <button onClick={() => setExtDiscountsPerPax(true)} className={`btn text-xs ${extDiscountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+                    </>
                   )}
                 </>
               )}
@@ -374,9 +415,10 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                     {ext.singleSupplement.inheritFromMain ? 'Match Core Inputs' : 'Custom'}
                   </button>
                   {!ext.singleSupplement.inheritFromMain && (
-                    <button onClick={() => setExtSuppPerPax(!extSuppPerPax)} className={`btn text-xs ${extSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>
-                      {extSuppPerPax ? 'Per Pax Mode' : 'Simple Mode'}
-                    </button>
+                    <>
+                      <button onClick={() => setExtSuppPerPax(false)} className={`btn text-xs ${!extSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+                      <button onClick={() => setExtSuppPerPax(true)} className={`btn text-xs ${extSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+                    </>
                   )}
                 </>
               )}
@@ -461,9 +503,11 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                     {ext.hotelsMeals.inheritFromMain ? 'Match Core Inputs' : 'Custom'}
                   </button>
                   {!ext.hotelsMeals.inheritFromMain && (
-                    <button onClick={() => toggleExtHotelsMealsPerPax(!extHotelsMealsPerPax)} className={`btn text-xs ${extHotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>
-                      {extHotelsMealsPerPax ? 'Per Pax Mode' : 'Simple Mode'}
-                    </button>
+                    <>
+                      <button onClick={() => toggleExtHotelsMealsPerPax(false)} className={`btn text-xs ${!extHotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+                      <button onClick={() => toggleExtHotelsMealsPerPax(true)} className={`btn text-xs ${extHotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+                      <ActiveDropdown id="extHM" value={extHmEffectiveAM} onChange={v => updateExtHotelsMeals({ activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                    </>
                   )}
                 </>
               )}

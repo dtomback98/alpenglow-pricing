@@ -11,6 +11,7 @@ export interface ExtensionSingleSupplementConfig {
 export interface ExtensionHotelsMealsConfig {
   enabled: boolean;
   inheritFromMain: boolean;
+  activeMode?: 'simple' | 'perPax';
   mode?: 'perPaxPerNight' | 'perNight' | 'total' | 'perPax';
   hotelLabel?: string; // display name for primary hotel
   hotelNights?: number; // nights for primary hotel; defaults to extensionNights (custom mode only)
@@ -241,6 +242,7 @@ export interface TripConfiguration {
   // Core trip data
   tripPrice: number;
   tripPriceMode?: 'perPerson' | 'total';
+  tripPriceActiveMode?: 'simple' | 'perPax';
   tripPriceByPax?: { [pax: number]: number };
   tripDays: number;
   tripNights: number;

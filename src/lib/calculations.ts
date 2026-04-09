@@ -95,18 +95,19 @@ function calculateExtension(pax: number, config: TripConfiguration) {
   let extensionMealsCost = 0;
   if (extension.hotelsMeals.enabled !== false && extPaxCount > 0) {
     const hm = extension.hotelsMeals;
+    const extHmAM = hm.activeMode ?? (hm.hotelCostByPax && Object.keys(hm.hotelCostByPax).length > 0 ? 'perPax' : 'simple');
     const hotelRate = hm.inheritFromMain
       ? (config.hotelsMeals.hotelCostByPax?.[pax] ?? config.hotelsMeals.hotelCostPerNight)
-      : (hm.hotelCostByPax?.[pax] ?? hm.hotelCostPerNight);
+      : (extHmAM === 'simple' ? hm.hotelCostPerNight : (hm.hotelCostByPax?.[pax] ?? hm.hotelCostPerNight));
     const lunchRate = hm.inheritFromMain
       ? (config.hotelsMeals.lunchCostByPax?.[pax] ?? config.hotelsMeals.lunchCostPerDay)
-      : (hm.lunchCostByPax?.[pax] ?? hm.lunchCostPerDay);
+      : (extHmAM === 'simple' ? hm.lunchCostPerDay : (hm.lunchCostByPax?.[pax] ?? hm.lunchCostPerDay));
     const dinnerRate = hm.inheritFromMain
       ? (config.hotelsMeals.dinnerCostByPax?.[pax] ?? config.hotelsMeals.dinnerCostPerNight)
-      : (hm.dinnerCostByPax?.[pax] ?? hm.dinnerCostPerNight);
+      : (extHmAM === 'simple' ? hm.dinnerCostPerNight : (hm.dinnerCostByPax?.[pax] ?? hm.dinnerCostPerNight));
     const additionalMeals = hm.inheritFromMain
       ? (config.hotelsMeals.additionalMealCostsByPax?.[pax] ?? config.hotelsMeals.additionalMealCosts)
-      : (hm.additionalMealCostsByPax?.[pax] ?? hm.additionalMealCosts);
+      : (extHmAM === 'simple' ? hm.additionalMealCosts : (hm.additionalMealCostsByPax?.[pax] ?? hm.additionalMealCosts));
     const extHmMode = hm.inheritFromMain ? (config.hotelsMeals.mode || 'perPaxPerNight') : (hm.mode || 'perPaxPerNight');
     // When inheriting, always use extensionNights; when custom, respect hotelNights override
     const extHotelNights = hm.inheritFromMain
@@ -246,8 +247,12 @@ function calculateTripSpecificCost(pax: number, config: TripConfiguration, total
 
 // Calculate all values for a specific pax count
 export function calculateForPax(pax: number, config: TripConfiguration): PaxCalculation {
-  const effectivePrice = config.tripPriceByPax?.[pax] ?? config.tripPrice;
-  const isTotalPricing = config.tripPriceMode === 'total' && !config.tripPriceByPax;
+  const usePerPaxPrice = config.tripPriceActiveMode === 'perPax'
+    || (!config.tripPriceActiveMode && config.tripPriceByPax != null);
+  const effectivePrice = usePerPaxPrice
+    ? (config.tripPriceByPax?.[pax] ?? config.tripPrice)
+    : config.tripPrice;
+  const isTotalPricing = config.tripPriceMode === 'total' && !usePerPaxPrice;
 
   // Revenue calculations
   const baseRevenue = isTotalPricing ? effectivePrice : effectivePrice * pax;

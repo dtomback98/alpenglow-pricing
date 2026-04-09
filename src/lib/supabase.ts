@@ -203,6 +203,7 @@ function rowToConfig(row: any): TripConfiguration {
     tripSpecific: migrateTripSpecific({ ...DEFAULT_CONFIG.tripSpecific, ...(typeof row.trip_specific === 'object' && row.trip_specific !== null ? row.trip_specific : {}) }),
     uiPreferences: row.ui_preferences || {},
     tripPriceMode: row.ui_preferences?.tripPriceMode || undefined,
+    tripPriceActiveMode: row.ui_preferences?.tripPriceActiveMode || undefined,
     tripPriceByPax: row.ui_preferences?.tripPriceByPax || undefined,
     notes: row.ui_preferences?.notes || '',
   };
@@ -234,7 +235,7 @@ function configToRow(config: TripConfiguration): any {
     transport_config: config.transportConfig,
     trip_specific: config.tripSpecific,
     // Clear tripPriceMode when per-pax pricing is active to prevent mode+byPax co-persistence inflating revenue
-    ui_preferences: { ...(config.uiPreferences || {}), tripPriceMode: config.tripPriceByPax ? undefined : config.tripPriceMode, tripPriceByPax: config.tripPriceByPax, notes: config.notes || '', earlyBirdTiers: config.earlyBirdTiers || [], discountsActiveMode: config.discountsActiveMode, earlyBirdCountSimple: config.earlyBirdCountSimple ?? 0, loyaltyCountSimple: config.loyaltyCountSimple ?? 0 },
+    ui_preferences: { ...(config.uiPreferences || {}), tripPriceMode: config.tripPriceByPax ? undefined : config.tripPriceMode, tripPriceByPax: config.tripPriceByPax, tripPriceActiveMode: config.tripPriceActiveMode, notes: config.notes || '', earlyBirdTiers: config.earlyBirdTiers || [], discountsActiveMode: config.discountsActiveMode, earlyBirdCountSimple: config.earlyBirdCountSimple ?? 0, loyaltyCountSimple: config.loyaltyCountSimple ?? 0 },
   };
 }
 
