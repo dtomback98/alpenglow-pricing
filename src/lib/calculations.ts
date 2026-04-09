@@ -1,9 +1,13 @@
 import { TripConfiguration, PaxCalculation, LogisticsConfig, StaffMember, FinancialBreakdown } from './types';
 
-// Get logistics rate based on pax count
+// Get logistics rate based on pax count; falls back to nearest defined rate
 export function getLogisticsRate(pax: number, logistics: LogisticsConfig): number {
-  const match = logistics.rates.find((r) => r.pax === pax);
-  return match ? match.rate : 0;
+  const exact = logistics.rates.find((r) => r.pax === pax);
+  if (exact) return exact.rate;
+  if (logistics.rates.length === 0) return 0;
+  return logistics.rates.reduce((best, r) =>
+    Math.abs(r.pax - pax) < Math.abs(best.pax - pax) ? r : best
+  ).rate;
 }
 
 // Calculate staff costs for a given pax count
@@ -108,17 +112,19 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     const extHotelNights = hm.inheritFromMain
       ? extension.extensionNights
       : (hm.hotelNights ?? extension.extensionNights);
+    // Lunch applies every day (nights + 1 arrival/departure day); dinner applies every night
+    const extensionDays = extension.extensionNights + 1;
     // Additional hotels only apply in custom mode
     const extAdditionalHotels = hm.inheritFromMain ? [] : (hm.additionalHotels || []);
 
     if (extHmMode === 'perPaxPerNight') {
       extensionHotelsCost = hotelRate * extHotelNights * extPaxCount;
       for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * h.nights * extPaxCount;
-      extensionMealsCost = (lunchRate + dinnerRate) * extension.extensionNights * extPaxCount + additionalMeals;
+      extensionMealsCost = (lunchRate * extensionDays + dinnerRate * extension.extensionNights) * extPaxCount + additionalMeals;
     } else if (extHmMode === 'perNight') {
       extensionHotelsCost = hotelRate * extHotelNights;
       for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * h.nights;
-      extensionMealsCost = (lunchRate + dinnerRate) * extension.extensionNights + additionalMeals;
+      extensionMealsCost = lunchRate * extensionDays + dinnerRate * extension.extensionNights + additionalMeals;
     } else if (extHmMode === 'perPax') {
       extensionHotelsCost = hotelRate * extPaxCount;
       for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * extPaxCount;
