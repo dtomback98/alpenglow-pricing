@@ -144,7 +144,7 @@ export default function Header({
             type="text"
             value={config.name}
             onChange={(e) => updateConfig({ name: e.target.value })}
-            className="w-48"
+            className="w-80 text-sm"
             placeholder="Trip name"
           />
 
