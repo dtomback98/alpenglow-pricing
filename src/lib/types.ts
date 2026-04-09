@@ -3,6 +3,7 @@
 export interface ExtensionSingleSupplementConfig {
   enabled: boolean;
   inheritFromMain: boolean;
+  activeMode?: 'simple' | 'perPax';
   singleSupplement: number;
   singleRoomExtra: number;
   countByPax: { [pax: number]: number };
@@ -39,6 +40,7 @@ export interface ExtensionStaffConfig {
 export interface ExtensionDiscountsConfig {
   enabled: boolean;
   inheritFromMain: boolean;
+  activeMode?: 'simple' | 'perPax';
   earlyBirdDiscount: number;
   earlyBirdCountByPax: { [pax: number]: number };
   loyaltyDiscountRate: number;
@@ -48,6 +50,7 @@ export interface ExtensionDiscountsConfig {
 export interface ExtensionLogisticsConfig {
   enabled: boolean;
   inheritFromMain: boolean;
+  activeMode?: 'simple' | 'perPax';
   mode?: 'perPaxPerDay' | 'perPax' | 'perDay' | 'total';
   simpleMode?: boolean; // true = single rate for all pax; false/undefined = per-pax grid
   rates: LogisticsRate[];
