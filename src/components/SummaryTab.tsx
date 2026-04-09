@@ -46,11 +46,13 @@ export default function SummaryTab({ config, updateConfig, isNewTrip, onNotesBlu
       {(() => {
         const bestCalc = calculations.reduce((best, curr) => curr.margin > best.margin ? curr : best);
         const revenuePerPaxPerDay = bestCalc.pax > 0 && config.tripDays > 0 ? bestCalc.totalRevenue / bestCalc.pax / config.tripDays : 0;
+        const usesPerPaxPrice = config.tripPriceActiveMode === 'perPax'
+          || (!config.tripPriceActiveMode && config.tripPriceByPax != null);
         return (
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <div className="card border-l-4 border-ag-accent">
               <div className="text-sm text-ag-text-muted mb-1">
-                {(config.tripPriceMode === 'total' || config.tripPriceByPax) ? `Price per Pax (${bestCalc.pax} pax)` : 'Base Price per Pax'}
+                {usesPerPaxPrice ? `Price per Pax (${bestCalc.pax} pax)` : config.tripPriceMode === 'total' ? `Total Price (${bestCalc.pax} pax)` : 'Base Price per Pax'}
               </div>
               <div className="text-2xl font-bold text-ag-text">
                 {formatCurrency(bestCalc.pax > 0 ? bestCalc.baseRevenue / bestCalc.pax : config.tripPrice)}
