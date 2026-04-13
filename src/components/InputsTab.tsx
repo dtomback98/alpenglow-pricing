@@ -1069,7 +1069,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 </div>
               </div>
               {/* Row 3: Staff Guide Meals */}
-              <div className="pt-4 border-t border-ag-border">
+              <div className="pt-2">
                 <div className="flex items-center gap-3 mb-3">
                   <label className="form-label mb-0">Staff Guide Meals Cost ($)</label>
                   <div className="flex gap-1">
