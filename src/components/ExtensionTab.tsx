@@ -16,7 +16,7 @@ const ActiveDropdown = ({ id, value, onChange, openId, setOpenId }: ActiveDropdo
       className="btn btn-secondary text-xs flex items-center gap-1"
       onClick={() => setOpenId(openId === id ? null : id)}
     >
-      Active: {value === 'simple' ? 'Simple' : 'Per Pax'} <span className="opacity-50">▾</span>
+      Mode: {value === 'simple' ? 'Simple' : 'Per Pax'} <span className="opacity-50">▾</span>
     </button>
     {openId === id && (
       <div className="absolute right-0 top-full mt-1 z-50 min-w-[110px] rounded-md border border-ag-border bg-ag-card shadow-lg">
@@ -283,9 +283,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   </button>
                   {!ext.discounts.inheritFromMain && (
                     <>
-                      <button onClick={() => setExtDiscountsPerPax(false)} className={`btn text-xs ${!extDiscountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-                      <button onClick={() => setExtDiscountsPerPax(true)} className={`btn text-xs ${extDiscountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                      <ActiveDropdown id="extDiscounts" value={extDiscountsEffectiveAM} onChange={v => updateExtDiscounts({ activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                      <ActiveDropdown id="extDiscounts" value={extDiscountsEffectiveAM} onChange={v => { setExtDiscountsPerPax(v === 'perPax'); updateExtDiscounts({ activeMode: v }); }} openId={openDropdown} setOpenId={setOpenDropdown} />
                     </>
                   )}
                 </>
@@ -402,9 +400,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   </button>
                   {!ext.singleSupplement.inheritFromMain && (
                     <>
-                      <button onClick={() => setExtSuppPerPax(false)} className={`btn text-xs ${!extSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-                      <button onClick={() => setExtSuppPerPax(true)} className={`btn text-xs ${extSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                      <ActiveDropdown id="extSingleSupp" value={extSuppEffectiveAM} onChange={v => updateExtSingleSupplement({ activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                      <ActiveDropdown id="extSingleSupp" value={extSuppEffectiveAM} onChange={v => { setExtSuppPerPax(v === 'perPax'); updateExtSingleSupplement({ activeMode: v }); }} openId={openDropdown} setOpenId={setOpenDropdown} />
                     </>
                   )}
                 </>
@@ -491,9 +487,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   </button>
                   {!ext.hotelsMeals.inheritFromMain && (
                     <>
-                      <button onClick={() => toggleExtHotelsMealsPerPax(false)} className={`btn text-xs ${!extHotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-                      <button onClick={() => toggleExtHotelsMealsPerPax(true)} className={`btn text-xs ${extHotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                      <ActiveDropdown id="extHM" value={extHmEffectiveAM} onChange={v => updateExtHotelsMeals({ activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                      <ActiveDropdown id="extHM" value={extHmEffectiveAM} onChange={v => { toggleExtHotelsMealsPerPax(v === 'perPax'); updateExtHotelsMeals({ activeMode: v }); }} openId={openDropdown} setOpenId={setOpenDropdown} />
                     </>
                   )}
                 </>
@@ -845,9 +839,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   </button>
                   {!ext.logisticsConfig.inheritFromMain && (
                     <>
-                      <button onClick={() => updateExtLogistics({ simpleMode: true })} className={`btn text-xs ${ext.logisticsConfig.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-                      <button onClick={() => updateExtLogistics({ simpleMode: false })} className={`btn text-xs ${ext.logisticsConfig.simpleMode === false ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                      <ActiveDropdown id="extLog" value={extLogEffectiveAM} onChange={v => updateExtLogistics({ activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                      <ActiveDropdown id="extLog" value={extLogEffectiveAM} onChange={v => updateExtLogistics({ simpleMode: v === 'simple', activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
                     </>
                   )}
                 </>
@@ -972,19 +964,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   <div className="flex gap-2">
                     {ext.logisticsConfig.guideLogistics?.enabled !== false && (
                       <>
-                        <button
-                          onClick={() => updateExtGuideLogistics({ simpleMode: true })}
-                          className={`btn text-xs ${ext.logisticsConfig.guideLogistics?.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}
-                        >
-                          Simple
-                        </button>
-                        <button
-                          onClick={() => updateExtGuideLogistics({ simpleMode: false })}
-                          className={`btn text-xs ${ext.logisticsConfig.guideLogistics?.simpleMode === false ? 'btn-primary' : 'btn-secondary'}`}
-                        >
-                          Per Pax
-                        </button>
-                        <ActiveDropdown id="extGuideLog" value={extGuideLogEffectiveAM} onChange={v => updateExtGuideLogistics({ activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                        <ActiveDropdown id="extGuideLog" value={extGuideLogEffectiveAM} onChange={v => updateExtGuideLogistics({ simpleMode: v === 'simple', activeMode: v })} openId={openDropdown} setOpenId={setOpenDropdown} />
                       </>
                     )}
                     <button onClick={() => updateExtGuideLogistics({ enabled: ext.logisticsConfig.guideLogistics?.enabled === false })} className={`btn text-xs ${ext.logisticsConfig.guideLogistics?.enabled === false ? 'btn-danger' : 'btn-primary'}`}>

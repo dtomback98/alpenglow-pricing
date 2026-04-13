@@ -30,7 +30,7 @@ const ActiveDropdown = ({ id, value, onChange, openId, setOpenId, showBands, sho
       className="btn btn-secondary text-xs flex items-center gap-1"
       onClick={() => setOpenId(openId === id ? null : id)}
     >
-      Active: {value === 'simple' ? 'Simple' : value === 'bands' ? 'Bands' : 'Per Pax'} <span className="opacity-50">▾</span>
+      Mode: {value === 'simple' ? 'Simple' : value === 'bands' ? 'Bands' : 'Per Pax'} <span className="opacity-50">▾</span>
     </button>
     {openId === id && (
       <div className="absolute right-0 top-full mt-1 z-50 min-w-[110px] rounded-md border border-ag-border bg-ag-card shadow-lg">
@@ -434,9 +434,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             <h2 className="text-lg font-semibold">Core Trip Details</h2>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setPricingPerPax(false)} className={`btn text-xs ${!pricingPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-            <button onClick={switchToPricingPerPax} className={`btn text-xs ${pricingPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-            <ActiveDropdown id="pricing" value={pricingEffectiveAM} onChange={v => updateConfig({ tripPriceActiveMode: v as 'simple' | 'perPax' })} openId={openDropdown} setOpenId={setOpenDropdown} />
+            <ActiveDropdown id="pricing" value={pricingEffectiveAM} onChange={v => { if (v === 'perPax') switchToPricingPerPax(); else setPricingPerPax(false); updateConfig({ tripPriceActiveMode: v as 'simple' | 'perPax' }); }} openId={openDropdown} setOpenId={setOpenDropdown} />
           </div>
         </div>
         {!collapsedSections.has('core') && (<>
@@ -532,9 +530,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <div className="flex gap-2">
             {config.discountsEnabled !== false && (
               <>
-                <button onClick={() => setDiscountsPerPax(false)} className={`btn text-xs ${!discountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-                <button onClick={() => setDiscountsPerPax(true)} className={`btn text-xs ${discountsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                <ActiveDropdown id="discounts" value={discountsEffectiveAM} onChange={v => updateConfig({ discountsActiveMode: v as 'simple' | 'perPax' })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                <ActiveDropdown id="discounts" value={discountsEffectiveAM} onChange={v => { setDiscountsPerPax(v === 'perPax'); updateConfig({ discountsActiveMode: v as 'simple' | 'perPax' }); }} openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateConfig({ discountsEnabled: config.discountsEnabled === false })} className={`btn text-xs ${config.discountsEnabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -693,9 +689,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <div className="flex gap-2">
             {config.singleSupplement.enabled !== false && (
               <>
-                <button onClick={() => setSingleSuppPerPax(false)} className={`btn text-xs ${!singleSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-                <button onClick={() => setSingleSuppPerPax(true)} className={`btn text-xs ${singleSuppPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                <ActiveDropdown id="singleSupp" value={ssEffectiveAM} onChange={v => updateNestedConfig('singleSupplement', { activeMode: v as 'simple' | 'perPax' })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                <ActiveDropdown id="singleSupp" value={ssEffectiveAM} onChange={v => { setSingleSuppPerPax(v === 'perPax'); updateNestedConfig('singleSupplement', { activeMode: v as 'simple' | 'perPax' }); }} openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateNestedConfig('singleSupplement', { enabled: config.singleSupplement.enabled === false })} className={`btn text-xs ${config.singleSupplement.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -758,9 +752,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <div className="flex gap-2">
             {config.hotelsMeals.enabled !== false && (
               <>
-                <button onClick={() => toggleHotelsMealsPerPax(false)} className={`btn text-xs ${!hotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-                <button onClick={() => toggleHotelsMealsPerPax(true)} className={`btn text-xs ${hotelsMealsPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                <ActiveDropdown id="hotels" value={hmEffectiveAM} onChange={v => updateNestedConfig('hotelsMeals', { activeMode: v as 'simple' | 'perPax' })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                <ActiveDropdown id="hotels" value={hmEffectiveAM} onChange={v => { toggleHotelsMealsPerPax(v === 'perPax'); updateNestedConfig('hotelsMeals', { activeMode: v as 'simple' | 'perPax' }); }} openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateNestedConfig('hotelsMeals', { enabled: config.hotelsMeals.enabled === false })} className={`btn text-xs ${config.hotelsMeals.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -1061,10 +1053,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <div className="flex gap-2">
             {config.transportConfig.enabled !== false && (
               <>
-                <button onClick={() => toggleTransportView('simple')} className={`btn text-xs ${transportViewMode === 'simple' ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-                <button onClick={() => toggleTransportView('perPax')} className={`btn text-xs ${transportViewMode === 'perPax' ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                <button onClick={() => toggleTransportView('bands')} className={`btn text-xs ${transportViewMode === 'bands' ? 'btn-primary' : 'btn-secondary'}`}>Bands</button>
-                <ActiveDropdown id="transport" value={transportEffectiveAM} onChange={v => updateNestedConfig('transportConfig', { activeMode: v })} showBands openId={openDropdown} setOpenId={setOpenDropdown} />
+                <ActiveDropdown id="transport" value={transportEffectiveAM} onChange={v => { toggleTransportView(v); updateNestedConfig('transportConfig', { activeMode: v }); }} showBands openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateNestedConfig('transportConfig', { enabled: config.transportConfig.enabled === false })} className={`btn text-xs ${config.transportConfig.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -1230,17 +1219,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <div className="flex gap-2">
             {config.tripSpecific.enabled !== false && (
               <>
-                <button onClick={() => updateNestedConfig('tripSpecific', { mode: 'simple' })} className={`btn text-xs ${tripSpecificMode === 'simple' ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-                <button onClick={() => updateNestedConfig('tripSpecific', { mode: 'bands' })} className={`btn text-xs ${tripSpecificMode === 'bands' ? 'btn-primary' : 'btn-secondary'}`}>Bands</button>
-                <ActiveDropdown
-                  id="tripSpecific"
-                  value={tripSpecificMode}
-                  onChange={v => updateNestedConfig('tripSpecific', { mode: v as 'simple' | 'bands' })}
-                  openId={openDropdown}
-                  setOpenId={setOpenDropdown}
-                  showBands
-                  showPerPax={false}
-                />
+                <ActiveDropdown id="tripSpecific" value={tripSpecificMode} onChange={v => updateNestedConfig('tripSpecific', { mode: v as 'simple' | 'bands' })} openId={openDropdown} setOpenId={setOpenDropdown} showBands showPerPax={false} />
               </>
             )}
             <button onClick={() => updateNestedConfig('tripSpecific', { enabled: config.tripSpecific.enabled === false })} className={`btn text-xs ${config.tripSpecific.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -1364,9 +1343,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <div className="flex gap-2">
             {config.logistics.enabled !== false && (
               <>
-                <button onClick={() => setLogisticsSimpleView(true)} className={`btn text-xs ${config.logistics.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-                <button onClick={() => setLogisticsSimpleView(false)} className={`btn text-xs ${config.logistics.simpleMode === false ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                <ActiveDropdown id="logistics" value={logEffectiveAM} onChange={v => updateNestedConfig('logistics', { activeMode: v as 'simple' | 'perPax' })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                <ActiveDropdown id="logistics" value={logEffectiveAM} onChange={v => { setLogisticsSimpleView(v === 'simple'); updateNestedConfig('logistics', { activeMode: v as 'simple' | 'perPax' }); }} openId={openDropdown} setOpenId={setOpenDropdown} />
               </>
             )}
             <button onClick={() => updateNestedConfig('logistics', { enabled: config.logistics.enabled === false })} className={`btn text-xs ${config.logistics.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
@@ -1430,9 +1407,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 <div className="flex gap-2">
                   {config.logistics.guideLogistics?.enabled !== false && (
                     <>
-                      <button onClick={() => setGuideLogisticsSimpleView(true)} className={`btn text-xs ${config.logistics.guideLogistics?.simpleMode !== false ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-                      <button onClick={() => setGuideLogisticsSimpleView(false)} className={`btn text-xs ${config.logistics.guideLogistics?.simpleMode === false ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
-                      <ActiveDropdown id="guideLogistics" value={glEffectiveAM} onChange={v => updateGuideLogistics({ activeMode: v as 'simple' | 'perPax' })} openId={openDropdown} setOpenId={setOpenDropdown} />
+                      <ActiveDropdown id="guideLogistics" value={glEffectiveAM} onChange={v => { setGuideLogisticsSimpleView(v === 'simple'); updateGuideLogistics({ activeMode: v as 'simple' | 'perPax' }); }} openId={openDropdown} setOpenId={setOpenDropdown} />
                     </>
                   )}
                   <button onClick={() => updateGuideLogistics({ enabled: config.logistics.guideLogistics?.enabled === false })} className={`btn text-xs ${config.logistics.guideLogistics?.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
