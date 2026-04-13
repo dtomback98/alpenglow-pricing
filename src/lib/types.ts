@@ -182,6 +182,8 @@ export interface TripSpecificCost {
   perPax: boolean;
   percentOfRevenue?: boolean;
   active?: boolean; // undefined = active (backward-compat); false = inactive
+  minPax?: number | null; // bands mode: only apply when pax >= minPax
+  maxPax?: number | null; // bands mode: only apply when pax <= maxPax
 }
 
 export interface CustomTripCost {
@@ -189,19 +191,13 @@ export interface CustomTripCost {
   label: string;
   amount: number;
   perPax: boolean;
-}
-
-export interface TripSpecificBand {
-  id: string;
-  minPax: number;
-  maxPax: number | null;
-  amount: number;
+  minPax?: number | null; // bands mode
+  maxPax?: number | null; // bands mode
 }
 
 export interface TripSpecificConfig {
   enabled: boolean;
   mode?: 'simple' | 'bands';
-  bands?: TripSpecificBand[];
   permits: TripSpecificCost;
   equipment: TripSpecificCost;
   jacketsApparel: TripSpecificCost;

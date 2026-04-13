@@ -147,7 +147,6 @@ export const DEFAULT_CONFIG: TripConfiguration = {
   tripSpecific: {
     enabled: true,
     mode: 'simple' as const,
-    bands: [],
     permits: { amount: 0, perPax: false, active: false },
     equipment: { amount: 0, perPax: false, active: false },
     jacketsApparel: { amount: 0, perPax: true },

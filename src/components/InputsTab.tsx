@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TripConfiguration, StaffMember, TripSpecificCost, CustomTripCost, AdditionalHotel, EarlyBirdTier, TransportBand, TripSpecificBand } from '@/lib/types';
+import { TripConfiguration, StaffMember, TripSpecificCost, CustomTripCost, AdditionalHotel, EarlyBirdTier, TransportBand } from '@/lib/types';
 
 interface InputsTabProps {
   config: TripConfiguration;
@@ -116,21 +116,6 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
       ...prev.tripSpecific,
       customCosts: (prev.tripSpecific.customCosts || []).filter(c => c.id !== id),
     },
-  }));
-
-  const addTripSpecificBand = () => updateConfig(prev => {
-    const bands = prev.tripSpecific.bands || [];
-    const lastMax = bands.length > 0 ? (bands[bands.length - 1].maxPax ?? null) : null;
-    const newMin = lastMax !== null ? lastMax + 1 : (prev.paxMin || 1);
-    return { tripSpecific: { ...prev.tripSpecific, bands: [...bands, { id: crypto.randomUUID(), minPax: newMin, maxPax: null, amount: 0 } as TripSpecificBand] } };
-  });
-
-  const removeTripSpecificBand = (id: string) => updateConfig(prev => ({
-    tripSpecific: { ...prev.tripSpecific, bands: (prev.tripSpecific.bands || []).filter(b => b.id !== id) },
-  }));
-
-  const updateTripSpecificBand = (id: string, updates: Partial<TripSpecificBand>) => updateConfig(prev => ({
-    tripSpecific: { ...prev.tripSpecific, bands: (prev.tripSpecific.bands || []).map(b => b.id === id ? { ...b, ...updates } : b) },
   }));
 
   const tripSpecificMode = config.tripSpecific.mode ?? 'simple';
@@ -1263,102 +1248,66 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <p className="text-sm text-ag-text-muted">Section disabled — trip-specific costs will not be applied to calculations.</p>
         ) : (
           <>
-            {tripSpecificMode === 'bands' ? (
-              /* Bands mode */
-              <>
-                <p className="text-xs text-ag-text-muted mb-3">Define total trip-specific costs by group size. The first matching band is used.</p>
-                {(config.tripSpecific.bands || []).length === 0 ? (
-                  <p className="text-sm text-ag-text-muted mb-3">No bands defined. Add one below.</p>
-                ) : (
-                  <div className="overflow-x-auto mb-3">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-ag-text-muted text-xs">
-                          <th className="text-left pb-2 pr-3">Min Pax</th>
-                          <th className="text-left pb-2 pr-3">Max Pax</th>
-                          <th className="text-left pb-2 pr-3">Amount ($)</th>
-                          <th className="pb-2" />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(config.tripSpecific.bands || []).map((band) => (
-                          <tr key={band.id}>
-                            <td className="py-1 pr-3">
-                              <NumInput type="number" min="1" value={band.minPax} onChange={(e) => updateTripSpecificBand(band.id, { minPax: Number(e.target.value) })} className="w-20" />
-                            </td>
-                            <td className="py-1 pr-3">
-                              <NumInput type="number" min="1" value={band.maxPax ?? ''} onChange={(e) => updateTripSpecificBand(band.id, { maxPax: e.target.value === '' ? null : Number(e.target.value) })} className="w-20" placeholder="No limit" />
-                            </td>
-                            <td className="py-1 pr-3">
-                              <NumInput type="number" value={band.amount} onChange={(e) => updateTripSpecificBand(band.id, { amount: Number(e.target.value) })} className="w-28" />
-                            </td>
-                            <td className="py-1">
-                              <button onClick={() => removeTripSpecificBand(band.id)} className="btn btn-danger text-xs">Remove</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-                <button onClick={addTripSpecificBand} className="btn btn-secondary text-xs">+ Add Band</button>
-              </>
-            ) : (
-              /* Simple mode */
-              <>
-                <p className="text-sm text-ag-text-muted mb-4">
-                  Check &quot;Per Pax&quot; to multiply the cost by the number of participants
-                </p>
+            <>
+              <p className="text-sm text-ag-text-muted mb-4">
+                {tripSpecificMode === 'bands'
+                  ? 'Each cost only applies when the pax count falls within its Min–Max range. Leave blank for no limit.'
+                  : 'Check "Per Pax" to multiply the cost by the number of participants'}
+              </p>
 
-                {/* Active fixed-field costs as single rows */}
-                {ALL_TRIP_SPECIFIC_FIELDS.filter(({ key }) => (config.tripSpecific[key] as TripSpecificCost).active !== false).map(({ key, label }) => (
+              {/* Active fixed-field costs as single rows */}
+              {ALL_TRIP_SPECIFIC_FIELDS.filter(({ key }) => (config.tripSpecific[key] as TripSpecificCost).active !== false).map(({ key, label }) => {
+                const cost = config.tripSpecific[key] as TripSpecificCost;
+                return (
                   <div key={key} className="flex items-center gap-2 mb-2">
                     <span className="text-sm text-ag-text w-40 shrink-0">{label} ($)</span>
-                    <NumInput
-                      value={(config.tripSpecific[key] as TripSpecificCost).amount}
-                      onChange={(e) => updateTripSpecificCost(key, { amount: Number(e.target.value) })}
-                      className="w-28 shrink-0"
-                    />
+                    <NumInput value={cost.amount} onChange={(e) => updateTripSpecificCost(key, { amount: Number(e.target.value) })} className="w-28 shrink-0" />
                     <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                      <input type="checkbox" checked={(config.tripSpecific[key] as TripSpecificCost).perPax} onChange={(e) => updateTripSpecificCost(key, { perPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                      <input type="checkbox" checked={cost.perPax} onChange={(e) => updateTripSpecificCost(key, { perPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
                       <span>Per Pax</span>
                     </label>
+                    {tripSpecificMode === 'bands' && (
+                      <>
+                        <span className="text-xs text-ag-text-muted shrink-0">Min:</span>
+                        <NumInput value={cost.minPax ?? undefined} onChange={(e) => updateTripSpecificCost(key, { minPax: e.target.value === '' ? null : Number(e.target.value) })} className="w-16 shrink-0" placeholder="any" />
+                        <span className="text-xs text-ag-text-muted shrink-0">Max:</span>
+                        <NumInput value={cost.maxPax ?? undefined} onChange={(e) => updateTripSpecificCost(key, { maxPax: e.target.value === '' ? null : Number(e.target.value) })} className="w-16 shrink-0" placeholder="any" />
+                      </>
+                    )}
                     <button onClick={() => updateTripSpecificCost(key, { active: false })} className="btn btn-danger text-xs shrink-0">×</button>
                   </div>
-                ))}
+                );
+              })}
 
-                {/* Custom costs */}
-                {(config.tripSpecific.customCosts || []).map((cc) => (
-                  <div key={cc.id} className="flex items-center gap-2 mb-2">
-                    <input
-                      type="text"
-                      placeholder="Label"
-                      value={cc.label}
-                      onChange={(e) => updateCustomCost(cc.id, { label: e.target.value })}
-                      className="flex-1 min-w-0"
-                    />
-                    <NumInput
-                      value={cc.amount}
-                      onChange={(e) => updateCustomCost(cc.id, { amount: Number(e.target.value) })}
-                      className="w-28 shrink-0"
-                    />
-                    <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                      <input type="checkbox" checked={cc.perPax} onChange={(e) => updateCustomCost(cc.id, { perPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                      <span>Per Pax</span>
-                    </label>
-                    <button onClick={() => removeCustomCost(cc.id)} className="btn btn-danger text-xs shrink-0">×</button>
-                  </div>
-                ))}
-
-                {/* Add buttons: inactive fixed fields + custom cost */}
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {ALL_TRIP_SPECIFIC_FIELDS.filter(({ key }) => (config.tripSpecific[key] as TripSpecificCost).active === false).map(({ key, label }) => (
-                    <button key={key} onClick={() => updateTripSpecificCost(key, { active: true })} className="btn btn-secondary text-xs">+ {label}</button>
-                  ))}
-                  <button onClick={addCustomCost} className="btn btn-secondary text-xs">+ Add Cost</button>
+              {/* Custom costs */}
+              {(config.tripSpecific.customCosts || []).map((cc) => (
+                <div key={cc.id} className="flex items-center gap-2 mb-2">
+                  <input type="text" placeholder="Label" value={cc.label} onChange={(e) => updateCustomCost(cc.id, { label: e.target.value })} className="flex-1 min-w-0" />
+                  <NumInput value={cc.amount} onChange={(e) => updateCustomCost(cc.id, { amount: Number(e.target.value) })} className="w-28 shrink-0" />
+                  <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                    <input type="checkbox" checked={cc.perPax} onChange={(e) => updateCustomCost(cc.id, { perPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                    <span>Per Pax</span>
+                  </label>
+                  {tripSpecificMode === 'bands' && (
+                    <>
+                      <span className="text-xs text-ag-text-muted shrink-0">Min:</span>
+                      <NumInput value={cc.minPax ?? undefined} onChange={(e) => updateCustomCost(cc.id, { minPax: e.target.value === '' ? null : Number(e.target.value) })} className="w-16 shrink-0" placeholder="any" />
+                      <span className="text-xs text-ag-text-muted shrink-0">Max:</span>
+                      <NumInput value={cc.maxPax ?? undefined} onChange={(e) => updateCustomCost(cc.id, { maxPax: e.target.value === '' ? null : Number(e.target.value) })} className="w-16 shrink-0" placeholder="any" />
+                    </>
+                  )}
+                  <button onClick={() => removeCustomCost(cc.id)} className="btn btn-danger text-xs shrink-0">×</button>
                 </div>
-              </>
-            )}
+              ))}
+
+              {/* Add buttons: inactive fixed fields + custom cost */}
+              <div className="flex flex-wrap gap-2 mt-3">
+                {ALL_TRIP_SPECIFIC_FIELDS.filter(({ key }) => (config.tripSpecific[key] as TripSpecificCost).active === false).map(({ key, label }) => (
+                  <button key={key} onClick={() => updateTripSpecificCost(key, { active: true })} className="btn btn-secondary text-xs">+ {label}</button>
+                ))}
+                <button onClick={addCustomCost} className="btn btn-secondary text-xs">+ Add Cost</button>
+              </div>
+            </>
           </>
         ))}
       </div>

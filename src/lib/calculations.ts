@@ -216,13 +216,7 @@ function calculateExtension(pax: number, config: TripConfiguration) {
 function calculateTripSpecificCost(pax: number, config: TripConfiguration, totalRevenue: number): number {
   const { tripSpecific } = config;
 
-  // Bands mode: find matching band and return its total amount
-  if (tripSpecific.mode === 'bands') {
-    const band = (tripSpecific.bands || []).find(b => pax >= b.minPax && (b.maxPax === null || pax <= b.maxPax));
-    return band ? band.amount : 0;
-  }
-
-  // Simple mode
+  const isBands = tripSpecific.mode === 'bands';
   let total = 0;
 
   const costs = [
@@ -237,6 +231,10 @@ function calculateTripSpecificCost(pax: number, config: TripConfiguration, total
 
   for (const cost of costs) {
     if (cost.active === false) continue;
+    if (isBands) {
+      const inRange = (cost.minPax == null || pax >= cost.minPax) && (cost.maxPax == null || pax <= cost.maxPax);
+      if (!inRange) continue;
+    }
     if (cost.percentOfRevenue) {
       total += cost.amount * totalRevenue;
     } else {
@@ -245,6 +243,10 @@ function calculateTripSpecificCost(pax: number, config: TripConfiguration, total
   }
 
   for (const cc of (config.tripSpecific.customCosts || [])) {
+    if (isBands) {
+      const inRange = (cc.minPax == null || pax >= cc.minPax) && (cc.maxPax == null || pax <= cc.maxPax);
+      if (!inRange) continue;
+    }
     total += cc.perPax ? cc.amount * pax : cc.amount;
   }
 
