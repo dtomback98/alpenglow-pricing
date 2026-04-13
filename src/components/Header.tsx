@@ -20,6 +20,8 @@ interface HeaderProps {
   loadedHistoryEntryId?: string;
   loadedStatus?: string;
   loadedCategory?: string;
+  loadedYear?: number;
+  loadedCountry?: string;
   loading?: boolean;
   expeditions: string[];
 }
@@ -38,6 +40,8 @@ export default function Header({
   loadedHistoryEntryId,
   loadedStatus,
   loadedCategory,
+  loadedYear,
+  loadedCountry,
   loading,
   expeditions,
 }: HeaderProps) {
@@ -61,13 +65,20 @@ export default function Header({
     setHistoryPax(paxMin);
   }, [paxMin, paxMax, paxStep]);
 
-  // Reset modal fields when a different trip is loaded
+  // Sync modal fields when a different trip is loaded (or after Save to History creates a new entry)
   useEffect(() => {
-    setHistoryCategory('Beg');
-    setHistoryYear(currentYear);
-    setHistoryStatus('budgeted');
-    setHistoryCountry('Other');
-  }, [loadedHistoryEntryId, currentYear]);
+    if (loadedHistoryEntryId) {
+      setHistoryCategory(loadedCategory ?? 'Beg');
+      setHistoryYear(loadedYear ?? currentYear);
+      setHistoryStatus((loadedStatus as typeof historyStatus) ?? 'budgeted');
+      setHistoryCountry(loadedCountry ?? 'Other');
+    } else {
+      setHistoryCategory('Beg');
+      setHistoryYear(currentYear);
+      setHistoryStatus('budgeted');
+      setHistoryCountry('Other');
+    }
+  }, [loadedHistoryEntryId, loadedCategory, loadedYear, loadedStatus, loadedCountry, currentYear]);
 
   // Clear save warning when isDirty or isNewTrip changes
   useEffect(() => {

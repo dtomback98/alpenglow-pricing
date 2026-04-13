@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { TripConfiguration, HistoricalTrip } from '@/lib/types';
 import { DEFAULT_CONFIG } from '@/lib/constants';
 import { calculateForPax } from '@/lib/calculations';
@@ -11,6 +11,8 @@ import {
   updateHistoryEntryNumbers,
   isSupabaseConfigured,
 } from '@/lib/supabase';
+
+const SESSION_KEY = 'lastLoadedHistoryEntry';
 
 interface UseTripDataReturn {
   config: TripConfiguration;
@@ -38,14 +40,52 @@ export function useTripData(): UseTripDataReturn {
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const sessionRestored = useRef(false);
 
   // isNewTrip: true when no history entry has been saved yet for this config
   const isNewTrip = loadedHistoryEntry === null;
 
-  // Check connection on mount (no auto-load — user picks a trip from history tab)
+  // Check connection on mount; also restore last session trip from sessionStorage
   useEffect(() => {
-    setIsConnected(isSupabaseConfigured());
-  }, []);
+    const connected = isSupabaseConfigured();
+    setIsConnected(connected);
+
+    if (!connected || sessionRestored.current) return;
+    sessionRestored.current = true;
+
+    try {
+      const stored = sessionStorage.getItem(SESSION_KEY);
+      if (!stored) return;
+      const entry: HistoricalTrip = JSON.parse(stored);
+      if (!entry?.tripConfigId) return;
+
+      setLoading(true);
+      fetchTripConfiguration(entry.tripConfigId)
+        .then(trip => {
+          if (trip) {
+            setConfigState({ ...trip, notes: entry.notes ?? trip.notes ?? '' });
+            setLoadedHistoryEntry(entry);
+            setIsDirty(false);
+          } else {
+            // Trip deleted — silently clear stale session entry
+            sessionStorage.removeItem(SESSION_KEY);
+          }
+        })
+        .catch(() => sessionStorage.removeItem(SESSION_KEY))
+        .finally(() => setLoading(false));
+    } catch {
+      sessionStorage.removeItem(SESSION_KEY);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist / clear last loaded entry in sessionStorage whenever it changes
+  useEffect(() => {
+    if (loadedHistoryEntry) {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(loadedHistoryEntry));
+    } else {
+      sessionStorage.removeItem(SESSION_KEY);
+    }
+  }, [loadedHistoryEntry]);
 
   // Update config with partial updates
   // Pass { silent: true } for system-initiated normalizations that should not mark dirty
