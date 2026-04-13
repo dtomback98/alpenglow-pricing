@@ -177,7 +177,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
 };
 
 // Trip status constants
-export const STATUS_ORDER = ['open-enrollment', 'budgeted', 'for-review', 'run', 'scratch'];
+export const STATUS_ORDER = ['for-review', 'open-enrollment', 'budgeted', 'run', 'scratch'];
 
 export const STATUS_LABELS: Record<string, string> = {
   'run': 'Run',
