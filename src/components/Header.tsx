@@ -153,7 +153,7 @@ export default function Header({
           </button>
 
           {/* Trip name input + metadata */}
-          <div className="flex flex-col gap-0.5">
+          <div className="relative">
             <input
               type="text"
               value={config.name}
@@ -161,9 +161,11 @@ export default function Header({
               className="w-80 text-sm"
               placeholder="Trip name"
             />
-            <p className={`text-xs px-1 ${loadedHistoryEntryId && (loadedCategory || loadedStatus || loadedYear) ? 'text-ag-text-muted' : 'invisible'}`}>
-              {[loadedCategory, loadedYear, STATUS_LABELS[loadedStatus ?? ''] ?? loadedStatus].filter(Boolean).join(' · ')}
-            </p>
+            {loadedHistoryEntryId && (loadedCategory || loadedStatus || loadedYear) && (
+              <p className="absolute top-full left-0 mt-0.5 text-xs text-ag-text-muted px-1 whitespace-nowrap">
+                {[loadedCategory, loadedYear, STATUS_LABELS[loadedStatus ?? ''] ?? loadedStatus].filter(Boolean).join(' · ')}
+              </p>
+            )}
           </div>
 
           {/* Save button */}
