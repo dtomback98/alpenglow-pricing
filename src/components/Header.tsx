@@ -135,13 +135,13 @@ export default function Header({
           {loadedHistoryEntryId && (loadedStatus || loadedCategory) ? (
             <div className="flex items-center gap-2 mt-1">
               {loadedCategory && (
-                <span className="text-xs font-medium px-2 py-0.5 rounded bg-ag-card-lighter text-ag-text-muted">
-                  {loadedCategory}
+                <span className="text-xs text-ag-text-muted">
+                  Category: <span className="font-medium px-1.5 py-0.5 rounded bg-ag-card-lighter">{loadedCategory}</span>
                 </span>
               )}
               {loadedStatus && (
-                <span className={`text-xs font-medium px-2 py-0.5 rounded ${STATUS_BADGE_CLASSES[loadedStatus] ?? 'bg-ag-card-lighter text-ag-text-muted'}`}>
-                  {STATUS_LABELS[loadedStatus] ?? loadedStatus}
+                <span className="text-xs text-ag-text-muted">
+                  Status: <span className={`font-medium px-1.5 py-0.5 rounded ${STATUS_BADGE_CLASSES[loadedStatus] ?? 'bg-ag-card-lighter text-ag-text-muted'}`}>{STATUS_LABELS[loadedStatus] ?? loadedStatus}</span>
                 </span>
               )}
             </div>

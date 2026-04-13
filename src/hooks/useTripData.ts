@@ -41,6 +41,7 @@ export function useTripData(): UseTripDataReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const sessionRestored = useRef(false);
+  const isFirstPersistRender = useRef(true);
 
   // isNewTrip: true when no history entry has been saved yet for this config
   const isNewTrip = loadedHistoryEntry === null;
@@ -79,7 +80,12 @@ export function useTripData(): UseTripDataReturn {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Persist / clear last loaded entry in sessionStorage whenever it changes
+  // Skip first render to avoid clearing sessionStorage before the async restore completes
   useEffect(() => {
+    if (isFirstPersistRender.current) {
+      isFirstPersistRender.current = false;
+      return;
+    }
     if (loadedHistoryEntry) {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(loadedHistoryEntry));
     } else {
