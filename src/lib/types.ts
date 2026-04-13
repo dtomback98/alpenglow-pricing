@@ -92,7 +92,6 @@ export interface HotelsMealsConfig {
   enabled: boolean;
   activeMode?: 'simple' | 'perPax'; // which dataset feeds calculations; undefined = legacy (byPax ?? flat)
   mode?: 'perPaxPerNight' | 'perNight' | 'total' | 'perPax'; // hotel rate mode
-  mealsMode?: 'perPaxPerNight' | 'perNight' | 'total' | 'perPax'; // meals rate mode (independent)
   hotelLabel?: string; // display name for primary hotel
   hotelNights?: number; // nights for primary hotel; defaults to tripNights
   hotelCostPerNight: number;

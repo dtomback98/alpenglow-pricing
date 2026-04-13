@@ -312,16 +312,9 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   const hotelsMealsOn = config.hotelsMeals.enabled !== false;
   const hmAM = config.hotelsMeals.activeMode;
   const hmMode = config.hotelsMeals.mode || 'perPaxPerNight';
-  const hmMealsMode = config.hotelsMeals.mealsMode ?? hmMode; // independent meals mode, falls back to hotel mode
   const hmHotelRate = hmAM === 'simple' ? config.hotelsMeals.hotelCostPerNight
     : hmAM === 'perPax' ? (config.hotelsMeals.hotelCostByPax?.[pax] ?? config.hotelsMeals.hotelCostPerNight)
     : (config.hotelsMeals.hotelCostByPax?.[pax] ?? config.hotelsMeals.hotelCostPerNight); // legacy
-  const hmLunchRate = hmAM === 'simple' ? config.hotelsMeals.lunchCostPerDay
-    : hmAM === 'perPax' ? (config.hotelsMeals.lunchCostByPax?.[pax] ?? config.hotelsMeals.lunchCostPerDay)
-    : (config.hotelsMeals.lunchCostByPax?.[pax] ?? config.hotelsMeals.lunchCostPerDay);
-  const hmDinnerRate = hmAM === 'simple' ? config.hotelsMeals.dinnerCostPerNight
-    : hmAM === 'perPax' ? (config.hotelsMeals.dinnerCostByPax?.[pax] ?? config.hotelsMeals.dinnerCostPerNight)
-    : (config.hotelsMeals.dinnerCostByPax?.[pax] ?? config.hotelsMeals.dinnerCostPerNight);
   const hmAdditional = hmAM === 'simple' ? config.hotelsMeals.additionalMealCosts
     : hmAM === 'perPax' ? (config.hotelsMeals.additionalMealCostsByPax?.[pax] ?? config.hotelsMeals.additionalMealCosts)
     : (config.hotelsMeals.additionalMealCostsByPax?.[pax] ?? config.hotelsMeals.additionalMealCosts);
@@ -343,15 +336,7 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
       hotelsCost = hmHotelRate;
       for (const h of hmAdditionalHotels) hotelsCost += h.ratePerNight;
     }
-    if (hmMealsMode === 'perPaxPerNight') {
-      mealsCost = (hmLunchRate * config.tripDays + hmDinnerRate * config.tripNights) * pax + hmAdditional;
-    } else if (hmMealsMode === 'perNight') {
-      mealsCost = hmLunchRate * config.tripDays + hmDinnerRate * config.tripNights + hmAdditional;
-    } else if (hmMealsMode === 'perPax') {
-      mealsCost = (hmLunchRate + hmDinnerRate) * pax + hmAdditional;
-    } else {
-      mealsCost = hmLunchRate + hmDinnerRate + hmAdditional;
-    }
+    mealsCost = hmAdditional;
   }
 
   // Logistics (gated)

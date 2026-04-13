@@ -184,7 +184,18 @@ function rowToConfig(row: any): TripConfiguration {
     loyaltyCountByPax: row.loyalty_count_by_pax || migrateDefaultCountByPax(row.pax_max || 16, 0.05),
     singleSupplement,
     extension,
-    hotelsMeals: { ...DEFAULT_CONFIG.hotelsMeals, ...(typeof row.hotels_meals === 'object' && row.hotels_meals !== null ? row.hotels_meals : {}) },
+    hotelsMeals: (() => {
+      const hm = { ...DEFAULT_CONFIG.hotelsMeals, ...(typeof row.hotels_meals === 'object' && row.hotels_meals !== null ? row.hotels_meals : {}) };
+      // Migrate: fold legacy lunchCostPerDay and dinnerCostPerNight into additionalMealCosts
+      const lunch = (hm as any).lunchCostPerDay || 0;
+      const dinner = (hm as any).dinnerCostPerNight || 0;
+      if (lunch > 0 || dinner > 0) {
+        const oldMode = (hm as any).mealsMode ?? hm.mode ?? 'perPaxPerNight';
+        const mealTotal = oldMode === 'total' ? lunch + dinner : lunch * row.trip_days + dinner * row.trip_nights;
+        return { ...hm, additionalMealCosts: (hm.additionalMealCosts || 0) + mealTotal, lunchCostPerDay: 0, dinnerCostPerNight: 0, mealsMode: undefined } as typeof hm;
+      }
+      return hm;
+    })(),
     logistics: (() => {
       const lg = migrateLogistics({ ...DEFAULT_CONFIG.logistics, ...(typeof row.logistics === 'object' && row.logistics !== null ? row.logistics : {}) });
       // Migrate baseRate: existing trips stored simple-mode rate in the rates array; populate baseRate from rates[0] when in simple view
