@@ -177,13 +177,14 @@ export const CATEGORY_COLORS: Record<string, string> = {
 };
 
 // Trip status constants
-export const STATUS_ORDER = ['open-enrollment', 'budgeted', 'run', 'scratch'];
+export const STATUS_ORDER = ['open-enrollment', 'budgeted', 'for-review', 'run', 'scratch'];
 
 export const STATUS_LABELS: Record<string, string> = {
   'run': 'Run',
   'budgeted': 'Budgeted',
   'open-enrollment': 'Open Enrollment',
   'scratch': 'Scratch',
+  'for-review': 'For Review',
 };
 
 export const STATUS_BADGE_CLASSES: Record<string, string> = {
@@ -191,6 +192,7 @@ export const STATUS_BADGE_CLASSES: Record<string, string> = {
   'scratch': 'bg-red-500/20 text-red-400',
   'open-enrollment': 'bg-blue-500/20 text-blue-400',
   'budgeted': 'bg-yellow-500/20 text-yellow-400',
+  'for-review': 'bg-purple-500/20 text-purple-400',
 };
 
 // Countries list (shared between Header and HistoryTab)

@@ -154,6 +154,7 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
                 <option value="run">Run</option>
                 <option value="open-enrollment">Open Enrollment</option>
                 <option value="budgeted">Budgeted</option>
+                <option value="for-review">For Review</option>
                 <option value="scratch">Scratch</option>
               </select>
             </div>

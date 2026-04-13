@@ -131,6 +131,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
                   >
                     <option value="budgeted">Budgeted</option>
                     <option value="open-enrollment">Open Enrollment</option>
+                    <option value="for-review">For Review</option>
                     <option value="run">Run</option>
                     <option value="scratch">Scratch</option>
                   </select>
@@ -342,6 +343,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
                 <option value="run">Run</option>
                 <option value="open-enrollment">Open Enrollment</option>
                 <option value="budgeted">Budgeted</option>
+                <option value="for-review">For Review</option>
                 <option value="scratch">Scratch</option>
               </select>
             </div>

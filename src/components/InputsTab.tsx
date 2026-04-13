@@ -473,7 +473,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           </div>
           <div className="form-group">
             <label className="form-label">Pax Step</label>
-            <NumInput type="number" min="1" value={paxStep} onChange={(e) => updateConfig({ paxStep: Math.max(1, Number(e.target.value)) })} className="w-full" />
+            <NumInput type="number" min="1" value={paxStep} onChange={(e) => updateConfig({ paxStep: Math.max(1, Math.round(Number(e.target.value) || 1)) })} className="w-full" />
           </div>
         </div>
         <div className="mt-4 pt-4 border-t border-ag-border">

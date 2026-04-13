@@ -44,7 +44,7 @@ export default function Header({
   const [saveWarning, setSaveWarning] = useState(false);
   const currentYear = new Date().getFullYear();
   const [historyYear, setHistoryYear] = useState(currentYear);
-  const [historyStatus, setHistoryStatus] = useState<'budgeted' | 'run' | 'scratch' | 'open-enrollment'>('budgeted');
+  const [historyStatus, setHistoryStatus] = useState<'budgeted' | 'run' | 'scratch' | 'open-enrollment' | 'for-review'>('budgeted');
   const [historyCountry, setHistoryCountry] = useState('Other');
 
   const paxMin = config.paxMin || 1;
@@ -214,9 +214,10 @@ export default function Header({
 
                 <div className="form-group mb-3">
                   <label className="form-label">Status</label>
-                  <select value={historyStatus} onChange={(e) => setHistoryStatus(e.target.value as 'budgeted' | 'run' | 'scratch' | 'open-enrollment')} className="w-full">
+                  <select value={historyStatus} onChange={(e) => setHistoryStatus(e.target.value as 'budgeted' | 'run' | 'scratch' | 'open-enrollment' | 'for-review')} className="w-full">
                     <option value="budgeted">Budgeted</option>
                     <option value="open-enrollment">Open Enrollment</option>
+                    <option value="for-review">For Review</option>
                     <option value="run">Run</option>
                     <option value="scratch">Scratch</option>
                   </select>

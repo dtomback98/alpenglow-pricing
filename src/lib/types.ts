@@ -328,7 +328,7 @@ export interface HistoricalTrip {
   createdAt?: string;
   year?: number;
   tripConfigId?: string;
-  status?: 'budgeted' | 'run' | 'scratch' | 'open-enrollment';
+  status?: 'budgeted' | 'run' | 'scratch' | 'open-enrollment' | 'for-review';
   country?: string;
 }
 
