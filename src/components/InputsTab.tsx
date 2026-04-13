@@ -1256,7 +1256,19 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
               <p className="text-sm text-ag-text-muted mb-4">Each cost only applies when pax falls within its Min–Max range. Leave blank for no limit.</p>
             )}
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full table-fixed text-sm">
+                <colgroup>
+                  <col />
+                  <col className="w-32" />
+                  <col className="w-24" />
+                  {tripSpecificMode === 'bands' && (
+                    <>
+                      <col className="w-28" />
+                      <col className="w-28" />
+                    </>
+                  )}
+                  <col className="w-20" />
+                </colgroup>
                 <thead>
                   <tr className="text-ag-text-muted text-xs border-b border-ag-border">
                     <th className="text-left pb-2 pr-4 font-medium">Category ($)</th>
@@ -1268,7 +1280,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                         <th className="text-left pb-2 pr-4 font-medium">Max Pax</th>
                       </>
                     )}
-                    <th className="pb-2" />
+                    <th className="text-left pb-2 font-medium">Remove</th>
                   </tr>
                 </thead>
                 <tbody>
