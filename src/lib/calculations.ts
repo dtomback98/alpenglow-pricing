@@ -215,6 +215,14 @@ function calculateExtension(pax: number, config: TripConfiguration) {
 // Calculate trip-specific cost with per-pax option
 function calculateTripSpecificCost(pax: number, config: TripConfiguration, totalRevenue: number): number {
   const { tripSpecific } = config;
+
+  // Bands mode: find matching band and return its total amount
+  if (tripSpecific.mode === 'bands') {
+    const band = (tripSpecific.bands || []).find(b => pax >= b.minPax && (b.maxPax === null || pax <= b.maxPax));
+    return band ? band.amount : 0;
+  }
+
+  // Simple mode
   let total = 0;
 
   const costs = [

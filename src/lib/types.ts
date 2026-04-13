@@ -191,8 +191,17 @@ export interface CustomTripCost {
   perPax: boolean;
 }
 
+export interface TripSpecificBand {
+  id: string;
+  minPax: number;
+  maxPax: number | null;
+  amount: number;
+}
+
 export interface TripSpecificConfig {
   enabled: boolean;
+  mode?: 'simple' | 'bands';
+  bands?: TripSpecificBand[];
   permits: TripSpecificCost;
   equipment: TripSpecificCost;
   jacketsApparel: TripSpecificCost;
