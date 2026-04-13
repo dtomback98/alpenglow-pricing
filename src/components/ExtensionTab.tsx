@@ -327,7 +327,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 </div>
                 <div className="form-group">
                   <label className="form-label">Loyalty Discount Rate (%)</label>
-                  <NumInput type="number" value={config.loyaltyDiscountRate * 100} disabled className="w-full opacity-50 cursor-not-allowed" />
+                  <NumInput type="number" value={parseFloat((config.loyaltyDiscountRate * 100).toFixed(1))} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-ag-border">
@@ -354,7 +354,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 <div className="form-group">
                   <label className="form-label">Loyalty Discount Rate (%)</label>
                   <p className="text-xs text-ag-text-muted mb-1">% discount on extension price per loyalty guest</p>
-                  <NumInput type="number" step="0.01" value={ext.discounts.loyaltyDiscountRate * 100} onChange={(e) => updateExtDiscounts({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
+                  <NumInput type="number" step="0.01" value={parseFloat((ext.discounts.loyaltyDiscountRate * 100).toFixed(1))} onChange={(e) => updateExtDiscounts({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
                 </div>
               </div>
               {!extDiscountsPerPax ? (

@@ -480,7 +480,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           <div className="form-group w-48">
             <label className="form-label">Inflation Rate (%)</label>
             <p className="text-xs text-ag-text-muted mb-1">Applied to all cost items</p>
-            <NumInput type="number" step="0.1" min="-100" max="1000" value={((config.inflationRate || 0) * 100)} onChange={(e) => updateConfig({ inflationRate: Number(e.target.value) / 100 })} className="w-full" />
+            <NumInput type="number" step="0.1" min="-100" max="1000" value={parseFloat(((config.inflationRate || 0) * 100).toFixed(1))} onChange={(e) => updateConfig({ inflationRate: Number(e.target.value) / 100 })} className="w-full" />
           </div>
         </div>
         </>)}
@@ -517,7 +517,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   <div className="form-group">
                     <label className="form-label">Loyalty Discount Rate (%)</label>
                     <p className="text-xs text-ag-text-muted mb-1">% discount on trip price per loyalty guest</p>
-                    <NumInput type="number" step="0.01" value={config.loyaltyDiscountRate * 100} onChange={(e) => updateConfig({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
+                    <NumInput type="number" step="0.01" value={parseFloat((config.loyaltyDiscountRate * 100).toFixed(1))} onChange={(e) => updateConfig({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Loyalty Count</label>
@@ -568,7 +568,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   <div className="form-group w-40 shrink-0">
                     <label className="form-label">Loyalty Rate (%)</label>
                     <p className="text-xs text-ag-text-muted mb-1">% discount per loyalty guest</p>
-                    <NumInput type="number" step="0.01" value={config.loyaltyDiscountRate * 100} onChange={(e) => updateConfig({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
+                    <NumInput type="number" step="0.01" value={parseFloat((config.loyaltyDiscountRate * 100).toFixed(1))} onChange={(e) => updateConfig({ loyaltyDiscountRate: Number(e.target.value) / 100 })} className="w-full" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-2">
