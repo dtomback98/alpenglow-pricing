@@ -821,15 +821,21 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   </div>
                 ))}
                 <button className="btn btn-secondary text-xs mt-2" onClick={() => { const newHotel: AdditionalHotel = { id: Date.now().toString(), label: `Hotel ${(config.hotelsMeals.additionalHotels?.length || 0) + 2}`, nights: config.hotelsMeals.hotelNights ?? config.tripNights, ratePerNight: config.hotelsMeals.hotelCostPerNight }; updateNestedConfig('hotelsMeals', { additionalHotels: [...(config.hotelsMeals.additionalHotels || []), newHotel] }); }}>+ Add Hotel</button>
-                {/* Additional Meal Costs — flat total, last row */}
-                <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-4 mt-3 items-end">
-                  <div className="form-group mb-0">
-                    <label className="form-label">Additional Meal Costs ($)</label>
-                    <p className="text-xs text-ag-text-muted mb-1">Flat total for entire trip</p>
-                    <NumInput type="number" value={config.hotelsMeals.additionalMealCosts} onChange={(e) => updateNestedConfig('hotelsMeals', { additionalMealCosts: Number(e.target.value) })} className="w-full" />
-                  </div>
-                  <div className="col-span-3" />
-                </div>
+                {/* Additional Meal Costs — follows hotel mode */}
+                {(() => {
+                  const m = config.hotelsMeals.mode || 'perPaxPerNight';
+                  const hint = m === 'perPaxPerNight' ? 'Per person, per night' : m === 'perNight' ? 'Per night (flat)' : m === 'perPax' ? 'Per person, whole trip' : 'Flat total for entire trip';
+                  return (
+                    <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-4 mt-3 items-end">
+                      <div className="form-group mb-0">
+                        <label className="form-label">Additional Meal Costs ($)</label>
+                        <p className="text-xs text-ag-text-muted mb-1">{hint}</p>
+                        <NumInput type="number" value={config.hotelsMeals.additionalMealCosts} onChange={(e) => updateNestedConfig('hotelsMeals', { additionalMealCosts: Number(e.target.value) })} className="w-full" />
+                      </div>
+                      <div className="col-span-3" />
+                    </div>
+                  );
+                })()}
               </>
             ) : (
               <>
@@ -878,15 +884,21 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                   </div>
                 ))}
                 <button className="btn btn-secondary text-xs mt-2" onClick={() => { const newHotel: AdditionalHotel = { id: Date.now().toString(), label: `Hotel ${(config.hotelsMeals.additionalHotels?.length || 0) + 2}`, nights: config.hotelsMeals.hotelNights ?? config.tripNights, ratePerNight: config.hotelsMeals.hotelCostPerNight }; updateNestedConfig('hotelsMeals', { additionalHotels: [...(config.hotelsMeals.additionalHotels || []), newHotel] }); }}>+ Add Hotel</button>
-                {/* Additional Meal Costs — flat total, last row */}
-                <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-4 mt-3 items-end">
-                  <div className="form-group mb-0">
-                    <label className="form-label">Additional Meal Costs ($)</label>
-                    <p className="text-xs text-ag-text-muted mb-1">Flat total for entire trip</p>
-                    <NumInput type="number" value={config.hotelsMeals.additionalMealCostsByPax?.[effectiveHMPax] ?? config.hotelsMeals.additionalMealCosts} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, additionalMealCostsByPax: { ...prev.hotelsMeals.additionalMealCostsByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
-                  </div>
-                  <div className="col-span-3" />
-                </div>
+                {/* Additional Meal Costs — follows hotel mode */}
+                {(() => {
+                  const m = config.hotelsMeals.mode || 'perPaxPerNight';
+                  const hint = m === 'perPaxPerNight' ? 'Per person, per night' : m === 'perNight' ? 'Per night (flat)' : m === 'perPax' ? 'Per person, whole trip' : 'Flat total for entire trip';
+                  return (
+                    <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-4 mt-3 items-end">
+                      <div className="form-group mb-0">
+                        <label className="form-label">Additional Meal Costs ($)</label>
+                        <p className="text-xs text-ag-text-muted mb-1">{hint}</p>
+                        <NumInput type="number" value={config.hotelsMeals.additionalMealCostsByPax?.[effectiveHMPax] ?? config.hotelsMeals.additionalMealCosts} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, additionalMealCostsByPax: { ...prev.hotelsMeals.additionalMealCostsByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
+                      </div>
+                      <div className="col-span-3" />
+                    </div>
+                  );
+                })()}
               </>
             )}
           </>

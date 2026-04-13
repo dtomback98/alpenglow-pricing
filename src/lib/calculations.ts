@@ -106,12 +106,6 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     const hotelRate = hm.inheritFromMain
       ? (config.hotelsMeals.hotelCostByPax?.[pax] ?? config.hotelsMeals.hotelCostPerNight)
       : (extHmAM === 'simple' ? hm.hotelCostPerNight : (hm.hotelCostByPax?.[pax] ?? hm.hotelCostPerNight));
-    const lunchRate = hm.inheritFromMain
-      ? (config.hotelsMeals.lunchCostByPax?.[pax] ?? config.hotelsMeals.lunchCostPerDay)
-      : (extHmAM === 'simple' ? hm.lunchCostPerDay : (hm.lunchCostByPax?.[pax] ?? hm.lunchCostPerDay));
-    const dinnerRate = hm.inheritFromMain
-      ? (config.hotelsMeals.dinnerCostByPax?.[pax] ?? config.hotelsMeals.dinnerCostPerNight)
-      : (extHmAM === 'simple' ? hm.dinnerCostPerNight : (hm.dinnerCostByPax?.[pax] ?? hm.dinnerCostPerNight));
     const additionalMeals = hm.inheritFromMain
       ? (config.hotelsMeals.additionalMealCostsByPax?.[pax] ?? config.hotelsMeals.additionalMealCosts)
       : (extHmAM === 'simple' ? hm.additionalMealCosts : (hm.additionalMealCostsByPax?.[pax] ?? hm.additionalMealCosts));
@@ -120,27 +114,25 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     const extHotelNights = hm.inheritFromMain
       ? extension.extensionNights
       : (hm.hotelNights ?? extension.extensionNights);
-    // Lunch applies every day (nights + 1 arrival/departure day); dinner applies every night
-    const extensionDays = extension.extensionNights + 1;
     // Additional hotels only apply in custom mode
     const extAdditionalHotels = hm.inheritFromMain ? [] : (hm.additionalHotels || []);
 
     if (extHmMode === 'perPaxPerNight') {
       extensionHotelsCost = hotelRate * extHotelNights * extPaxCount;
       for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * h.nights * extPaxCount;
-      extensionMealsCost = (lunchRate * extensionDays + dinnerRate * extension.extensionNights) * extPaxCount + additionalMeals;
+      extensionMealsCost = additionalMeals * extension.extensionNights * extPaxCount;
     } else if (extHmMode === 'perNight') {
       extensionHotelsCost = hotelRate * extHotelNights;
       for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * h.nights;
-      extensionMealsCost = lunchRate * extensionDays + dinnerRate * extension.extensionNights + additionalMeals;
+      extensionMealsCost = additionalMeals * extension.extensionNights;
     } else if (extHmMode === 'perPax') {
       extensionHotelsCost = hotelRate * extPaxCount;
       for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * extPaxCount;
-      extensionMealsCost = (lunchRate + dinnerRate) * extPaxCount + additionalMeals;
+      extensionMealsCost = additionalMeals * extPaxCount;
     } else {
       extensionHotelsCost = hotelRate;
       for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight;
-      extensionMealsCost = lunchRate + dinnerRate + additionalMeals;
+      extensionMealsCost = additionalMeals;
     }
   }
 
@@ -336,7 +328,10 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
       hotelsCost = hmHotelRate;
       for (const h of hmAdditionalHotels) hotelsCost += h.ratePerNight;
     }
-    mealsCost = hmAdditional;
+    if (hmMode === 'perPaxPerNight') mealsCost = hmAdditional * config.tripNights * pax;
+    else if (hmMode === 'perNight') mealsCost = hmAdditional * config.tripNights;
+    else if (hmMode === 'perPax') mealsCost = hmAdditional * pax;
+    else mealsCost = hmAdditional;
   }
 
   // Logistics (gated)
