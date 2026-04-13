@@ -57,6 +57,8 @@ export default function PricingTool() {
         isConnected={tripData.isConnected}
         error={tripData.error}
         loadedHistoryEntryId={tripData.loadedHistoryEntry?.id}
+        loadedStatus={tripData.loadedHistoryEntry?.status}
+        loadedCategory={tripData.loadedHistoryEntry?.category}
         loading={tripData.loading}
         expeditions={expeditions}
       />

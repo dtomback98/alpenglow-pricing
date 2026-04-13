@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { TripConfiguration } from '@/lib/types';
+import { STATUS_LABELS, STATUS_BADGE_CLASSES } from '@/lib/constants';
 
 const CATEGORIES = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 
@@ -17,6 +18,8 @@ interface HeaderProps {
   isConnected: boolean;
   error: string | null;
   loadedHistoryEntryId?: string;
+  loadedStatus?: string;
+  loadedCategory?: string;
   loading?: boolean;
   expeditions: string[];
 }
@@ -33,6 +36,8 @@ export default function Header({
   isConnected,
   error,
   loadedHistoryEntryId,
+  loadedStatus,
+  loadedCategory,
   loading,
   expeditions,
 }: HeaderProps) {
@@ -116,9 +121,24 @@ export default function Header({
           <h1 className="text-2xl font-bold text-ag-text">
             Alpenglow Pricing Tool
           </h1>
-          <p className="text-ag-text-muted mt-1">
-            Trip pricing calculator and analysis
-          </p>
+          {loadedHistoryEntryId && (loadedStatus || loadedCategory) ? (
+            <div className="flex items-center gap-2 mt-1">
+              {loadedCategory && (
+                <span className="text-xs font-medium px-2 py-0.5 rounded bg-ag-card-lighter text-ag-text-muted">
+                  {loadedCategory}
+                </span>
+              )}
+              {loadedStatus && (
+                <span className={`text-xs font-medium px-2 py-0.5 rounded ${STATUS_BADGE_CLASSES[loadedStatus] ?? 'bg-ag-card-lighter text-ag-text-muted'}`}>
+                  {STATUS_LABELS[loadedStatus] ?? loadedStatus}
+                </span>
+              )}
+            </div>
+          ) : (
+            <p className="text-ag-text-muted mt-1">
+              Trip pricing calculator and analysis
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
