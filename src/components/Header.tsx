@@ -132,9 +132,6 @@ export default function Header({
           <h1 className="text-2xl font-bold text-ag-text">
             Alpenglow Pricing Tool
           </h1>
-          <p className="text-ag-text-muted mt-1">
-            Trip pricing calculator and analysis
-          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -164,11 +161,9 @@ export default function Header({
               className="w-80 text-sm"
               placeholder="Trip name"
             />
-            {loadedHistoryEntryId && (loadedCategory || loadedStatus || loadedYear) && (
-              <p className="text-xs text-ag-text-muted px-1">
-                {[loadedCategory, STATUS_LABELS[loadedStatus ?? ''] ?? loadedStatus, loadedYear].filter(Boolean).join(' · ')}
-              </p>
-            )}
+            <p className={`text-xs px-1 ${loadedHistoryEntryId && (loadedCategory || loadedStatus || loadedYear) ? 'text-ag-text-muted' : 'invisible'}`}>
+              {[loadedCategory, loadedYear, STATUS_LABELS[loadedStatus ?? ''] ?? loadedStatus].filter(Boolean).join(' · ')}
+            </p>
           </div>
 
           {/* Save button */}
