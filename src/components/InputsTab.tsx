@@ -22,8 +22,9 @@ interface ActiveDropdownProps {
   openId: string | null;
   setOpenId: (id: string | null) => void;
   showBands?: boolean;
+  showPerPax?: boolean;
 }
-const ActiveDropdown = ({ id, value, onChange, openId, setOpenId, showBands }: ActiveDropdownProps) => (
+const ActiveDropdown = ({ id, value, onChange, openId, setOpenId, showBands, showPerPax = true }: ActiveDropdownProps) => (
   <div className="relative" onClick={e => e.stopPropagation()}>
     <button
       className="btn btn-secondary text-xs flex items-center gap-1"
@@ -34,13 +35,15 @@ const ActiveDropdown = ({ id, value, onChange, openId, setOpenId, showBands }: A
     {openId === id && (
       <div className="absolute right-0 top-full mt-1 z-50 min-w-[110px] rounded-md border border-ag-border bg-ag-card shadow-lg">
         <button
-          className={`block w-full text-left px-3 py-2 text-xs ${showBands ? '' : 'rounded-t-md'} hover:bg-white/5 ${value === 'simple' ? 'text-blue-400 font-medium' : 'text-ag-text'}`}
+          className={`block w-full text-left px-3 py-2 text-xs rounded-t-md hover:bg-white/5 ${value === 'simple' ? 'text-blue-400 font-medium' : 'text-ag-text'}`}
           onClick={() => { onChange('simple'); setOpenId(null); }}
         >Simple</button>
-        <button
-          className={`block w-full text-left px-3 py-2 text-xs ${!showBands ? 'rounded-b-md' : ''} hover:bg-white/5 ${value === 'perPax' ? 'text-blue-400 font-medium' : 'text-ag-text'}`}
-          onClick={() => { onChange('perPax'); setOpenId(null); }}
-        >Per Pax</button>
+        {showPerPax && (
+          <button
+            className={`block w-full text-left px-3 py-2 text-xs ${!showBands ? 'rounded-b-md' : ''} hover:bg-white/5 ${value === 'perPax' ? 'text-blue-400 font-medium' : 'text-ag-text'}`}
+            onClick={() => { onChange('perPax'); setOpenId(null); }}
+          >Per Pax</button>
+        )}
         {showBands && (
           <button
             className={`block w-full text-left px-3 py-2 text-xs rounded-b-md hover:bg-white/5 ${value === 'bands' ? 'text-blue-400 font-medium' : 'text-ag-text'}`}
@@ -1241,10 +1244,15 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           </div>
           <div className="flex gap-2">
             {config.tripSpecific.enabled !== false && (
-              <>
-                <button onClick={() => updateNestedConfig('tripSpecific', { mode: 'simple' })} className={`btn text-xs ${tripSpecificMode === 'simple' ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
-                <button onClick={() => updateNestedConfig('tripSpecific', { mode: 'bands' })} className={`btn text-xs ${tripSpecificMode === 'bands' ? 'btn-primary' : 'btn-secondary'}`}>Bands</button>
-              </>
+              <ActiveDropdown
+                id="tripSpecific"
+                value={tripSpecificMode}
+                onChange={v => updateNestedConfig('tripSpecific', { mode: v as 'simple' | 'bands' })}
+                openId={openDropdown}
+                setOpenId={setOpenDropdown}
+                showBands
+                showPerPax={false}
+              />
             )}
             <button onClick={() => updateNestedConfig('tripSpecific', { enabled: config.tripSpecific.enabled === false })} className={`btn text-xs ${config.tripSpecific.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
               {config.tripSpecific.enabled === false ? 'Inactive' : 'Active'}
