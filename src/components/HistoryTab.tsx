@@ -444,7 +444,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
         <div className="mb-4">
           <h2 className="text-lg font-semibold">Margin by Trip</h2>
         </div>
-        <div style={{ height: Math.max(240, chartData.length * 36) }}>
+        <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#475569" horizontal={false} />
@@ -469,7 +469,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
                 labelStyle={{ color: '#f8fafc' }}
                 formatter={(value: number) => [`${value.toFixed(1)}%`, 'Margin']}
               />
-              <Bar dataKey="margin" radius={[0, 4, 4, 0]}>
+              <Bar dataKey="margin" radius={[0, 4, 4, 0]} maxBarSize={20}>
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[entry.category] || '#3b82f6'} />
                 ))}
