@@ -444,21 +444,21 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
         <div className="mb-4">
           <h2 className="text-lg font-semibold">Margin by Trip</h2>
         </div>
-        <div className="h-64">
+        <div style={{ height: Math.max(240, chartData.length * 36) }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
+            <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#475569" horizontal={false} />
               <XAxis
-                dataKey="name"
-                tick={{ fill: '#94a3b8', fontSize: 10 }}
-                angle={-45}
-                textAnchor="end"
-                height={100}
-                interval={0}
+                type="number"
+                tick={{ fill: '#94a3b8', fontSize: 11 }}
+                tickFormatter={(value) => `${value}%`}
               />
               <YAxis
-                tick={{ fill: '#94a3b8' }}
-                tickFormatter={(value) => `${value}%`}
+                type="category"
+                dataKey="name"
+                tick={{ fill: '#94a3b8', fontSize: 11 }}
+                width={180}
+                tickFormatter={(value: string) => value.length > 22 ? value.slice(0, 21) + '…' : value}
               />
               <Tooltip
                 contentStyle={{
@@ -469,7 +469,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
                 labelStyle={{ color: '#f8fafc' }}
                 formatter={(value: number) => [`${value.toFixed(1)}%`, 'Margin']}
               />
-              <Bar dataKey="margin" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="margin" radius={[0, 4, 4, 0]}>
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[entry.category] || '#3b82f6'} />
                 ))}
