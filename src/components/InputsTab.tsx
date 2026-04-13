@@ -65,6 +65,7 @@ const TRIP_SPECIFIC_ALWAYS_FIELDS: TripSpecificFieldDef[] = [
 const TRIP_SPECIFIC_BUTTON_FIELDS: TripSpecificFieldDef[] = [
   { key: 'permits', label: 'Permits' },
   { key: 'equipment', label: 'Equipment' },
+  { key: 'insurance', label: 'Insurance' },
   { key: 'hypoxico', label: 'Hypoxico' },
   { key: 'otherCosts', label: 'Other Costs' },
 ];

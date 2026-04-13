@@ -177,7 +177,8 @@ function calculateExtension(pax: number, config: TripConfiguration) {
       rate = logAM === 'simple' ? (config.logistics.baseRate || 0) : getLogisticsRate(pax, config.logistics);
       mode = config.logistics.mode || (config.logistics.perPax ? 'perPaxPerDay' : 'perDay');
     } else {
-      rate = rateFromArray(pax, lc.rates ?? []);
+      const lcAM = lc.activeMode ?? (lc.simpleMode !== false ? 'simple' : 'perPax');
+      rate = lcAM === 'simple' ? (lc.baseRate || 0) : rateFromArray(pax, lc.rates ?? []);
       mode = lc.mode || 'perDay';
     }
     if (mode === 'perPaxPerDay') extensionLogisticsCost = rate * extension.extensionNights * extPaxCount;
@@ -511,8 +512,13 @@ export function calculateFinancialBreakdown(pax: number, config: TripConfigurati
   const inflationMultiplier = Math.max(0, 1 + (config.inflationRate || 0));
   const tripSpecificOn = config.tripSpecific.enabled !== false;
 
-  const calcTsItem = (item: { amount: number; perPax: boolean; percentOfRevenue?: boolean; active?: boolean }): number => {
+  const isTsBands = config.tripSpecific.mode === 'bands';
+  const calcTsItem = (item: { amount: number; perPax: boolean; percentOfRevenue?: boolean; active?: boolean; minPax?: number | null; maxPax?: number | null }): number => {
     if (item.active === false) return 0;
+    if (isTsBands) {
+      const inRange = (item.minPax == null || pax >= item.minPax) && (item.maxPax == null || pax <= item.maxPax);
+      if (!inRange) return 0;
+    }
     if (item.percentOfRevenue) return item.amount * calc.totalRevenue;
     return item.perPax ? item.amount * pax : item.amount;
   };
@@ -530,7 +536,13 @@ export function calculateFinancialBreakdown(pax: number, config: TripConfigurati
       calcTsItem(ts.hypoxico || { amount: 0, perPax: false })
     ) * inflationMultiplier;
     const customTotal = (ts.customCosts || []).reduce(
-      (sum, cc) => sum + (cc.perPax ? cc.amount * pax : cc.amount), 0
+      (sum, cc) => {
+        if (isTsBands) {
+          const inRange = (cc.minPax == null || pax >= cc.minPax) && (cc.maxPax == null || pax <= cc.maxPax);
+          if (!inRange) return sum;
+        }
+        return sum + (cc.perPax ? cc.amount * pax : cc.amount);
+      }, 0
     );
     otherTripCosts = (
       calcTsItem(ts.insurance) +

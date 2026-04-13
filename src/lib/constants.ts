@@ -150,7 +150,7 @@ export const DEFAULT_CONFIG: TripConfiguration = {
     permits: { amount: 0, perPax: false, active: false },
     equipment: { amount: 0, perPax: false, active: false },
     jacketsApparel: { amount: 0, perPax: true },
-    insurance: { amount: 0, perPax: true },
+    insurance: { amount: 0, perPax: true, active: false },
     contingency: { amount: 0, perPax: false },
     hypoxico: { amount: 0, perPax: false, active: false },
     otherCosts: { amount: 0, perPax: false, active: false },

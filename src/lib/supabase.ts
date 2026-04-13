@@ -433,7 +433,7 @@ export async function saveToHistory(
     name: config.name,
     category,
     pax,
-    price_per_pax: calc.totalRevenue / pax,
+    price_per_pax: pax > 0 ? calc.totalRevenue / pax : 0,
     revenue: calc.totalRevenue,
     gross_profit: calc.grossProfit,
     margin: calc.margin,

@@ -210,12 +210,12 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
     : ext.singleSupplement.singleRoomExtra;
 
   // When inheriting from main, use per-pax rates if the main trip uses per-pax mode
-  // (effectiveStaffPax is the currently-displayed pax level in the extension UI)
+  // Use effectiveExtHMPax (the H&M section's own pax selector) for correct display
   const resolvedHotelRate = ext.hotelsMeals.inheritFromMain
-    ? (config.hotelsMeals.hotelCostByPax?.[effectiveStaffPax] ?? config.hotelsMeals.hotelCostPerNight)
+    ? (config.hotelsMeals.hotelCostByPax?.[effectiveExtHMPax] ?? config.hotelsMeals.hotelCostPerNight)
     : ext.hotelsMeals.hotelCostPerNight;
   const resolvedAdditionalMeals = ext.hotelsMeals.inheritFromMain
-    ? (config.hotelsMeals.additionalMealCostsByPax?.[effectiveStaffPax] ?? config.hotelsMeals.additionalMealCosts)
+    ? (config.hotelsMeals.additionalMealCostsByPax?.[effectiveExtHMPax] ?? config.hotelsMeals.additionalMealCosts)
     : ext.hotelsMeals.additionalMealCosts;
 
   return (
