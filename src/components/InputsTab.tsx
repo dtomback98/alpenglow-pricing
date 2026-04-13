@@ -858,7 +858,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                     <NumInput value={config.hotelsMeals.hotelNights ?? config.tripNights} onChange={(e) => updateNestedConfig('hotelsMeals', { hotelNights: Number(e.target.value) || 1 })} className="w-full" />
                   </div>
                   <div className="form-group mb-0">
-                    <label className="form-label">Hotel Cost ($)</label>
+                    <label className="form-label">Rate ($)</label>
                     <NumInput type="number" value={config.hotelsMeals.hotelCostByPax?.[effectiveHMPax] ?? config.hotelsMeals.hotelCostPerNight} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, hotelCostByPax: { ...prev.hotelsMeals.hotelCostByPax, [effectiveHMPax]: val } } })); }} className="w-full" />
                   </div>
                   <div className="w-16" />
