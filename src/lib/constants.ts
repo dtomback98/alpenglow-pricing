@@ -146,13 +146,13 @@ export const DEFAULT_CONFIG: TripConfiguration = {
 
   tripSpecific: {
     enabled: true,
-    permits: { amount: 0, perPax: false },
-    equipment: { amount: 0, perPax: false },
+    permits: { amount: 0, perPax: false, active: false },
+    equipment: { amount: 0, perPax: false, active: false },
     jacketsApparel: { amount: 0, perPax: true },
     insurance: { amount: 0, perPax: true },
     contingency: { amount: 0, perPax: false },
-    hypoxico: { amount: 0, perPax: false },
-    otherCosts: { amount: 0, perPax: false },
+    hypoxico: { amount: 0, perPax: false, active: false },
+    otherCosts: { amount: 0, perPax: false, active: false },
     customCosts: [],
   },
 };

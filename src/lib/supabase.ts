@@ -69,7 +69,7 @@ function migrateLogistics(logistics: any): any {
 function migrateTripSpecific(tripSpecific: any): any {
   if (!tripSpecific) return tripSpecific;
   if (!tripSpecific.hypoxico) {
-    return { ...tripSpecific, hypoxico: { amount: 0, perPax: false } };
+    return { ...tripSpecific, hypoxico: { amount: 0, perPax: false, active: false } };
   }
   return tripSpecific;
 }

@@ -52,14 +52,21 @@ const ActiveDropdown = ({ id, value, onChange, openId, setOpenId, showBands }: A
   </div>
 );
 
-const TRIP_SPECIFIC_FIELDS: { key: keyof Omit<TripConfiguration['tripSpecific'], 'enabled' | 'customCosts'>; label: string }[] = [
-  { key: 'permits', label: 'Permits' },
-  { key: 'equipment', label: 'Equipment' },
+type TripSpecificFieldDef = { key: keyof Omit<TripConfiguration['tripSpecific'], 'enabled' | 'customCosts'>; label: string };
+
+const TRIP_SPECIFIC_ALWAYS_FIELDS: TripSpecificFieldDef[] = [
   { key: 'jacketsApparel', label: 'Jackets & Apparel' },
   { key: 'contingency', label: 'Contingency' },
+];
+
+const TRIP_SPECIFIC_BUTTON_FIELDS: TripSpecificFieldDef[] = [
+  { key: 'permits', label: 'Permits' },
+  { key: 'equipment', label: 'Equipment' },
   { key: 'hypoxico', label: 'Hypoxico' },
   { key: 'otherCosts', label: 'Other Costs' },
 ];
+
+const ALL_TRIP_SPECIFIC_FIELDS = [...TRIP_SPECIFIC_ALWAYS_FIELDS, ...TRIP_SPECIFIC_BUTTON_FIELDS];
 
 export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   const updateNestedConfig = <K extends NestedConfigKey>(
@@ -1226,68 +1233,53 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             <p className="text-sm text-ag-text-muted mb-4">
               Check &quot;Per Pax&quot; to multiply the cost by the number of participants
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {TRIP_SPECIFIC_FIELDS.filter(({ key }) => (config.tripSpecific[key] as TripSpecificCost).active !== false).map(({ key, label }) => {
-                return (
-                  <div key={key} className="form-group flex flex-col">
-                    <div className="flex items-center justify-between gap-1 mb-1">
-                      <label className="form-label mb-0">{label} ($)</label>
-                      <div className="flex gap-1 shrink-0">
-                        <button onClick={() => updateTripSpecificCost(key, { active: false })} className="btn btn-danger text-xs">×</button>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 items-center">
-                      <NumInput
-                        type="number"
-                        value={config.tripSpecific[key].amount}
-                        onChange={(e) => updateTripSpecificCost(key, { amount: Number(e.target.value) })}
-                        className="flex-1 min-w-0"
-                      />
-                      <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                        <input type="checkbox" checked={config.tripSpecific[key].perPax} onChange={(e) => updateTripSpecificCost(key, { perPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                        <span>Per Pax</span>
-                      </label>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {/* Restore deleted fixed fields */}
-            {TRIP_SPECIFIC_FIELDS.some(({ key }) => (config.tripSpecific[key] as TripSpecificCost).active === false) && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {TRIP_SPECIFIC_FIELDS.filter(({ key }) => (config.tripSpecific[key] as TripSpecificCost).active === false).map(({ key, label }) => (
-                  <button key={key} onClick={() => updateTripSpecificCost(key, { active: true })} className="btn btn-secondary text-xs">+ {label}</button>
-                ))}
-              </div>
-            )}
 
-            {/* Custom Costs */}
-            <div className="mt-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-ag-text-muted">Custom Costs</span>
-                <button onClick={addCustomCost} className="btn btn-secondary text-xs">+ Add Cost</button>
+            {/* Active fixed-field costs as single rows */}
+            {ALL_TRIP_SPECIFIC_FIELDS.filter(({ key }) => (config.tripSpecific[key] as TripSpecificCost).active !== false).map(({ key, label }) => (
+              <div key={key} className="flex items-center gap-2 mb-2">
+                <span className="text-sm text-ag-text w-40 shrink-0">{label} ($)</span>
+                <NumInput
+                  value={config.tripSpecific[key].amount}
+                  onChange={(e) => updateTripSpecificCost(key, { amount: Number(e.target.value) })}
+                  className="w-28 shrink-0"
+                />
+                <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                  <input type="checkbox" checked={config.tripSpecific[key].perPax} onChange={(e) => updateTripSpecificCost(key, { perPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                  <span>Per Pax</span>
+                </label>
+                <button onClick={() => updateTripSpecificCost(key, { active: false })} className="btn btn-danger text-xs shrink-0">×</button>
               </div>
-              {(config.tripSpecific.customCosts || []).map((cc) => (
-                <div key={cc.id} className="flex items-center gap-2 mb-2">
-                  <input
-                    type="text"
-                    placeholder="Label"
-                    value={cc.label}
-                    onChange={(e) => updateCustomCost(cc.id, { label: e.target.value })}
-                    className="flex-1 min-w-0"
-                  />
-                  <NumInput
-                    value={cc.amount}
-                    onChange={(e) => updateCustomCost(cc.id, { amount: Number(e.target.value) })}
-                    className="w-28 shrink-0"
-                  />
-                  <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                    <input type="checkbox" checked={cc.perPax} onChange={(e) => updateCustomCost(cc.id, { perPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                    <span>Per Pax</span>
-                  </label>
-                  <button onClick={() => removeCustomCost(cc.id)} className="btn btn-danger text-xs shrink-0">×</button>
-                </div>
+            ))}
+
+            {/* Custom costs */}
+            {(config.tripSpecific.customCosts || []).map((cc) => (
+              <div key={cc.id} className="flex items-center gap-2 mb-2">
+                <input
+                  type="text"
+                  placeholder="Label"
+                  value={cc.label}
+                  onChange={(e) => updateCustomCost(cc.id, { label: e.target.value })}
+                  className="flex-1 min-w-0"
+                />
+                <NumInput
+                  value={cc.amount}
+                  onChange={(e) => updateCustomCost(cc.id, { amount: Number(e.target.value) })}
+                  className="w-28 shrink-0"
+                />
+                <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
+                  <input type="checkbox" checked={cc.perPax} onChange={(e) => updateCustomCost(cc.id, { perPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
+                  <span>Per Pax</span>
+                </label>
+                <button onClick={() => removeCustomCost(cc.id)} className="btn btn-danger text-xs shrink-0">×</button>
+              </div>
+            ))}
+
+            {/* Add buttons: inactive fixed fields + custom cost */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              {ALL_TRIP_SPECIFIC_FIELDS.filter(({ key }) => (config.tripSpecific[key] as TripSpecificCost).active === false).map(({ key, label }) => (
+                <button key={key} onClick={() => updateTripSpecificCost(key, { active: true })} className="btn btn-secondary text-xs">+ {label}</button>
               ))}
+              <button onClick={addCustomCost} className="btn btn-secondary text-xs">+ Add Cost</button>
             </div>
           </>
         ))}
