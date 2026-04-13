@@ -428,42 +428,46 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
           </div>
         </div>
         {!collapsedSections.has('core') && (<>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="form-group">
-            <label className="form-label">Trip Price ($)</label>
-            <p className="text-xs text-ag-text-muted mb-1">
-              {pricingPerPax ? 'Per person at each pax level' : config.tripPriceMode === 'total' ? 'Total revenue for entire trip' : 'Per person for entire trip'}
-            </p>
-            <NumInput type="number" value={config.tripPrice} onChange={(e) => {
-              const val = Number(e.target.value);
-              if (!pricingPerPax) {
-                updateConfig({ tripPrice: val, tripPriceByPax: undefined });
-              } else {
-                updateConfig({ tripPrice: val });
-              }
-            }} className="w-full" />
-            {!pricingPerPax && (
+        {!pricingPerPax ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="form-group">
+              <label className="form-label">Trip Price ($)</label>
+              <p className="text-xs text-ag-text-muted mb-1">
+                {config.tripPriceMode === 'total' ? 'Total revenue for entire trip' : 'Per person for entire trip'}
+              </p>
+              <NumInput type="number" value={config.tripPrice} onChange={(e) => {
+                updateConfig({ tripPrice: Number(e.target.value), tripPriceByPax: undefined });
+              }} className="w-full" />
               <div className="flex gap-1 mt-2">
                 <button onClick={() => updateConfig({ tripPriceMode: undefined })} className={`btn text-xs ${config.tripPriceMode !== 'total' ? 'btn-primary' : 'btn-secondary'}`}>Per Person</button>
                 <button onClick={() => updateConfig({ tripPriceMode: 'total' })} className={`btn text-xs ${config.tripPriceMode === 'total' ? 'btn-primary' : 'btn-secondary'}`}>Total for Trip</button>
               </div>
-            )}
+            </div>
+            <div className="form-group">
+              <label className="form-label">Trip Days</label>
+              <p className="text-xs text-ag-text-muted mb-1">&nbsp;</p>
+              <NumInput type="number" value={config.tripDays} onChange={(e) => updateConfig({ tripDays: Number(e.target.value) })} className="w-full" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Trip Nights</label>
+              <p className="text-xs text-ag-text-muted mb-1">&nbsp;</p>
+              <NumInput type="number" value={config.tripNights} onChange={(e) => updateConfig({ tripNights: Number(e.target.value) })} className="w-full" />
+            </div>
           </div>
-          <div className="form-group">
-            <label className="form-label">Trip Days</label>
-            <p className="text-xs text-ag-text-muted mb-1">&nbsp;</p>
-            <NumInput type="number" value={config.tripDays} onChange={(e) => updateConfig({ tripDays: Number(e.target.value) })} className="w-full" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Trip Nights</label>
-            <p className="text-xs text-ag-text-muted mb-1">&nbsp;</p>
-            <NumInput type="number" value={config.tripNights} onChange={(e) => updateConfig({ tripNights: Number(e.target.value) })} className="w-full" />
-          </div>
-        </div>
-        {pricingPerPax && (
-          <div className="mt-4 pt-4 border-t border-ag-border">
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="form-group">
+                <label className="form-label">Trip Days</label>
+                <NumInput type="number" value={config.tripDays} onChange={(e) => updateConfig({ tripDays: Number(e.target.value) })} className="w-full" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Trip Nights</label>
+                <NumInput type="number" value={config.tripNights} onChange={(e) => updateConfig({ tripNights: Number(e.target.value) })} className="w-full" />
+              </div>
+            </div>
             <div className="flex items-center justify-between mb-2">
-              <label className="form-label mb-0">Price by Pax Level ($)</label>
+              <label className="form-label mb-0">Price by Pax Level ($ per person)</label>
               <button onClick={() => {
                 const baseVal = config.tripPriceByPax?.[paxCounts[0]] ?? config.tripPrice;
                 const newPrices: { [pax: number]: number } = {};
@@ -480,7 +484,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 </div>
               ))}
             </div>
-          </div>
+          </>
         )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-ag-border">
           <div className="form-group">
@@ -925,7 +929,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             </div>
             <div className="space-y-4">
               {currentStaff.map((staff, index) => (
-                <div key={index} className="flex items-end gap-4 pb-4 border-b border-ag-border last:border-0">
+                <div key={index} className="flex items-end gap-4 pb-4">
                   <div className="form-group flex-1">
                     <label className="form-label">Role</label>
                     <input type="text" value={staff.role} onChange={(e) => updateStaffMember(index, { role: e.target.value })} className="w-full" />
@@ -1153,7 +1157,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                       </thead>
                       <tbody>
                         {(config.transportConfig.transportBands || []).map((band) => (
-                          <tr key={band.id} className="border-t border-ag-border">
+                          <tr key={band.id}>
                             <td className="py-2 pr-3">
                               <NumInput type="number" min="1" value={band.minPax} onChange={(e) => updateTransportBand(band.id, { minPax: Number(e.target.value) })} className="w-20" />
                             </td>
