@@ -29,7 +29,9 @@ export function calculateStaffCost(pax: number, config: TripConfiguration): numb
 
   // Add travel day costs (only for guides who fly)
   const flyingGuides = staffConfig.guideFlightCountByPax?.[pax] ?? 0;
-  totalCost += staffConfig.travelDays * staffConfig.travelDayRate * flyingGuides;
+  const travelDaysVal = staffConfig.travelDaysByPax?.[pax] ?? staffConfig.travelDays;
+  const travelDayRateVal = staffConfig.travelDayRateByPax?.[pax] ?? staffConfig.travelDayRate;
+  totalCost += travelDaysVal * travelDayRateVal * flyingGuides;
 
   return totalCost;
 }
@@ -150,9 +152,9 @@ function calculateExtension(pax: number, config: TripConfiguration) {
       // Use main staff but scale days to extension nights
       const mainStaff = config.staffConfig.staffByPax[pax] || [];
       const extStaff = mainStaff.map(s => ({ ...s, days: extension.extensionNights }));
-      extensionStaffCost = calculateStaffCostFromArray(extStaff, sc.travelDays, config.staffConfig.travelDayRate);
+      extensionStaffCost = calculateStaffCostFromArray(extStaff, config.staffConfig.travelDaysByPax?.[pax] ?? config.staffConfig.travelDays, config.staffConfig.travelDayRateByPax?.[pax] ?? config.staffConfig.travelDayRate);
       // Staff meals: inherit from main config
-      const mealsAmount = config.staffConfig.staffMealsCost || 0;
+      const mealsAmount = config.staffConfig.staffMealsCostByPax?.[pax] ?? config.staffConfig.staffMealsCost ?? 0;
       const mealsMode = config.staffConfig.staffMealsMode || 'perDay';
       const totalStaffCount = mainStaff.reduce((sum, s) => sum + s.quantity, 0);
       if (mealsMode === 'perDayPerGuide') extensionStaffCost += mealsAmount * extension.extensionNights * totalStaffCount;
@@ -162,7 +164,7 @@ function calculateExtension(pax: number, config: TripConfiguration) {
       const staff = sc.staffByPax[pax] || [];
       extensionStaffCost = calculateStaffCostFromArray(staff, sc.travelDays, sc.travelDayRate);
       // Staff meals: use extension's own config
-      const mealsAmount = sc.staffMealsCost || 0;
+      const mealsAmount = sc.staffMealsCost ?? 0;
       const mealsMode = sc.staffMealsMode || 'perDay';
       const totalStaffCount = staff.reduce((sum, s) => sum + s.quantity, 0);
       if (mealsMode === 'perDayPerGuide') extensionStaffCost += mealsAmount * extension.extensionNights * totalStaffCount;
@@ -376,12 +378,12 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   const staffCost = staffOn ? calculateStaffCost(pax, config) : 0;
 
   // Guide flights (part of staff config, gated with staff)
-  const guideFlightCostPer = config.staffConfig.guideFlightCost || 0;
+  const guideFlightCostPer = config.staffConfig.guideFlightCostByPax?.[pax] ?? config.staffConfig.guideFlightCost ?? 0;
   const guideFlightCount = config.staffConfig.guideFlightCountByPax?.[pax] ?? 0;
   const guideFlightsCost = staffOn ? guideFlightCostPer * guideFlightCount : 0;
 
   // Staff guide meals (gated with staff)
-  const staffMealsAmount = config.staffConfig.staffMealsCost || 0;
+  const staffMealsAmount = config.staffConfig.staffMealsCostByPax?.[pax] ?? config.staffConfig.staffMealsCost ?? 0;
   const staffMealsMode = config.staffConfig.staffMealsMode || 'perDay';
   let staffMealsCost = 0;
   if (staffOn) {
