@@ -161,9 +161,25 @@ export interface TransportBand {
   localTransport: number;
 }
 
+export interface VehicleBand {
+  id: string;
+  minPax: number;
+  maxPax: number | null;
+  cost: number;
+}
+
+export interface TransportVehicle {
+  id: string;
+  label: string;
+  mode: 'simple' | 'perPax' | 'bands';
+  simpleRate: number;
+  perPaxRates?: { [pax: number]: number };
+  bands: VehicleBand[];
+}
+
 export interface TransportConfig {
   enabled: boolean;
-  activeMode?: 'simple' | 'perPax' | 'bands'; // which dataset feeds calculations; undefined = legacy (byPax ?? flat)
+  activeMode?: 'simple' | 'perPax' | 'bands'; // Legacy — used by old single-table bands; ignored when transportVehicles is set
   flightCostPerPerson: number; // Legacy — flights now in StaffConfig, kept for migration
   groundTransportTotal: number;
   groundTransportPerPax?: boolean;
@@ -174,7 +190,8 @@ export interface TransportConfig {
   localTransport: number;
   localTransportPerPax?: boolean;
   localTransportByPax?: { [pax: number]: number };
-  transportBands?: TransportBand[];
+  transportBands?: TransportBand[]; // Legacy single-table bands
+  transportVehicles?: TransportVehicle[]; // Multi-vehicle line items (authoritative when non-empty)
 }
 
 export interface TripSpecificCost {

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TripConfiguration, StaffMember, TripSpecificCost, CustomTripCost, AdditionalHotel, EarlyBirdTier, TransportBand } from '@/lib/types';
+import { TripConfiguration, StaffMember, TripSpecificCost, CustomTripCost, AdditionalHotel, EarlyBirdTier, VehicleBand, TransportVehicle } from '@/lib/types';
 
 interface InputsTabProps {
   config: TripConfiguration;
@@ -176,7 +176,6 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   const hmEffectiveAM: 'simple' | 'perPax' = config.hotelsMeals.activeMode ?? (config.hotelsMeals.hotelCostByPax && Object.keys(config.hotelsMeals.hotelCostByPax).length > 0 ? 'perPax' : 'simple');
   const logEffectiveAM: 'simple' | 'perPax' = config.logistics.activeMode ?? (config.logistics.simpleMode !== false ? 'simple' : 'perPax');
   const glEffectiveAM: 'simple' | 'perPax' = config.logistics.guideLogistics?.activeMode ?? (config.logistics.guideLogistics?.simpleMode !== false ? 'simple' : 'perPax');
-  const transportEffectiveAM: 'simple' | 'perPax' | 'bands' = config.transportConfig.activeMode ?? (config.transportConfig.groundTransportByPax && Object.keys(config.transportConfig.groundTransportByPax).length > 0 ? 'perPax' : 'simple');
   const earlyBirdTiers = config.earlyBirdTiers || [];
   const addEarlyBirdTier = () => {
     const newTier: EarlyBirdTier = {
@@ -195,9 +194,6 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   };
   const singleSuppPerPax = config.uiPreferences?.singleSuppPerPax ?? false;
   const hotelsMealsPerPax = config.uiPreferences?.hotelsMealsPerPax ?? false;
-  const transportPerPax = config.uiPreferences?.transportPerPax ?? false;
-  const transportBandsView = config.uiPreferences?.transportBandsView ?? false;
-  const transportViewMode = transportBandsView ? 'bands' : (transportPerPax ? 'perPax' : 'simple');
   const setPricingPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, pricingPerPax: val } }));
   const switchToPricingPerPax = () => updateConfig(prev => {
     const byPax = prev.tripPriceByPax;
@@ -214,69 +210,89 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   const [selectedHMPax, setSelectedHMPax] = useState(paxMin);
   useEffect(() => { setSelectedHMPax(paxMin); }, [paxMin]);
   const effectiveHMPax = paxCounts.includes(selectedHMPax) ? selectedHMPax : paxCounts[0] || 1;
-  const [selectedTransportPax, setSelectedTransportPax] = useState(paxMin);
-  useEffect(() => { setSelectedTransportPax(paxMin); }, [paxMin]);
-  const effectiveTransportPax = paxCounts.includes(selectedTransportPax) ? selectedTransportPax : paxCounts[0] || 1;
+  const [vehiclePaxSelection, setVehiclePaxSelection] = useState<{ [vehicleId: string]: number }>({});
 
-  const toggleTransportView = (mode: 'simple' | 'perPax' | 'bands') => {
-    if (mode === 'perPax') {
-      updateConfig(prev => {
-        const t = prev.transportConfig;
-        const needsInit = !t.groundTransportByPax || Object.keys(t.groundTransportByPax).length === 0;
-        if (!needsInit) return { uiPreferences: { ...prev.uiPreferences, transportPerPax: true, transportBandsView: false } };
-        const groundByPax: { [k: number]: number } = {};
-        const airportByPax: { [k: number]: number } = {};
-        const localByPax: { [k: number]: number } = {};
-        for (const p of paxCounts) {
-          groundByPax[p] = t.groundTransportTotal;
-          airportByPax[p] = t.airportTransfers;
-          localByPax[p] = t.localTransport;
-        }
-        return {
-          uiPreferences: { ...prev.uiPreferences, transportPerPax: true, transportBandsView: false },
-          transportConfig: { ...t, groundTransportByPax: groundByPax, airportTransfersByPax: airportByPax, localTransportByPax: localByPax },
-        };
-      });
-    } else if (mode === 'bands') {
-      updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, transportPerPax: false, transportBandsView: true } }));
+  // Auto-migrate legacy transport data to vehicles when a trip is loaded
+  useEffect(() => {
+    if (config.transportConfig.transportVehicles && config.transportConfig.transportVehicles.length > 0) return;
+    const t = config.transportConfig;
+    const tAM = t.activeMode ?? 'simple';
+    const vehicles: TransportVehicle[] = [];
+    if (tAM === 'bands' && (t.transportBands || []).length > 0) {
+      vehicles.push({ id: crypto.randomUUID(), label: 'Transport', mode: 'bands', simpleRate: 0, bands: (t.transportBands || []).map(b => ({ id: b.id, minPax: b.minPax, maxPax: b.maxPax, cost: b.groundTransport + b.airportTransfers + b.localTransport })) });
+    } else if (tAM === 'perPax') {
+      const gtByPax = t.groundTransportByPax; const atByPax = t.airportTransfersByPax; const ltByPax = t.localTransportByPax;
+      if (gtByPax && Object.values(gtByPax).some(v => v > 0)) vehicles.push({ id: crypto.randomUUID(), label: 'Ground Transport', mode: 'perPax', simpleRate: t.groundTransportTotal, perPaxRates: gtByPax, bands: [] });
+      else if (t.groundTransportTotal > 0) vehicles.push({ id: crypto.randomUUID(), label: 'Ground Transport', mode: 'simple', simpleRate: t.groundTransportTotal, bands: [] });
+      if (atByPax && Object.values(atByPax).some(v => v > 0)) vehicles.push({ id: crypto.randomUUID(), label: 'Helicopters', mode: 'perPax', simpleRate: t.airportTransfers, perPaxRates: atByPax, bands: [] });
+      else if (t.airportTransfers > 0) vehicles.push({ id: crypto.randomUUID(), label: 'Helicopters', mode: 'simple', simpleRate: t.airportTransfers, bands: [] });
+      if (ltByPax && Object.values(ltByPax).some(v => v > 0)) vehicles.push({ id: crypto.randomUUID(), label: 'Local Transport', mode: 'perPax', simpleRate: t.localTransport, perPaxRates: ltByPax, bands: [] });
+      else if (t.localTransport > 0) vehicles.push({ id: crypto.randomUUID(), label: 'Local Transport', mode: 'simple', simpleRate: t.localTransport, bands: [] });
     } else {
-      updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, transportPerPax: false, transportBandsView: false } }));
+      if (t.groundTransportTotal > 0) vehicles.push({ id: crypto.randomUUID(), label: 'Ground Transport', mode: 'simple', simpleRate: t.groundTransportTotal, bands: [] });
+      if (t.airportTransfers > 0) vehicles.push({ id: crypto.randomUUID(), label: 'Helicopters', mode: 'simple', simpleRate: t.airportTransfers, bands: [] });
+      if (t.localTransport > 0) vehicles.push({ id: crypto.randomUUID(), label: 'Local Transport', mode: 'simple', simpleRate: t.localTransport, bands: [] });
     }
+    if (vehicles.length > 0) updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, transportVehicles: vehicles } }), { silent: true });
+  }, [config.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const addVehicle = () => {
+    updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, transportVehicles: [...(prev.transportConfig.transportVehicles || []), { id: crypto.randomUUID(), label: 'New Vehicle', mode: 'simple' as const, simpleRate: 0, bands: [] }] } }));
   };
 
-  const addTransportBand = () => {
+  const removeVehicle = (id: string) => {
+    updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, transportVehicles: (prev.transportConfig.transportVehicles || []).filter(v => v.id !== id) } }));
+  };
+
+  const updateVehicle = (id: string, updates: Partial<TransportVehicle>) => {
+    updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, transportVehicles: (prev.transportConfig.transportVehicles || []).map(v => v.id === id ? { ...v, ...updates } : v) } }));
+  };
+
+  const updateVehicleMode = (vehicleId: string, mode: 'simple' | 'perPax' | 'bands') => {
     updateConfig(prev => {
-      const bands = prev.transportConfig.transportBands || [];
-      const lastMax = bands.length > 0 ? (bands[bands.length - 1].maxPax ?? null) : null;
-      const newMin = lastMax !== null ? lastMax + 1 : paxMin;
-      return { transportConfig: { ...prev.transportConfig, transportBands: [...bands, { id: crypto.randomUUID(), minPax: newMin, maxPax: null, groundTransport: 0, airportTransfers: 0, localTransport: 0 } as TransportBand] } };
+      const vehicles = prev.transportConfig.transportVehicles || [];
+      const vehicle = vehicles.find(v => v.id === vehicleId);
+      if (!vehicle) return {};
+      let extra: Partial<TransportVehicle> = {};
+      if (mode === 'perPax' && (!vehicle.perPaxRates || Object.keys(vehicle.perPaxRates).length === 0)) {
+        const rates: { [k: number]: number } = {};
+        for (const p of paxCounts) rates[p] = vehicle.simpleRate;
+        extra = { perPaxRates: rates };
+      }
+      return { transportConfig: { ...prev.transportConfig, transportVehicles: vehicles.map(v => v.id === vehicleId ? { ...v, mode, ...extra } : v) } };
     });
   };
 
-  const removeTransportBand = (id: string) => {
-    updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, transportBands: (prev.transportConfig.transportBands || []).filter(b => b.id !== id) } }));
-  };
-
-  const updateTransportBand = (id: string, updates: Partial<TransportBand>) => {
-    updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, transportBands: (prev.transportConfig.transportBands || []).map(b => b.id === id ? { ...b, ...updates } : b) } }));
-  };
-
-  const copyTransportToAllPax = () => {
+  const addVehicleBand = (vehicleId: string) => {
     updateConfig(prev => {
-      const t = prev.transportConfig;
-      const p = effectiveTransportPax;
-      const ground = t.groundTransportByPax?.[p] ?? t.groundTransportTotal;
-      const airport = t.airportTransfersByPax?.[p] ?? t.airportTransfers;
-      const local = t.localTransportByPax?.[p] ?? t.localTransport;
-      const groundByPax: { [k: number]: number } = {};
-      const airportByPax: { [k: number]: number } = {};
-      const localByPax: { [k: number]: number } = {};
-      for (const pp of paxCounts) {
-        groundByPax[pp] = ground;
-        airportByPax[pp] = airport;
-        localByPax[pp] = local;
-      }
-      return { transportConfig: { ...t, groundTransportByPax: groundByPax, airportTransfersByPax: airportByPax, localTransportByPax: localByPax } };
+      const vehicles = prev.transportConfig.transportVehicles || [];
+      const vehicle = vehicles.find(v => v.id === vehicleId);
+      if (!vehicle) return {};
+      const lastMax = vehicle.bands.length > 0 ? (vehicle.bands[vehicle.bands.length - 1].maxPax ?? null) : null;
+      const newBand: VehicleBand = { id: crypto.randomUUID(), minPax: lastMax !== null ? lastMax + 1 : paxMin, maxPax: null, cost: 0 };
+      return { transportConfig: { ...prev.transportConfig, transportVehicles: vehicles.map(v => v.id === vehicleId ? { ...v, bands: [...v.bands, newBand] } : v) } };
+    });
+  };
+
+  const removeVehicleBand = (vehicleId: string, bandId: string) => {
+    updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, transportVehicles: (prev.transportConfig.transportVehicles || []).map(v => v.id === vehicleId ? { ...v, bands: v.bands.filter(b => b.id !== bandId) } : v) } }));
+  };
+
+  const updateVehicleBand = (vehicleId: string, bandId: string, updates: Partial<VehicleBand>) => {
+    updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, transportVehicles: (prev.transportConfig.transportVehicles || []).map(v => v.id === vehicleId ? { ...v, bands: v.bands.map(b => b.id === bandId ? { ...b, ...updates } : b) } : v) } }));
+  };
+
+  const copyVehicleToAllPax = (vehicleId: string) => {
+    updateConfig(prev => {
+      const vehicles = prev.transportConfig.transportVehicles || [];
+      const vehicle = vehicles.find(v => v.id === vehicleId);
+      if (!vehicle) return {};
+      const selPax = vehiclePaxSelection[vehicleId] ?? paxMin;
+      const effPax = paxCounts.includes(selPax) ? selPax : (paxCounts[0] || 1);
+      const rate = vehicle.perPaxRates?.[effPax] ?? vehicle.simpleRate;
+      const rates: { [k: number]: number } = {};
+      for (const p of paxCounts) rates[p] = rate;
+      return { transportConfig: { ...prev.transportConfig, transportVehicles: vehicles.map(v => v.id === vehicleId ? { ...v, perPaxRates: rates } : v) } };
     });
   };
 
@@ -1051,161 +1067,121 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
             <button onClick={() => toggleSection('transport')} className="text-ag-text-muted hover:text-ag-text text-sm mr-2">{collapsedSections.has('transport') ? '▶' : '▼'}</button>
             <h2 className="text-lg font-semibold">Transport</h2>
           </div>
-          <div className="flex gap-2">
-            {config.transportConfig.enabled !== false && (
-              <>
-                <ActiveDropdown id="transport" value={transportEffectiveAM} onChange={v => { toggleTransportView(v); updateNestedConfig('transportConfig', { activeMode: v }); }} showBands openId={openDropdown} setOpenId={setOpenDropdown} />
-              </>
-            )}
-            <button onClick={() => updateNestedConfig('transportConfig', { enabled: config.transportConfig.enabled === false })} className={`btn text-xs ${config.transportConfig.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
-              {config.transportConfig.enabled === false ? 'Inactive' : 'Active'}
-            </button>
-          </div>
+          <button onClick={() => updateNestedConfig('transportConfig', { enabled: config.transportConfig.enabled === false })} className={`btn text-xs ${config.transportConfig.enabled === false ? 'btn-danger' : 'btn-primary'}`}>
+            {config.transportConfig.enabled === false ? 'Inactive' : 'Active'}
+          </button>
         </div>
         {!collapsedSections.has('transport') && (config.transportConfig.enabled === false ? (
           <p className="text-sm text-ag-text-muted">Section disabled — transport costs will not be applied to calculations.</p>
         ) : (
           <>
-            {transportViewMode === 'simple' ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="form-group">
-                  <label className="form-label">Ground Transport ($)</label>
-                  <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.groundTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
-                  <div className="flex gap-3 items-center">
-                    <NumInput type="number" value={config.transportConfig.groundTransportTotal} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportTotal: Number(e.target.value) })} className="flex-1 min-w-0" />
-                    <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                      <input type="checkbox" checked={config.transportConfig.groundTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                      <span>Per Pax</span>
-                    </label>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Helicopters ($)</label>
-                  <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.airportTransfersPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
-                  <div className="flex gap-3 items-center">
-                    <NumInput type="number" value={config.transportConfig.airportTransfers} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfers: Number(e.target.value) })} className="flex-1 min-w-0" />
-                    <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                      <input type="checkbox" checked={config.transportConfig.airportTransfersPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfersPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                      <span>Per Pax</span>
-                    </label>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Local Transport ($)</label>
-                  <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.localTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
-                  <div className="flex gap-3 items-center">
-                    <NumInput type="number" value={config.transportConfig.localTransport} onChange={(e) => updateNestedConfig('transportConfig', { localTransport: Number(e.target.value) })} className="flex-1 min-w-0" />
-                    <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                      <input type="checkbox" checked={config.transportConfig.localTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { localTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                      <span>Per Pax</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            ) : transportViewMode === 'perPax' ? (
-              <>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex gap-2 flex-wrap">
-                    {paxCounts.map((p) => (
-                      <button key={p} onClick={() => setSelectedTransportPax(p)} className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${selectedTransportPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-lighter text-ag-text-muted hover:text-ag-text'}`}>
-                        {p} pax
-                      </button>
-                    ))}
-                  </div>
-                  <button onClick={copyTransportToAllPax} className="btn btn-secondary text-xs ml-2">Copy to All Pax</button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                  <div className="form-group">
-                    <label className="form-label">Ground Transport ($)</label>
-                    <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.groundTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
-                    <div className="flex gap-3 items-center">
-                      <NumInput type="number" value={config.transportConfig.groundTransportByPax?.[effectiveTransportPax] ?? config.transportConfig.groundTransportTotal} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, groundTransportByPax: { ...prev.transportConfig.groundTransportByPax, [effectiveTransportPax]: val } } })); }} className="flex-1 min-w-0" />
-                      <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                        <input type="checkbox" checked={config.transportConfig.groundTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { groundTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                        <span>Per Pax</span>
-                      </label>
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Helicopters ($)</label>
-                    <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.airportTransfersPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
-                    <div className="flex gap-3 items-center">
-                      <NumInput type="number" value={config.transportConfig.airportTransfersByPax?.[effectiveTransportPax] ?? config.transportConfig.airportTransfers} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, airportTransfersByPax: { ...prev.transportConfig.airportTransfersByPax, [effectiveTransportPax]: val } } })); }} className="flex-1 min-w-0" />
-                      <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                        <input type="checkbox" checked={config.transportConfig.airportTransfersPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { airportTransfersPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                        <span>Per Pax</span>
-                      </label>
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Local Transport ($)</label>
-                    <p className="text-xs text-ag-text-muted mb-1">{config.transportConfig.localTransportPerPax ? 'Per person' : 'Flat total for entire trip'}</p>
-                    <div className="flex gap-3 items-center">
-                      <NumInput type="number" value={config.transportConfig.localTransportByPax?.[effectiveTransportPax] ?? config.transportConfig.localTransport} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, localTransportByPax: { ...prev.transportConfig.localTransportByPax, [effectiveTransportPax]: val } } })); }} className="flex-1 min-w-0" />
-                      <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap shrink-0">
-                        <input type="checkbox" checked={config.transportConfig.localTransportPerPax ?? false} onChange={(e) => updateNestedConfig('transportConfig', { localTransportPerPax: e.target.checked })} className="w-4 h-4 accent-ag-accent" />
-                        <span>Per Pax</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* Bands editor */
-              <>
-                <p className="text-xs text-ag-text-muted mb-3">Define cost tiers by group size. The first band whose range contains the pax count will be used.</p>
-                {(config.transportConfig.transportBands || []).length === 0 ? (
-                  <p className="text-sm text-ag-text-muted mb-3">No bands defined. Add one below.</p>
-                ) : (
-                  <div className="overflow-x-auto mb-3">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-ag-text-muted text-xs">
-                          <th className="text-left pb-2 pr-3 font-medium">Min Pax</th>
-                          <th className="text-left pb-2 pr-3 font-medium">Max Pax</th>
-                          <th className="text-left pb-2 pr-3 font-medium">Ground Transport ($)</th>
-                          <th className="text-left pb-2 pr-3 font-medium">Helicopters ($)</th>
-                          <th className="text-left pb-2 pr-3 font-medium">Local Transport ($)</th>
-                          <th className="pb-2"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(config.transportConfig.transportBands || []).map((band) => (
-                          <tr key={band.id}>
-                            <td className="py-2 pr-3">
-                              <NumInput type="number" min="1" value={band.minPax} onChange={(e) => updateTransportBand(band.id, { minPax: Number(e.target.value) })} className="w-20" />
-                            </td>
-                            <td className="py-2 pr-3">
-                              <input
-                                type="number"
-                                min="1"
-                                placeholder="∞"
-                                value={band.maxPax ?? ''}
-                                onChange={(e) => updateTransportBand(band.id, { maxPax: e.target.value === '' ? null : Number(e.target.value) })}
-                                className="w-20"
-                              />
-                            </td>
-                            <td className="py-2 pr-3">
-                              <NumInput type="number" value={band.groundTransport} onChange={(e) => updateTransportBand(band.id, { groundTransport: Number(e.target.value) })} className="w-28" />
-                            </td>
-                            <td className="py-2 pr-3">
-                              <NumInput type="number" value={band.airportTransfers} onChange={(e) => updateTransportBand(band.id, { airportTransfers: Number(e.target.value) })} className="w-28" />
-                            </td>
-                            <td className="py-2 pr-3">
-                              <NumInput type="number" value={band.localTransport} onChange={(e) => updateTransportBand(band.id, { localTransport: Number(e.target.value) })} className="w-28" />
-                            </td>
-                            <td className="py-2">
-                              <button onClick={() => removeTransportBand(band.id)} className="btn btn-danger text-xs">Remove</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-                <button onClick={addTransportBand} className="btn btn-secondary text-xs">+ Add Band</button>
-              </>
+            {(config.transportConfig.transportVehicles || []).length === 0 && (
+              <p className="text-sm text-ag-text-muted mb-3">No transport line items defined. Add one below.</p>
             )}
+            {(config.transportConfig.transportVehicles || []).map((vehicle, idx) => {
+              const selPax = vehiclePaxSelection[vehicle.id] ?? paxMin;
+              const effPax = paxCounts.includes(selPax) ? selPax : (paxCounts[0] || 1);
+              return (
+                <div key={vehicle.id}>
+                  {idx > 0 && <hr className="border-ag-border my-4" />}
+                  {/* Vehicle header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <input
+                      type="text"
+                      value={vehicle.label}
+                      onChange={(e) => updateVehicle(vehicle.id, { label: e.target.value })}
+                      className="bg-transparent text-sm font-medium border-b border-ag-border focus:outline-none focus:border-ag-accent text-ag-text w-48"
+                    />
+                    <div className="flex gap-2">
+                      <ActiveDropdown
+                        id={`vehicle-${vehicle.id}`}
+                        value={vehicle.mode}
+                        onChange={(v) => updateVehicleMode(vehicle.id, v)}
+                        showBands
+                        openId={openDropdown}
+                        setOpenId={setOpenDropdown}
+                      />
+                      <button onClick={() => removeVehicle(vehicle.id)} className="btn btn-danger text-xs">Remove</button>
+                    </div>
+                  </div>
+                  {/* Simple mode */}
+                  {vehicle.mode === 'simple' && (
+                    <div className="form-group">
+                      <label className="form-label">Cost ($)</label>
+                      <NumInput type="number" value={vehicle.simpleRate} onChange={(e) => updateVehicle(vehicle.id, { simpleRate: Number(e.target.value) })} className="w-48" />
+                    </div>
+                  )}
+                  {/* Per-pax mode */}
+                  {vehicle.mode === 'perPax' && (
+                    <>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex gap-2 flex-wrap">
+                          {paxCounts.map((p) => (
+                            <button key={p} onClick={() => setVehiclePaxSelection(prev => ({ ...prev, [vehicle.id]: p }))} className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${effPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-lighter text-ag-text-muted hover:text-ag-text'}`}>
+                              {p} pax
+                            </button>
+                          ))}
+                        </div>
+                        <button onClick={() => copyVehicleToAllPax(vehicle.id)} className="btn btn-secondary text-xs ml-2">Copy to All Pax</button>
+                      </div>
+                      <div className="form-group mt-3">
+                        <label className="form-label">Cost ($)</label>
+                        <NumInput
+                          type="number"
+                          value={vehicle.perPaxRates?.[effPax] ?? vehicle.simpleRate}
+                          onChange={(e) => updateVehicle(vehicle.id, { perPaxRates: { ...vehicle.perPaxRates, [effPax]: Number(e.target.value) } })}
+                          className="w-48"
+                        />
+                      </div>
+                    </>
+                  )}
+                  {/* Bands mode */}
+                  {vehicle.mode === 'bands' && (
+                    <>
+                      <p className="text-xs text-ag-text-muted mb-3">The first band whose range contains the pax count will be used.</p>
+                      {vehicle.bands.length === 0 ? (
+                        <p className="text-sm text-ag-text-muted mb-3">No bands defined. Add one below.</p>
+                      ) : (
+                        <div className="overflow-x-auto mb-3">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="text-ag-text-muted text-xs">
+                                <th className="text-left pb-2 pr-3 font-medium">Min Pax</th>
+                                <th className="text-left pb-2 pr-3 font-medium">Max Pax</th>
+                                <th className="text-left pb-2 pr-3 font-medium">Cost ($)</th>
+                                <th className="pb-2"></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {vehicle.bands.map((band) => (
+                                <tr key={band.id}>
+                                  <td className="py-2 pr-3">
+                                    <NumInput type="number" min="1" value={band.minPax} onChange={(e) => updateVehicleBand(vehicle.id, band.id, { minPax: Number(e.target.value) })} className="w-20" />
+                                  </td>
+                                  <td className="py-2 pr-3">
+                                    <input type="number" min="1" placeholder="∞" value={band.maxPax ?? ''} onChange={(e) => updateVehicleBand(vehicle.id, band.id, { maxPax: e.target.value === '' ? null : Number(e.target.value) })} className="w-20" />
+                                  </td>
+                                  <td className="py-2 pr-3">
+                                    <NumInput type="number" value={band.cost} onChange={(e) => updateVehicleBand(vehicle.id, band.id, { cost: Number(e.target.value) })} className="w-28" />
+                                  </td>
+                                  <td className="py-2">
+                                    <button onClick={() => removeVehicleBand(vehicle.id, band.id)} className="btn btn-danger text-xs">Remove</button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                      <button onClick={() => addVehicleBand(vehicle.id)} className="btn btn-secondary text-xs">+ Add Band</button>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+            <div className={`${(config.transportConfig.transportVehicles || []).length > 0 ? 'mt-4 pt-4 border-t border-ag-border' : ''}`}>
+              <button onClick={addVehicle} className="btn btn-secondary text-xs">+ Add Vehicle</button>
+            </div>
           </>
         ))}
       </div>

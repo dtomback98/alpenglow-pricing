@@ -396,12 +396,25 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   const tAM = config.transportConfig.activeMode;
   let transportCost = 0;
   if (transportOn) {
-    if (tAM === 'bands') {
+    const vehicles = config.transportConfig.transportVehicles;
+    if (vehicles && vehicles.length > 0) {
+      // Multi-vehicle mode: sum each vehicle's cost for this pax count
+      for (const vehicle of vehicles) {
+        if (vehicle.mode === 'simple') {
+          transportCost += vehicle.simpleRate;
+        } else if (vehicle.mode === 'perPax') {
+          transportCost += vehicle.perPaxRates?.[pax] ?? vehicle.simpleRate;
+        } else if (vehicle.mode === 'bands') {
+          const band = vehicle.bands.find(b => pax >= b.minPax && (b.maxPax === null || pax <= b.maxPax));
+          if (band) transportCost += band.cost;
+        }
+      }
+    } else if (tAM === 'bands') {
+      // Legacy single-table bands
       const band = (config.transportConfig.transportBands || []).find(b => pax >= b.minPax && (b.maxPax === null || pax <= b.maxPax));
       if (band) {
         transportCost += band.groundTransport + band.airportTransfers + band.localTransport;
       } else {
-        // Fallback to simple values when no band matches (avoids silent $0)
         const g = config.transportConfig.groundTransportTotal || 0;
         const a = config.transportConfig.airportTransfers || 0;
         const l = config.transportConfig.localTransport || 0;
@@ -410,6 +423,7 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
         transportCost += config.transportConfig.localTransportPerPax ? l * pax : l;
       }
     } else {
+      // Legacy simple/perPax
       const groundRate = tAM === 'simple'
         ? (config.transportConfig.groundTransportTotal || 0)
         : ((config.transportConfig.groundTransportByPax?.[pax] ?? config.transportConfig.groundTransportTotal) || 0);
