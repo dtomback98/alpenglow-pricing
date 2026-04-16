@@ -25,6 +25,9 @@ export interface ExtensionHotelsMealsConfig {
   dinnerCostByPax?: { [pax: number]: number };
   additionalMealCostsByPax?: { [pax: number]: number };
   additionalHotels?: AdditionalHotel[]; // custom mode only
+  guideCountMode?: 'off' | 'matchStaff' | 'custom';
+  guideCount?: number;
+  guideCountByPax?: { [pax: number]: number };
 }
 
 export interface ExtensionStaffConfig {
@@ -103,6 +106,9 @@ export interface HotelsMealsConfig {
   dinnerCostByPax?: { [pax: number]: number };
   additionalMealCostsByPax?: { [pax: number]: number };
   additionalHotels?: AdditionalHotel[];
+  guideCountMode?: 'off' | 'matchStaff' | 'custom';
+  guideCount?: number;
+  guideCountByPax?: { [pax: number]: number };
 }
 
 export interface LogisticsRate {
@@ -175,6 +181,10 @@ export interface TransportVehicle {
   simpleRate: number;
   perPaxRates?: { [pax: number]: number };
   bands: VehicleBand[];
+  guideCountMode?: 'off' | 'matchStaff' | 'custom';
+  guideCount?: number;
+  guideCountByPax?: { [pax: number]: number };
+  guideCountPerPax?: boolean;
 }
 
 export interface TransportConfig {
@@ -255,6 +265,7 @@ export interface UiPreferences {
   extSuppPerPax?: boolean;
   extDiscountsPerPax?: boolean;
   extHotelsMealsPerPax?: boolean;
+  hmGuidePerPax?: boolean;
   notes?: string;
 }
 

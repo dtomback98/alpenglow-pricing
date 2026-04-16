@@ -54,6 +54,22 @@ function calculateStaffCostFromArray(
   return totalCost;
 }
 
+// Resolve guide count to add to effective pax for H&M or transport calculations
+function resolveGuideCount(
+  pax: number,
+  mode: string | undefined,
+  count: number | undefined,
+  countByPax: { [pax: number]: number } | undefined,
+  config: TripConfiguration
+): number {
+  if (!mode || mode === 'off') return 0;
+  if (mode === 'matchStaff') {
+    const staff = config.staffConfig.staffByPax[pax] || [];
+    return staff.reduce((sum, s) => sum + s.quantity, 0);
+  }
+  return countByPax?.[pax] ?? count ?? 0;
+}
+
 // Calculate extension (formerly pre/post) values
 function calculateExtension(pax: number, config: TripConfiguration) {
   const { extension } = config;
@@ -123,18 +139,24 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     // Additional hotels only apply in custom mode
     const extAdditionalHotels = hm.inheritFromMain ? [] : (hm.additionalHotels || []);
 
+    const extHmGuideMode = hm.inheritFromMain ? config.hotelsMeals.guideCountMode : hm.guideCountMode;
+    const extHmGuideCount = resolveGuideCount(pax, extHmGuideMode,
+      hm.inheritFromMain ? config.hotelsMeals.guideCount : hm.guideCount,
+      hm.inheritFromMain ? config.hotelsMeals.guideCountByPax : hm.guideCountByPax,
+      config);
+    const extHmEffectivePax = extPaxCount + extHmGuideCount;
     if (extHmMode === 'perPaxPerNight') {
-      extensionHotelsCost = hotelRate * extHotelNights * extPaxCount;
-      for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * h.nights * extPaxCount;
-      extensionMealsCost = additionalMeals * extHotelNights * extPaxCount;
+      extensionHotelsCost = hotelRate * extHotelNights * extHmEffectivePax;
+      for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * h.nights * extHmEffectivePax;
+      extensionMealsCost = additionalMeals * extHotelNights * extHmEffectivePax;
     } else if (extHmMode === 'perNight') {
       extensionHotelsCost = hotelRate * extHotelNights;
       for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * h.nights;
       extensionMealsCost = additionalMeals * extHotelNights;
     } else if (extHmMode === 'perPax') {
-      extensionHotelsCost = hotelRate * extPaxCount;
-      for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * extPaxCount;
-      extensionMealsCost = additionalMeals * extPaxCount;
+      extensionHotelsCost = hotelRate * extHmEffectivePax;
+      for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * extHmEffectivePax;
+      extensionMealsCost = additionalMeals * extHmEffectivePax;
     } else {
       extensionHotelsCost = hotelRate;
       for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight;
@@ -333,22 +355,24 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
   let hotelsCost = 0;
   let mealsCost = 0;
   if (hotelsMealsOn) {
+    const hmGuideCount = resolveGuideCount(pax, config.hotelsMeals.guideCountMode, config.hotelsMeals.guideCount, config.hotelsMeals.guideCountByPax, config);
+    const hmEffectivePax = pax + hmGuideCount;
     if (hmMode === 'perPaxPerNight') {
-      hotelsCost = hmHotelRate * hmHotelNights * pax;
-      for (const h of hmAdditionalHotels) hotelsCost += h.ratePerNight * h.nights * pax;
+      hotelsCost = hmHotelRate * hmHotelNights * hmEffectivePax;
+      for (const h of hmAdditionalHotels) hotelsCost += h.ratePerNight * h.nights * hmEffectivePax;
     } else if (hmMode === 'perNight') {
       hotelsCost = hmHotelRate * hmHotelNights;
       for (const h of hmAdditionalHotels) hotelsCost += h.ratePerNight * h.nights;
     } else if (hmMode === 'perPax') {
-      hotelsCost = hmHotelRate * pax;
-      for (const h of hmAdditionalHotels) hotelsCost += h.ratePerNight * pax;
+      hotelsCost = hmHotelRate * hmEffectivePax;
+      for (const h of hmAdditionalHotels) hotelsCost += h.ratePerNight * hmEffectivePax;
     } else {
       hotelsCost = hmHotelRate;
       for (const h of hmAdditionalHotels) hotelsCost += h.ratePerNight;
     }
-    if (hmMode === 'perPaxPerNight') mealsCost = hmAdditional * config.tripNights * pax;
+    if (hmMode === 'perPaxPerNight') mealsCost = hmAdditional * config.tripNights * hmEffectivePax;
     else if (hmMode === 'perNight') mealsCost = hmAdditional * config.tripNights;
-    else if (hmMode === 'perPax') mealsCost = hmAdditional * pax;
+    else if (hmMode === 'perPax') mealsCost = hmAdditional * hmEffectivePax;
     else mealsCost = hmAdditional;
   }
 
@@ -407,6 +431,8 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
     if (vehicles && vehicles.length > 0) {
       // Multi-vehicle mode: sum each vehicle's cost for this pax count
       for (const vehicle of vehicles) {
+        const vGuideCount = resolveGuideCount(pax, vehicle.guideCountMode, vehicle.guideCount, vehicle.guideCountByPax, config);
+        const vEffectivePax = pax + vGuideCount;
         if (vehicle.mode === 'simple') {
           transportCost += vehicle.simpleRate;
         } else if (vehicle.mode === 'perPax') {
@@ -415,16 +441,16 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
           let vehicleRate: number;
           if (keys.length === 0) {
             vehicleRate = vehicle.simpleRate;
-          } else if (rates[pax] !== undefined) {
-            vehicleRate = rates[pax];
+          } else if (rates[vEffectivePax] !== undefined) {
+            vehicleRate = rates[vEffectivePax];
           } else {
-            // Nearest-key fallback: find the key closest to pax
-            const nearest = keys.reduce((a, b) => Math.abs(b - pax) < Math.abs(a - pax) ? b : a);
+            // Nearest-key fallback: find the key closest to effective pax
+            const nearest = keys.reduce((a, b) => Math.abs(b - vEffectivePax) < Math.abs(a - vEffectivePax) ? b : a);
             vehicleRate = rates[nearest];
           }
           transportCost += vehicleRate;
         } else if (vehicle.mode === 'bands') {
-          const band = vehicle.bands.find(b => pax >= b.minPax && (b.maxPax === null || pax <= b.maxPax));
+          const band = vehicle.bands.find(b => vEffectivePax >= b.minPax && (b.maxPax === null || vEffectivePax <= b.maxPax));
           if (band) transportCost += band.cost;
         }
       }

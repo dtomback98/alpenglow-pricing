@@ -937,6 +937,60 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                 })()}
               </>
             )}
+            {/* Guide Inclusion */}
+            <div className="mt-6 pt-6 border-t border-ag-border">
+              <div className="flex items-center gap-3 mb-3">
+                <h3 className="text-sm font-semibold">Guide Inclusion</h3>
+                <span className="text-xs text-ag-text-muted">Add guides to pax count for cost calculation (Rate × Pax modes only)</span>
+              </div>
+              <div className="flex gap-2 items-center mb-3">
+                {(['off', 'matchStaff', 'custom'] as const).map((m) => (
+                  <button key={m} onClick={() => updateNestedConfig('hotelsMeals', { guideCountMode: m })}
+                    className={`btn text-xs ${(config.hotelsMeals.guideCountMode ?? 'off') === m ? 'btn-primary' : 'btn-secondary'}`}>
+                    {m === 'off' ? 'Off' : m === 'matchStaff' ? 'Match Staff' : 'Custom'}
+                  </button>
+                ))}
+              </div>
+              {(config.hotelsMeals.guideCountMode ?? 'off') === 'matchStaff' && (
+                <p className="text-xs text-ag-text-muted">Guide count is automatically read from Staff Configuration for each group size.</p>
+              )}
+              {(config.hotelsMeals.guideCountMode ?? 'off') === 'custom' && (
+                <>
+                  <div className="flex gap-2 items-center mb-3">
+                    <button onClick={() => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, hmGuidePerPax: false } }))}
+                      className={`btn text-xs ${!config.uiPreferences?.hmGuidePerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+                    <button onClick={() => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, hmGuidePerPax: true } }))}
+                      className={`btn text-xs ${config.uiPreferences?.hmGuidePerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+                  </div>
+                  {!config.uiPreferences?.hmGuidePerPax ? (
+                    <div className="form-group">
+                      <label className="form-label">Guide Count</label>
+                      <p className="text-xs text-ag-text-muted mb-1">Same guide count for all group sizes</p>
+                      <NumInput type="number" value={config.hotelsMeals.guideCount ?? 0}
+                        onChange={(e) => updateNestedConfig('hotelsMeals', { guideCount: Number(e.target.value) })} className="w-32" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex gap-2 flex-wrap items-center mb-2">
+                        {paxCounts.map((p) => (
+                          <button key={p} onClick={() => setSelectedHMPax(p)}
+                            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${effectiveHMPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-lighter text-ag-text-muted hover:text-ag-text'}`}>
+                            {p} pax
+                          </button>
+                        ))}
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Guide Count ({effectiveHMPax} pax)</label>
+                        <NumInput type="number"
+                          value={config.hotelsMeals.guideCountByPax?.[effectiveHMPax] ?? config.hotelsMeals.guideCount ?? 0}
+                          onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ hotelsMeals: { ...prev.hotelsMeals, guideCountByPax: { ...prev.hotelsMeals.guideCountByPax, [effectiveHMPax]: val } } })); }}
+                          className="w-32" />
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
           </>
         ))}
       </div>
@@ -1191,6 +1245,59 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                       <button onClick={() => addVehicleBand(vehicle.id)} className="btn btn-secondary text-xs">+ Add Band</button>
                     </>
                   )}
+                  {/* Guide Seats */}
+                  <div className="mt-4 pt-4 border-t border-ag-border">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-xs font-semibold">Guide Seats</span>
+                      <span className="text-xs text-ag-text-muted">Add guides to pax for band/per-pax lookup (no effect on flat rates)</span>
+                    </div>
+                    <div className="flex gap-2 items-center mb-2">
+                      {(['off', 'matchStaff', 'custom'] as const).map((m) => (
+                        <button key={m} onClick={() => updateVehicle(vehicle.id, { guideCountMode: m })}
+                          className={`btn text-xs ${(vehicle.guideCountMode ?? 'off') === m ? 'btn-primary' : 'btn-secondary'}`}>
+                          {m === 'off' ? 'Off' : m === 'matchStaff' ? 'Match Staff' : 'Custom'}
+                        </button>
+                      ))}
+                    </div>
+                    {(vehicle.guideCountMode ?? 'off') === 'matchStaff' && (
+                      <p className="text-xs text-ag-text-muted">Guide count automatically read from Staff Configuration for each group size.</p>
+                    )}
+                    {(vehicle.guideCountMode ?? 'off') === 'custom' && (
+                      <>
+                        <div className="flex gap-2 items-center mb-2">
+                          <button onClick={() => updateVehicle(vehicle.id, { guideCountPerPax: false })}
+                            className={`btn text-xs ${!vehicle.guideCountPerPax ? 'btn-primary' : 'btn-secondary'}`}>Simple</button>
+                          <button onClick={() => updateVehicle(vehicle.id, { guideCountPerPax: true })}
+                            className={`btn text-xs ${vehicle.guideCountPerPax ? 'btn-primary' : 'btn-secondary'}`}>Per Pax</button>
+                        </div>
+                        {!vehicle.guideCountPerPax ? (
+                          <div className="form-group">
+                            <label className="form-label">Guide Count</label>
+                            <NumInput type="number" value={vehicle.guideCount ?? 0}
+                              onChange={(e) => updateVehicle(vehicle.id, { guideCount: Number(e.target.value) })} className="w-32" />
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex gap-2 flex-wrap items-center mb-2">
+                              {paxCounts.map((p) => (
+                                <button key={p} onClick={() => setVehiclePaxSelection(prev => ({ ...prev, [vehicle.id]: p }))}
+                                  className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${effPax === p ? 'bg-ag-accent text-white' : 'bg-ag-card-lighter text-ag-text-muted hover:text-ag-text'}`}>
+                                  {p} pax
+                                </button>
+                              ))}
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">Guide Count ({effPax} pax)</label>
+                              <NumInput type="number"
+                                value={vehicle.guideCountByPax?.[effPax] ?? vehicle.guideCount ?? 0}
+                                onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, transportVehicles: (prev.transportConfig.transportVehicles || []).map(v => v.id === vehicle.id ? { ...v, guideCountByPax: { ...v.guideCountByPax, [effPax]: val } } : v) } })); }}
+                                className="w-32" />
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               );
             })}

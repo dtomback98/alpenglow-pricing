@@ -521,6 +521,9 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   <NumInput type="number" value={resolvedAdditionalMeals} disabled className="w-full opacity-50 cursor-not-allowed" />
                 </div>
               </div>
+              {config.hotelsMeals.guideCountMode && config.hotelsMeals.guideCountMode !== 'off' && (
+                <p className="text-xs text-ag-text-muted mt-3">Guide inclusion: inheriting main H&amp;M setting ({config.hotelsMeals.guideCountMode === 'matchStaff' ? 'Match Staff' : 'Custom'}).</p>
+              )}
             </div>
           ) : (
             <>
@@ -666,6 +669,32 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   })()}
                 </>
               )}
+              {/* Guide Inclusion — custom mode only */}
+              <div className="mt-6 pt-6 border-t border-ag-border">
+                <div className="flex items-center gap-3 mb-3">
+                  <h3 className="text-sm font-semibold">Guide Inclusion</h3>
+                  <span className="text-xs text-ag-text-muted">Add guides to pax count for cost calculation (Rate × Pax modes only)</span>
+                </div>
+                <div className="flex gap-2 items-center mb-3">
+                  {(['off', 'matchStaff', 'custom'] as const).map((m) => (
+                    <button key={m} onClick={() => updateExtHotelsMeals({ guideCountMode: m })}
+                      className={`btn text-xs ${(ext.hotelsMeals.guideCountMode ?? 'off') === m ? 'btn-primary' : 'btn-secondary'}`}>
+                      {m === 'off' ? 'Off' : m === 'matchStaff' ? 'Match Staff' : 'Custom'}
+                    </button>
+                  ))}
+                </div>
+                {(ext.hotelsMeals.guideCountMode ?? 'off') === 'matchStaff' && (
+                  <p className="text-xs text-ag-text-muted">Guide count is automatically read from Staff Configuration for each group size.</p>
+                )}
+                {(ext.hotelsMeals.guideCountMode ?? 'off') === 'custom' && (
+                  <div className="form-group">
+                    <label className="form-label">Guide Count</label>
+                    <p className="text-xs text-ag-text-muted mb-1">Same guide count for all group sizes</p>
+                    <NumInput type="number" value={ext.hotelsMeals.guideCount ?? 0}
+                      onChange={(e) => updateExtHotelsMeals({ guideCount: Number(e.target.value) })} className="w-32" />
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
