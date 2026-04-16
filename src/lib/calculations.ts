@@ -37,17 +37,20 @@ export function calculateStaffCost(pax: number, config: TripConfiguration): numb
 }
 
 // Calculate staff cost from a staff array and travel config
+// flyingCount: if provided, only that many guides incur travel-day cost (for extension inherit path)
 function calculateStaffCostFromArray(
   staff: StaffMember[],
   travelDays: number,
-  travelDayRate: number
+  travelDayRate: number,
+  flyingCount?: number
 ): number {
   let totalCost = 0;
   for (const s of staff) {
     totalCost += s.dailyRate * s.days * s.quantity;
   }
   const totalStaffCount = staff.reduce((sum, s) => sum + s.quantity, 0);
-  totalCost += travelDays * travelDayRate * totalStaffCount;
+  const travelCount = flyingCount !== undefined ? flyingCount : totalStaffCount;
+  totalCost += travelDays * travelDayRate * travelCount;
   return totalCost;
 }
 
@@ -147,7 +150,8 @@ function calculateExtension(pax: number, config: TripConfiguration) {
       // Use main staff but scale days to extension nights
       const mainStaff = config.staffConfig.staffByPax[pax] || [];
       const extStaff = mainStaff.map(s => ({ ...s, days: extension.extensionNights }));
-      extensionStaffCost = calculateStaffCostFromArray(extStaff, config.staffConfig.travelDaysByPax?.[pax] ?? config.staffConfig.travelDays, config.staffConfig.travelDayRateByPax?.[pax] ?? config.staffConfig.travelDayRate);
+      const flyingGuideCount = config.staffConfig.guideFlightCountByPax?.[pax] ?? 0;
+      extensionStaffCost = calculateStaffCostFromArray(extStaff, config.staffConfig.travelDaysByPax?.[pax] ?? config.staffConfig.travelDays, config.staffConfig.travelDayRateByPax?.[pax] ?? config.staffConfig.travelDayRate, flyingGuideCount);
       // Staff meals: inherit from main config
       const mealsAmount = config.staffConfig.staffMealsCostByPax?.[pax] ?? config.staffConfig.staffMealsCost ?? 0;
       const mealsMode = config.staffConfig.staffMealsMode || 'perDay';
@@ -406,7 +410,19 @@ export function calculateForPax(pax: number, config: TripConfiguration): PaxCalc
         if (vehicle.mode === 'simple') {
           transportCost += vehicle.simpleRate;
         } else if (vehicle.mode === 'perPax') {
-          transportCost += vehicle.perPaxRates?.[pax] ?? vehicle.simpleRate;
+          const rates = vehicle.perPaxRates ?? {};
+          const keys = Object.keys(rates).map(Number).filter(k => !isNaN(k));
+          let vehicleRate: number;
+          if (keys.length === 0) {
+            vehicleRate = vehicle.simpleRate;
+          } else if (rates[pax] !== undefined) {
+            vehicleRate = rates[pax];
+          } else {
+            // Nearest-key fallback: find the key closest to pax
+            const nearest = keys.reduce((a, b) => Math.abs(b - pax) < Math.abs(a - pax) ? b : a);
+            vehicleRate = rates[nearest];
+          }
+          transportCost += vehicleRate;
         } else if (vehicle.mode === 'bands') {
           const band = vehicle.bands.find(b => pax >= b.minPax && (b.maxPax === null || pax <= b.maxPax));
           if (band) transportCost += band.cost;

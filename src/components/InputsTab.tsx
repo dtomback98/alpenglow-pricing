@@ -214,7 +214,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
   useEffect(() => { setSelectedHMPax(paxMin); }, [config.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const effectiveHMPax = paxCounts.includes(selectedHMPax) ? selectedHMPax : paxCounts[0] || 1;
   const [vehiclePaxSelection, setVehiclePaxSelection] = useState<{ [vehicleId: string]: number }>({});
-  useEffect(() => { setVehiclePaxSelection({}); }, [paxMin]);
+  useEffect(() => { setVehiclePaxSelection({}); }, [config.paxMin, config.paxMax, config.paxStep]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-migrate legacy transport data to vehicles when a trip is loaded
   useEffect(() => {
