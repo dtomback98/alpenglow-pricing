@@ -91,9 +91,12 @@ function calculateExtension(pax: number, config: TripConfiguration) {
   if (extension.discounts?.enabled !== false && extPaxCount > 0) {
     const disc = extension.discounts;
     const ebDiscount = disc.inheritFromMain ? config.earlyBirdDiscount : disc.earlyBirdDiscount;
-    const ebCount = Math.min(disc.earlyBirdCountByPax?.[pax] ?? 0, extPaxCount);
+    const discAM = config.discountsActiveMode;
+    const mainEbCount = discAM === 'simple' ? (config.earlyBirdCountSimple ?? 0) : (config.earlyBirdCountByPax?.[pax] || 0);
+    const ebCount = Math.min(disc.inheritFromMain ? mainEbCount : (disc.earlyBirdCountByPax?.[pax] ?? 0), extPaxCount);
     const loyaltyRate = disc.inheritFromMain ? config.loyaltyDiscountRate : disc.loyaltyDiscountRate;
-    const loyaltyCount = Math.min(disc.loyaltyCountByPax?.[pax] ?? 0, extPaxCount);
+    const mainLoyaltyCount = discAM === 'simple' ? (config.loyaltyCountSimple ?? 0) : (config.loyaltyCountByPax?.[pax] || 0);
+    const loyaltyCount = Math.min(disc.inheritFromMain ? mainLoyaltyCount : (disc.loyaltyCountByPax?.[pax] ?? 0), extPaxCount);
     extensionDiscountCost = (ebDiscount * ebCount) + (extension.extensionPrice * loyaltyCount * loyaltyRate);
   }
 
@@ -120,11 +123,11 @@ function calculateExtension(pax: number, config: TripConfiguration) {
     if (extHmMode === 'perPaxPerNight') {
       extensionHotelsCost = hotelRate * extHotelNights * extPaxCount;
       for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * h.nights * extPaxCount;
-      extensionMealsCost = additionalMeals * extension.extensionNights * extPaxCount;
+      extensionMealsCost = additionalMeals * extHotelNights * extPaxCount;
     } else if (extHmMode === 'perNight') {
       extensionHotelsCost = hotelRate * extHotelNights;
       for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * h.nights;
-      extensionMealsCost = additionalMeals * extension.extensionNights;
+      extensionMealsCost = additionalMeals * extHotelNights;
     } else if (extHmMode === 'perPax') {
       extensionHotelsCost = hotelRate * extPaxCount;
       for (const h of extAdditionalHotels) extensionHotelsCost += h.ratePerNight * extPaxCount;

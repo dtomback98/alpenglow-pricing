@@ -107,9 +107,11 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
   }, [openDropdown]);
 
   const [extPercent, setExtPercent] = useState(100);
+  useEffect(() => { setExtPercent(100); }, [config.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [selectedExtHMPax, setSelectedExtHMPax] = useState(paxMin);
   useEffect(() => { setSelectedExtHMPax(paxMin); }, [paxMin]);
+  useEffect(() => { setSelectedExtHMPax(paxMin); }, [config.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const effectiveExtHMPax = paxCounts.includes(selectedExtHMPax) ? selectedExtHMPax : paxCounts[0] || 1;
 
   const toggleExtHotelsMealsPerPax = (val: boolean) => {
@@ -132,7 +134,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
     } else {
       updateConfig(prev => ({
         uiPreferences: { ...prev.uiPreferences, extHotelsMealsPerPax: false },
-        extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, activeMode: undefined, hotelCostByPax: undefined, additionalMealCostsByPax: undefined } },
+        extension: { ...prev.extension, hotelsMeals: { ...prev.extension.hotelsMeals, activeMode: 'simple' } },
       }));
     }
   };
@@ -151,6 +153,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
   };
   const [selectedStaffPax, setSelectedStaffPax] = useState(paxMin);
   useEffect(() => { setSelectedStaffPax(paxMin); }, [paxMin]);
+  useEffect(() => { setSelectedStaffPax(paxMin); }, [config.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const effectiveStaffPax = paxCounts.includes(selectedStaffPax) ? selectedStaffPax : paxCounts[0] || 1;
 
@@ -925,10 +928,9 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                   <label className="form-label">Rate (all pax)</label>
                   <NumInput
                     type="number"
-                    value={ext.logisticsConfig.rates?.[0]?.rate ?? 0}
+                    value={ext.logisticsConfig.baseRate ?? 0}
                     onChange={(e) => {
-                      const val = Number(e.target.value);
-                      updateExtLogistics({ rates: paxCounts.map(p => ({ pax: p, rate: val })) });
+                      updateExtLogistics({ baseRate: Number(e.target.value) });
                     }}
                     className="w-full"
                   />
@@ -994,10 +996,9 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                         <label className="form-label">Rate (all pax)</label>
                         <NumInput
                           type="number"
-                          value={ext.logisticsConfig.guideLogistics?.rates?.[0]?.rate ?? 0}
+                          value={ext.logisticsConfig.guideLogistics?.baseRate ?? 0}
                           onChange={(e) => {
-                            const val = Number(e.target.value);
-                            updateExtGuideLogistics({ rates: paxCounts.map(p => ({ pax: p, rate: val })) });
+                            updateExtGuideLogistics({ baseRate: Number(e.target.value) });
                           }}
                           className="w-full"
                         />

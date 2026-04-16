@@ -132,8 +132,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
 
   const [selectedStaffPax, setSelectedStaffPax] = useState(paxMin);
   useEffect(() => { setSelectedStaffPax(paxMin); }, [paxMin]);
+  useEffect(() => { setSelectedStaffPax(paxMin); }, [config.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const [selectedTravelPax, setSelectedTravelPax] = useState(paxMin);
   useEffect(() => { setSelectedTravelPax(paxMin); }, [paxMin]);
+  useEffect(() => { setSelectedTravelPax(paxMin); }, [config.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   useEffect(() => {
@@ -209,8 +211,10 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
 
   const [selectedHMPax, setSelectedHMPax] = useState(paxMin);
   useEffect(() => { setSelectedHMPax(paxMin); }, [paxMin]);
+  useEffect(() => { setSelectedHMPax(paxMin); }, [config.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const effectiveHMPax = paxCounts.includes(selectedHMPax) ? selectedHMPax : paxCounts[0] || 1;
   const [vehiclePaxSelection, setVehiclePaxSelection] = useState<{ [vehicleId: string]: number }>({});
+  useEffect(() => { setVehiclePaxSelection({}); }, [paxMin]);
 
   // Auto-migrate legacy transport data to vehicles when a trip is loaded
   useEffect(() => {
@@ -280,6 +284,17 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
 
   const updateVehicleBand = (vehicleId: string, bandId: string, updates: Partial<VehicleBand>) => {
     updateConfig(prev => ({ transportConfig: { ...prev.transportConfig, transportVehicles: (prev.transportConfig.transportVehicles || []).map(v => v.id === vehicleId ? { ...v, bands: v.bands.map(b => b.id === bandId ? { ...b, ...updates } : b) } : v) } }));
+  };
+
+  const updateVehiclePerPaxRate = (vehicleId: string, pax: number, rate: number) => {
+    updateConfig(prev => ({
+      transportConfig: {
+        ...prev.transportConfig,
+        transportVehicles: (prev.transportConfig.transportVehicles || []).map(v =>
+          v.id === vehicleId ? { ...v, perPaxRates: { ...v.perPaxRates, [pax]: rate } } : v
+        ),
+      },
+    }));
   };
 
   const copyVehicleToAllPax = (vehicleId: string) => {
@@ -1129,7 +1144,7 @@ export default function InputsTab({ config, updateConfig }: InputsTabProps) {
                         <NumInput
                           type="number"
                           value={vehicle.perPaxRates?.[effPax] ?? vehicle.simpleRate}
-                          onChange={(e) => updateVehicle(vehicle.id, { perPaxRates: { ...vehicle.perPaxRates, [effPax]: Number(e.target.value) } })}
+                          onChange={(e) => updateVehiclePerPaxRate(vehicle.id, effPax, Number(e.target.value))}
                           className="w-48"
                         />
                       </div>
