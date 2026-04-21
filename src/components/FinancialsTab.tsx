@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useHistoricalData } from '@/hooks/useHistoricalData';
 import { CATEGORY_COLORS, CATEGORY_LABELS, STATUS_LABELS, STATUS_BADGE_CLASSES } from '@/lib/constants';
-import { formatCurrency, formatPercent, getMarginColor, calculateFinancialBreakdown } from '@/lib/calculations';
+import { formatCurrency, formatPercent, getMarginColor, calculateFinancialBreakdown, calculateForPax } from '@/lib/calculations';
+import { PaxCalculation } from '@/lib/types';
 import { fetchTripConfigurationsByIds } from '@/lib/supabase';
 import { TripConfiguration, FinancialBreakdown } from '@/lib/types';
 import { exportFinancialsBreakdown } from '@/lib/excelExport';
@@ -98,16 +99,17 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
   const tripRows = filteredTrips.map(trip => {
     const config = trip.tripConfigId ? configMap.get(trip.tripConfigId) : undefined;
     const breakdown = config ? calculateFinancialBreakdown(trip.pax, config) : null;
-    return { trip, breakdown };
+    const calc: PaxCalculation | null = config ? calculateForPax(trip.pax, config) : null;
+    return { trip, breakdown, calc };
   });
 
   const rowsWithBreakdown = tripRows.filter(r => r.breakdown !== null);
 
   // Aggregate totals across trips that have breakdown data
   const totals = rowsWithBreakdown.reduce(
-    (acc, { trip, breakdown }) => {
-      acc.revenue += trip.revenue;
-      acc.grossProfit += trip.grossProfit;
+    (acc, { trip, breakdown, calc }) => {
+      acc.revenue += calc ? calc.totalRevenue : trip.revenue;
+      acc.grossProfit += calc ? calc.grossProfit : trip.grossProfit;
       if (breakdown) {
         acc.tripTravelLogistics += breakdown.tripTravelLogistics;
         acc.guideWages += breakdown.guideWages;
@@ -146,7 +148,14 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
   };
 
   const handleExportSelected = () => {
-    const selectedRows = tripRows.filter(r => selectedTripIds.has(r.trip.id));
+    const selectedRows = tripRows
+      .filter(r => selectedTripIds.has(r.trip.id))
+      .map(({ trip, breakdown, calc }) => ({
+        trip: calc
+          ? { ...trip, revenue: calc.totalRevenue, grossProfit: calc.grossProfit, margin: calc.margin }
+          : trip,
+        breakdown,
+      }));
     exportFinancialsBreakdown(selectedRows);
   };
 
@@ -363,7 +372,7 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
               </tr>
             </thead>
             <tbody>
-              {tripRows.map(({ trip, breakdown }) => (
+              {tripRows.map(({ trip, breakdown, calc }) => (
                 <tr key={trip.id}>
                   <td>
                     <input
@@ -394,8 +403,8 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
                     </span>
                   </td>
                   <td>{trip.pax}</td>
-                  <td className="whitespace-nowrap">{formatCurrency(trip.revenue)}</td>
-                  {breakdown ? (
+                  <td className="whitespace-nowrap">{formatCurrency(calc ? calc.totalRevenue : trip.revenue)}</td>
+                  {breakdown && calc ? (
                     <>
                       {FINANCIAL_CATEGORIES.map(({ key }) => (
                         <td key={key} className="whitespace-nowrap">{formatCurrency(breakdown[key] as number)}</td>
@@ -410,7 +419,7 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
                       <td className="whitespace-nowrap">{formatCurrency(trip.revenue - trip.grossProfit)}</td>
                     </>
                   )}
-                  <td className={`whitespace-nowrap ${getMarginColor(trip.margin)}`}>{formatPercent(trip.margin)}</td>
+                  <td className={`whitespace-nowrap ${getMarginColor(calc ? calc.margin : trip.margin)}`}>{formatPercent(calc ? calc.margin : trip.margin)}</td>
                 </tr>
               ))}
             </tbody>
