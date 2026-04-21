@@ -6,6 +6,7 @@ import { CATEGORY_COLORS, CATEGORY_LABELS, STATUS_LABELS, STATUS_BADGE_CLASSES }
 import { formatCurrency, formatPercent, getMarginColor, calculateFinancialBreakdown } from '@/lib/calculations';
 import { fetchTripConfigurationsByIds } from '@/lib/supabase';
 import { TripConfiguration, FinancialBreakdown } from '@/lib/types';
+import { exportFinancialsBreakdown } from '@/lib/excelExport';
 
 const CATEGORIES = ['All', 'Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 
@@ -33,6 +34,7 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
   const [newExpeditionName, setNewExpeditionName] = useState('');
   const [configMap, setConfigMap] = useState<Map<string, TripConfiguration>>(new Map());
   const [configsLoading, setConfigsLoading] = useState(false);
+  const [selectedTripIds, setSelectedTripIds] = useState<Set<string>>(new Set());
 
   // Re-fetch when refreshKey changes (after Save to History)
   useEffect(() => {
@@ -87,6 +89,11 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
     return true;
   });
 
+  // Clear selection when filters change
+  useEffect(() => {
+    setSelectedTripIds(new Set());
+  }, [yearFilter, statusFilter, selectedCategory, selectedCountry]);
+
   // Compute financial breakdown for each filtered trip
   const tripRows = filteredTrips.map(trip => {
     const config = trip.tripConfigId ? configMap.get(trip.tripConfigId) : undefined;
@@ -118,6 +125,30 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
       commercialLicensing: 0, tripCommunications: 0, otherTripCosts: 0,
     }
   );
+
+  const allSelected = tripRows.length > 0 && tripRows.every(r => selectedTripIds.has(r.trip.id));
+  const someSelected = tripRows.some(r => selectedTripIds.has(r.trip.id));
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelectedTripIds(new Set());
+    } else {
+      setSelectedTripIds(new Set(tripRows.map(r => r.trip.id)));
+    }
+  };
+
+  const toggleTrip = (id: string) => {
+    setSelectedTripIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleExportSelected = () => {
+    const selectedRows = tripRows.filter(r => selectedTripIds.has(r.trip.id));
+    exportFinancialsBreakdown(selectedRows);
+  };
 
   if (loading || configsLoading) {
     return <div className="text-center text-ag-text-muted py-8">Loading financial data...</div>;
@@ -295,13 +326,29 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
 
       {/* Per-trip breakdown table */}
       <div className="card overflow-x-auto">
-        <h2 className="text-lg font-semibold mb-4">Cost Breakdown by Trip</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Cost Breakdown by Trip</h2>
+          {selectedTripIds.size > 0 && (
+            <button onClick={handleExportSelected} className="btn btn-primary text-sm">
+              Export {selectedTripIds.size} Trip{selectedTripIds.size !== 1 ? 's' : ''}
+            </button>
+          )}
+        </div>
         {filteredTrips.length === 0 ? (
           <p className="text-sm text-ag-text-muted">No trips match the current filters.</p>
         ) : (
           <table className="pricing-table history-table">
             <thead>
               <tr>
+                <th>
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={el => { if (el) el.indeterminate = someSelected && !allSelected; }}
+                    onChange={toggleAll}
+                    className="cursor-pointer"
+                  />
+                </th>
                 <th>Trip</th>
                 <th>Cat</th>
                 <th>Year</th>
@@ -318,6 +365,14 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
             <tbody>
               {tripRows.map(({ trip, breakdown }) => (
                 <tr key={trip.id}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedTripIds.has(trip.id)}
+                      onChange={() => toggleTrip(trip.id)}
+                      className="cursor-pointer"
+                    />
+                  </td>
                   <td className="font-medium">{trip.name}</td>
                   <td>
                     {trip.category && (

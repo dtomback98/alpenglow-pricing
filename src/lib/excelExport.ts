@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { TripConfiguration, PaxCalculation, HistoricalTrip } from './types';
+import { TripConfiguration, PaxCalculation, HistoricalTrip, FinancialBreakdown } from './types';
 import { STATUS_LABELS } from './constants';
 
 function round2(n: number): number {
@@ -104,5 +104,39 @@ export function exportHistoricalTrips(trips: HistoricalTrip[], yearLabel: string
 
   const statusPart = statusLabel ? `_${statusLabel}` : '';
   const fileName = `trip_history_${yearLabel}_${categoryLabel}${statusPart}.xlsx`.replace(/[^a-zA-Z0-9_.-]/g, '_');
+  XLSX.writeFile(wb, fileName);
+}
+
+export function exportFinancialsBreakdown(
+  rows: { trip: HistoricalTrip; breakdown: FinancialBreakdown | null }[],
+  label?: string
+) {
+  const wb = XLSX.utils.book_new();
+
+  const data = rows.map(({ trip, breakdown }) => ({
+    'Trip': trip.name,
+    'Category': trip.category || '',
+    'Country': trip.country || 'Other',
+    'Year': trip.year || new Date().getFullYear(),
+    'Status': STATUS_LABELS[trip.status || 'budgeted'] || trip.status || 'Budgeted',
+    'Pax': trip.pax,
+    'Revenue': round2(trip.revenue),
+    'Travel & Logistics': breakdown ? round2(breakdown.tripTravelLogistics) : '',
+    'Guide Wages': breakdown ? round2(breakdown.guideWages) : '',
+    'Trip Supplies': breakdown ? round2(breakdown.tripSupplies) : '',
+    'Comm. Use & Licensing': breakdown ? round2(breakdown.commercialLicensing) : '',
+    'Trip Communications': breakdown ? round2(breakdown.tripCommunications) : '',
+    'Other Costs': breakdown ? round2(breakdown.otherTripCosts) : '',
+    'Total Costs': breakdown ? round2(breakdown.total) : round2(trip.revenue - trip.grossProfit),
+    'Gross Profit': round2(trip.grossProfit),
+    'Margin %': round2(trip.margin),
+    'Notes': trip.notes || '',
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, 'Cost Breakdown');
+
+  const suffix = label ? `_${label}` : '';
+  const fileName = `financials_breakdown${suffix}.xlsx`.replace(/[^a-zA-Z0-9_.-]/g, '_');
   XLSX.writeFile(wb, fileName);
 }
