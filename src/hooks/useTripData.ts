@@ -166,7 +166,7 @@ export function useTripData(): UseTripDataReturn {
 
       // Recalculate at the history entry's pax and update stored numbers + sync name/notes
       const calc = calculateForPax(loadedHistoryEntry.pax, saved);
-      await updateHistoryEntryNumbers(loadedHistoryEntry.id, {
+      const numbersUpdated = await updateHistoryEntryNumbers(loadedHistoryEntry.id, {
         revenue: calc.totalRevenue,
         gross_profit: calc.grossProfit,
         margin: calc.margin,
@@ -178,6 +178,10 @@ export function useTripData(): UseTripDataReturn {
       setConfigState(saved);
       setLoadedHistoryEntry(prev => prev ? { ...prev, name: saved.name, notes: saved.notes || '' } : prev);
       setIsDirty(false);
+
+      if (!numbersUpdated) {
+        setError('Config saved, but history entry metrics failed to update — please save again to retry.');
+      }
     } catch (err) {
       setError('Failed to save trip');
       console.error(err);

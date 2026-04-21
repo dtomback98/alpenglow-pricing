@@ -565,9 +565,10 @@ export function calculateAllPax(config: TripConfiguration): PaxCalculation[] {
   return results;
 }
 
-// Map a PaxCalculation to the six financial reporting categories
-export function calculateFinancialBreakdown(pax: number, config: TripConfiguration): FinancialBreakdown {
-  const calc = calculateForPax(pax, config);
+// Map a PaxCalculation to the six financial reporting categories.
+// Pass a precomputed PaxCalculation to avoid a redundant calculateForPax call.
+export function calculateFinancialBreakdown(pax: number, config: TripConfiguration, precomputed?: PaxCalculation): FinancialBreakdown {
+  const calc = precomputed ?? calculateForPax(pax, config);
   const inflationMultiplier = Math.max(0, 1 + (config.inflationRate || 0));
   const tripSpecificOn = config.tripSpecific.enabled !== false;
 

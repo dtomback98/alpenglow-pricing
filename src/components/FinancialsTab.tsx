@@ -95,11 +95,11 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
     setSelectedTripIds(new Set());
   }, [yearFilter, statusFilter, selectedCategory, selectedCountry]);
 
-  // Compute financial breakdown for each filtered trip
+  // Compute financial breakdown for each filtered trip (single calculateForPax call per trip)
   const tripRows = filteredTrips.map(trip => {
     const config = trip.tripConfigId ? configMap.get(trip.tripConfigId) : undefined;
-    const breakdown = config ? calculateFinancialBreakdown(trip.pax, config) : null;
     const calc: PaxCalculation | null = config ? calculateForPax(trip.pax, config) : null;
+    const breakdown = calc ? calculateFinancialBreakdown(trip.pax, config!, calc) : null;
     return { trip, breakdown, calc };
   });
 
