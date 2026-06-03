@@ -392,6 +392,7 @@ export async function fetchHistoricalTrips(category?: string): Promise<Historica
     tripDate: row.trip_date,
     createdAt: row.created_at,
     year: row.year || 2025,
+    month: row.month || undefined,
     tripConfigId: row.trip_config_id || undefined,
     status: (['run', 'budgeted', 'scratch', 'open-enrollment', 'for-review'].includes(row.status)) ? row.status : (row.year && row.year <= 2025 ? 'run' : 'budgeted'),
     country: row.country || 'Other',
@@ -571,10 +572,10 @@ export async function updateTripConfigurationNotes(id: string, notes: string): P
   return true;
 }
 
-// Update a historical trip entry (status, notes, name, country)
+// Update a historical trip entry (status, notes, name, country, category, year, month)
 export async function updateHistoricalTrip(
   id: string,
-  updates: { status?: string; notes?: string; name?: string; country?: string }
+  updates: { status?: string; notes?: string; name?: string; country?: string; category?: string; year?: number; month?: string | null }
 ): Promise<boolean> {
   if (!supabase) return false;
 

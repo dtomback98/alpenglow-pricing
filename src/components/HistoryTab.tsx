@@ -9,6 +9,8 @@ import { HistoricalTrip } from '@/lib/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const CATEGORIES = ['All', 'Beg', 'Inter', 'Adv', 'Ski', '8k E'];
+const TRIP_CATEGORIES = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 interface HistoryTabProps {
   onLoadTrip?: (trip: HistoricalTrip) => void;
@@ -21,220 +23,306 @@ interface HistoryTabProps {
   onNotesUpdated?: (id: string, notes: string) => void;
 }
 
-function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted, expeditions, onNotesUpdated }: {
+function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted, expeditions, onNotesUpdated, collapsed, onToggle }: {
   trips: HistoricalTrip[];
   title: string;
   onLoadTrip?: (trip: HistoricalTrip) => void;
   onDeleteTrip?: (id: string) => Promise<boolean>;
-  onUpdateTrip?: (id: string, updates: { status?: string; notes?: string; name?: string; country?: string }) => Promise<boolean>;
+  onUpdateTrip?: (id: string, updates: { status?: string; notes?: string; name?: string; country?: string; category?: string; year?: number; month?: string | null }) => Promise<boolean>;
   onTripConfigRenamed?: () => void;
   loadedHistoryEntryId?: string;
   onTripDeleted?: (id: string) => void;
   expeditions: string[];
   onNotesUpdated?: (id: string, notes: string) => void;
+  collapsed?: boolean;
+  onToggle?: () => void;
 }) {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editNoteText, setEditNoteText] = useState('');
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editNameText, setEditNameText] = useState('');
-
-  if (trips.length === 0) {
-    return (
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-4">{title}</h2>
-        <p className="text-sm text-ag-text-muted">No trips to display.</p>
-      </div>
-    );
-  }
+  const [editingYearId, setEditingYearId] = useState<string | null>(null);
+  const [editYearValue, setEditYearValue] = useState<number>(new Date().getFullYear());
 
   const hasActions = !!(onLoadTrip || onDeleteTrip);
 
   return (
     <div className="card overflow-x-auto">
-      <h2 className="text-lg font-semibold mb-3">{title}</h2>
-      <table className="pricing-table history-table">
-        <thead>
-          <tr>
-            <th>Trip</th>
-            <th>Cat</th>
-            <th>Status</th>
-            <th>Expedition</th>
-            <th>Pax</th>
-            <th>$/Pax</th>
-            <th>Revenue</th>
-            <th>Profit</th>
-            <th>Margin</th>
-            <th>Notes</th>
-            {hasActions && <th>Actions</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {trips.map((trip) => (
-            <tr key={trip.id} className={trip.id === loadedHistoryEntryId ? 'bg-ag-accent/10' : ''}>
+      <div
+        className={`flex items-center gap-2 ${collapsed !== undefined ? 'cursor-pointer select-none' : ''} ${collapsed !== undefined ? 'mb-0' : 'mb-3'}`}
+        onClick={onToggle}
+      >
+        {onToggle !== undefined && (
+          <span className="text-ag-text-muted hover:text-ag-text text-sm mr-1">
+            {collapsed ? '▶' : '▼'}
+          </span>
+        )}
+        <h2 className="text-lg font-semibold">{title}</h2>
+        {collapsed && (
+          <span className="text-xs text-ag-text-muted ml-2">({trips.length} trip{trips.length !== 1 ? 's' : ''})</span>
+        )}
+      </div>
 
-              {/* Trip name — click to edit */}
-              <td className="font-medium" style={{ maxWidth: '160px' }}>
-                {editingNameId === trip.id ? (
-                  <input
-                    type="text"
-                    value={editNameText}
-                    autoFocus
-                    onChange={(e) => setEditNameText(e.target.value)}
-                    onBlur={async () => {
-                      const trimmed = editNameText.trim();
-                      if (trimmed && trimmed !== trip.name && onUpdateTrip) {
-                        await onUpdateTrip(trip.id, { name: trimmed });
-                        onTripConfigRenamed?.();
-                      }
-                      setEditingNameId(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') e.currentTarget.blur();
-                      if (e.key === 'Escape') setEditingNameId(null);
-                    }}
-                    className="w-full"
-                  />
-                ) : (
-                  <span
-                    className={`block overflow-hidden text-ellipsis whitespace-nowrap ${onUpdateTrip ? 'cursor-pointer hover:text-ag-accent' : ''}`}
-                    title={trip.name}
-                    onClick={() => {
-                      if (onUpdateTrip) {
-                        setEditingNameId(trip.id);
-                        setEditNameText(trip.name);
-                      }
-                    }}
-                  >
-                    {trip.name}
-                  </span>
-                )}
-              </td>
+      {!collapsed && (
+        <>
+          {trips.length === 0 ? (
+            <p className="text-sm text-ag-text-muted mt-3">No trips to display.</p>
+          ) : (
+            <table className="pricing-table history-table mt-3">
+              <thead>
+                <tr>
+                  <th>Trip</th>
+                  <th>Year</th>
+                  <th>Month</th>
+                  <th>Cat</th>
+                  <th>Status</th>
+                  <th>Expedition</th>
+                  <th>Pax</th>
+                  <th>$/Pax</th>
+                  <th>Revenue</th>
+                  <th>Profit</th>
+                  <th>Margin</th>
+                  <th>Notes</th>
+                  {hasActions && <th>Actions</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {trips.map((trip) => (
+                  <tr key={trip.id} className={trip.id === loadedHistoryEntryId ? 'bg-ag-accent/10' : ''}>
 
-              {/* Category badge */}
-              <td className="whitespace-nowrap">
-                {trip.category && (
-                  <span
-                    className="px-1.5 py-0.5 rounded text-xs font-medium"
-                    style={{ backgroundColor: `${CATEGORY_COLORS[trip.category] || '#3b82f6'}30`, color: CATEGORY_COLORS[trip.category] || '#3b82f6' }}
-                  >
-                    {trip.category}
-                  </span>
-                )}
-              </td>
+                    {/* Trip name — click to edit */}
+                    <td className="font-medium" style={{ maxWidth: '160px' }}>
+                      {editingNameId === trip.id ? (
+                        <input
+                          type="text"
+                          value={editNameText}
+                          autoFocus
+                          onChange={(e) => setEditNameText(e.target.value)}
+                          onBlur={async () => {
+                            const trimmed = editNameText.trim();
+                            if (trimmed && trimmed !== trip.name && onUpdateTrip) {
+                              await onUpdateTrip(trip.id, { name: trimmed });
+                              onTripConfigRenamed?.();
+                            }
+                            setEditingNameId(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') e.currentTarget.blur();
+                            if (e.key === 'Escape') setEditingNameId(null);
+                          }}
+                          className="w-full"
+                        />
+                      ) : (
+                        <span
+                          className={`block overflow-hidden text-ellipsis whitespace-nowrap ${onUpdateTrip ? 'cursor-pointer hover:text-ag-accent' : ''}`}
+                          title={trip.name}
+                          onClick={() => {
+                            if (onUpdateTrip) {
+                              setEditingNameId(trip.id);
+                              setEditNameText(trip.name);
+                            }
+                          }}
+                        >
+                          {trip.name}
+                        </span>
+                      )}
+                    </td>
 
-              {/* Status — inline select for editable rows, badge for readonly */}
-              <td className="whitespace-nowrap">
-                {onUpdateTrip ? (
-                  <select
-                    value={trip.status || 'budgeted'}
-                    onChange={async (e) => { await onUpdateTrip(trip.id, { status: e.target.value }); }}
-                  >
-                    <option value="budgeted">Budgeted</option>
-                    <option value="open-enrollment">Open Enrollment</option>
-                    <option value="for-review">For Review</option>
-                    <option value="run">Run</option>
-                    <option value="scratch">Scratch</option>
-                  </select>
-                ) : (
-                  <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${STATUS_BADGE_CLASSES[trip.status || 'budgeted'] || STATUS_BADGE_CLASSES['budgeted']}`}>
-                    {STATUS_LABELS[trip.status || 'budgeted'] || 'Budgeted'}
-                  </span>
-                )}
-              </td>
+                    {/* Year — click to edit */}
+                    <td className="whitespace-nowrap">
+                      {editingYearId === trip.id ? (
+                        <input
+                          type="number"
+                          value={editYearValue}
+                          autoFocus
+                          onChange={(e) => setEditYearValue(Number(e.target.value))}
+                          onBlur={async () => {
+                            if (editYearValue && editYearValue !== trip.year && onUpdateTrip) {
+                              await onUpdateTrip(trip.id, { year: editYearValue });
+                            }
+                            setEditingYearId(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') e.currentTarget.blur();
+                            if (e.key === 'Escape') setEditingYearId(null);
+                          }}
+                          className="w-20"
+                        />
+                      ) : (
+                        <span
+                          className={`${onUpdateTrip ? 'cursor-pointer hover:text-ag-accent' : ''}`}
+                          onClick={() => {
+                            if (onUpdateTrip) {
+                              setEditingYearId(trip.id);
+                              setEditYearValue(trip.year || new Date().getFullYear());
+                            }
+                          }}
+                        >
+                          {trip.year || 2025}
+                        </span>
+                      )}
+                    </td>
 
-              {/* Country — inline select for editable rows, text for readonly */}
-              <td className="whitespace-nowrap">
-                {onUpdateTrip ? (
-                  <select
-                    value={trip.country || 'Other'}
-                    onChange={async (e) => { await onUpdateTrip(trip.id, { country: e.target.value }); }}
-                  >
-                    {expeditions.map(c => <option key={c} value={c}>{c}</option>)}
-                    {trip.country && !expeditions.includes(trip.country) && (
-                      <option key={trip.country} value={trip.country}>{trip.country}</option>
+                    {/* Month — inline select */}
+                    <td className="whitespace-nowrap">
+                      {onUpdateTrip ? (
+                        <select
+                          value={trip.month || ''}
+                          onChange={async (e) => { await onUpdateTrip(trip.id, { month: e.target.value || null }); }}
+                          className="text-sm"
+                        >
+                          <option value="">N/A</option>
+                          {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                      ) : (
+                        <span className="text-ag-text-muted">{trip.month || 'N/A'}</span>
+                      )}
+                    </td>
+
+                    {/* Category — inline select with color coding */}
+                    <td className="whitespace-nowrap">
+                      {onUpdateTrip ? (
+                        <select
+                          value={trip.category || ''}
+                          onChange={async (e) => { await onUpdateTrip(trip.id, { category: e.target.value }); }}
+                          style={{
+                            backgroundColor: `${CATEGORY_COLORS[trip.category] || '#3b82f6'}25`,
+                            color: CATEGORY_COLORS[trip.category] || '#3b82f6',
+                            borderColor: `${CATEGORY_COLORS[trip.category] || '#3b82f6'}60`,
+                          }}
+                          className="text-xs font-medium rounded px-1 py-0.5"
+                        >
+                          {TRIP_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      ) : (
+                        trip.category && (
+                          <span
+                            className="px-1.5 py-0.5 rounded text-xs font-medium"
+                            style={{ backgroundColor: `${CATEGORY_COLORS[trip.category] || '#3b82f6'}30`, color: CATEGORY_COLORS[trip.category] || '#3b82f6' }}
+                          >
+                            {trip.category}
+                          </span>
+                        )
+                      )}
+                    </td>
+
+                    {/* Status — inline select for editable rows, badge for readonly */}
+                    <td className="whitespace-nowrap">
+                      {onUpdateTrip ? (
+                        <select
+                          value={trip.status || 'budgeted'}
+                          onChange={async (e) => { await onUpdateTrip(trip.id, { status: e.target.value }); }}
+                        >
+                          <option value="budgeted">Budgeted</option>
+                          <option value="open-enrollment">Open Enrollment</option>
+                          <option value="for-review">For Review</option>
+                          <option value="run">Run</option>
+                          <option value="actuals">Actuals</option>
+                          <option value="scratch">Scratch</option>
+                        </select>
+                      ) : (
+                        <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${STATUS_BADGE_CLASSES[trip.status || 'budgeted'] || STATUS_BADGE_CLASSES['budgeted']}`}>
+                          {STATUS_LABELS[trip.status || 'budgeted'] || 'Budgeted'}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Country — inline select for editable rows, text for readonly */}
+                    <td className="whitespace-nowrap">
+                      {onUpdateTrip ? (
+                        <select
+                          value={trip.country || 'Other'}
+                          onChange={async (e) => { await onUpdateTrip(trip.id, { country: e.target.value }); }}
+                        >
+                          {expeditions.map(c => <option key={c} value={c}>{c}</option>)}
+                          {trip.country && !expeditions.includes(trip.country) && (
+                            <option key={trip.country} value={trip.country}>{trip.country}</option>
+                          )}
+                        </select>
+                      ) : (
+                        <span className="text-ag-text-muted">{trip.country || 'Other'}</span>
+                      )}
+                    </td>
+
+                    <td className="whitespace-nowrap">{trip.pax}</td>
+                    <td className="whitespace-nowrap">{formatCurrency(trip.pricePerPax)}</td>
+                    <td className="whitespace-nowrap">{formatCurrency(trip.revenue)}</td>
+                    <td className={`whitespace-nowrap ${trip.grossProfit >= 0 ? 'text-ag-success' : 'text-ag-danger'}`}>
+                      {formatCurrency(trip.grossProfit)}
+                    </td>
+                    <td className={`whitespace-nowrap ${getMarginColor(trip.margin)}`}>{formatPercent(trip.margin)}</td>
+
+                    {/* Notes — click to edit, truncated display */}
+                    <td style={{ minWidth: '100px', maxWidth: '200px' }}>
+                      {editingNoteId === trip.id ? (
+                        <div className="flex flex-col gap-1">
+                          <textarea
+                            value={editNoteText}
+                            autoFocus
+                            onChange={(e) => setEditNoteText(e.target.value)}
+                            className="w-full p-1"
+                            rows={2}
+                          />
+                          <div className="flex gap-1">
+                            <button className="btn btn-primary text-xs py-0.5 px-2" onClick={async () => {
+                              if (onUpdateTrip) await onUpdateTrip(trip.id, { notes: editNoteText });
+                              onNotesUpdated?.(trip.id, editNoteText);
+                              setEditingNoteId(null);
+                            }}>Save</button>
+                            <button className="btn btn-secondary text-xs py-0.5 px-2" onClick={() => setEditingNoteId(null)}>×</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <span
+                          className={`text-ag-text-muted ${onUpdateTrip ? 'cursor-pointer hover:text-ag-accent' : ''}`}
+                          title={trip.notes || undefined}
+                          onClick={() => {
+                            if (onUpdateTrip) {
+                              setEditingNoteId(trip.id);
+                              setEditNoteText(trip.notes || '');
+                            }
+                          }}
+                          style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}
+                        >
+                          {trip.notes
+                            ? (trip.notes.length > 55 ? trip.notes.slice(0, 55) + '…' : trip.notes)
+                            : (onUpdateTrip ? <span className="text-ag-border italic">add note</span> : '—')}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Actions — Load + Delete only */}
+                    {hasActions && (
+                      <td className="whitespace-nowrap">
+                        <div className="flex gap-1">
+                          {onLoadTrip && trip.tripConfigId && (
+                            <button onClick={() => onLoadTrip(trip)} className="btn btn-secondary text-xs py-0.5 px-2">
+                              Load
+                            </button>
+                          )}
+                          {onDeleteTrip && (
+                            <button
+                              onClick={async () => {
+                                if (confirm(`Delete "${trip.name}" from history?`)) {
+                                  const success = await onDeleteTrip(trip.id);
+                                  if (success) onTripDeleted?.(trip.id);
+                                }
+                              }}
+                              className="btn btn-danger text-xs py-0.5 px-2"
+                            >
+                              Del
+                            </button>
+                          )}
+                        </div>
+                      </td>
                     )}
-                  </select>
-                ) : (
-                  <span className="text-ag-text-muted">{trip.country || 'Other'}</span>
-                )}
-              </td>
-
-              <td className="whitespace-nowrap">{trip.pax}</td>
-              <td className="whitespace-nowrap">{formatCurrency(trip.pricePerPax)}</td>
-              <td className="whitespace-nowrap">{formatCurrency(trip.revenue)}</td>
-              <td className={`whitespace-nowrap ${trip.grossProfit >= 0 ? 'text-ag-success' : 'text-ag-danger'}`}>
-                {formatCurrency(trip.grossProfit)}
-              </td>
-              <td className={`whitespace-nowrap ${getMarginColor(trip.margin)}`}>{formatPercent(trip.margin)}</td>
-
-              {/* Notes — click to edit, truncated display */}
-              <td style={{ minWidth: '100px', maxWidth: '200px' }}>
-                {editingNoteId === trip.id ? (
-                  <div className="flex flex-col gap-1">
-                    <textarea
-                      value={editNoteText}
-                      autoFocus
-                      onChange={(e) => setEditNoteText(e.target.value)}
-                      className="w-full p-1"
-                      rows={2}
-                    />
-                    <div className="flex gap-1">
-                      <button className="btn btn-primary text-xs py-0.5 px-2" onClick={async () => {
-                        if (onUpdateTrip) await onUpdateTrip(trip.id, { notes: editNoteText });
-                        onNotesUpdated?.(trip.id, editNoteText);
-                        setEditingNoteId(null);
-                      }}>Save</button>
-                      <button className="btn btn-secondary text-xs py-0.5 px-2" onClick={() => setEditingNoteId(null)}>×</button>
-                    </div>
-                  </div>
-                ) : (
-                  <span
-                    className={`text-ag-text-muted ${onUpdateTrip ? 'cursor-pointer hover:text-ag-accent' : ''}`}
-                    title={trip.notes || undefined}
-                    onClick={() => {
-                      if (onUpdateTrip) {
-                        setEditingNoteId(trip.id);
-                        setEditNoteText(trip.notes || '');
-                      }
-                    }}
-                    style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}
-                  >
-                    {trip.notes
-                      ? (trip.notes.length > 55 ? trip.notes.slice(0, 55) + '…' : trip.notes)
-                      : (onUpdateTrip ? <span className="text-ag-border italic">add note</span> : '—')}
-                  </span>
-                )}
-              </td>
-
-              {/* Actions — Load + Delete only */}
-              {hasActions && (
-                <td className="whitespace-nowrap">
-                  <div className="flex gap-1">
-                    {onLoadTrip && trip.tripConfigId && (
-                      <button onClick={() => onLoadTrip(trip)} className="btn btn-secondary text-xs py-0.5 px-2">
-                        Load
-                      </button>
-                    )}
-                    {onDeleteTrip && (
-                      <button
-                        onClick={async () => {
-                          if (confirm(`Delete "${trip.name}" from history?`)) {
-                            const success = await onDeleteTrip(trip.id);
-                            if (success) onTripDeleted?.(trip.id);
-                          }
-                        }}
-                        className="btn btn-danger text-xs py-0.5 px-2"
-                      >
-                        Del
-                      </button>
-                    )}
-                  </div>
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -242,27 +330,33 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
 export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted, expeditions, addExpedition, onNotesUpdated }: HistoryTabProps) {
   const { trips, loading, error, selectedCategory, setSelectedCategory, deleteTrip, updateTrip, refresh } = useHistoricalData();
 
-  // Re-fetch when refreshKey changes (e.g. after Save to History)
   useEffect(() => {
     if (refreshKey && refreshKey > 0) {
       refresh();
     }
   }, [refreshKey, refresh]);
+
   const currentYear = new Date().getFullYear();
   const [yearFilter, setYearFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [monthFilter, setMonthFilter] = useState<string>('all');
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [showNewExpedition, setShowNewExpedition] = useState(false);
   const [newExpeditionName, setNewExpeditionName] = useState('');
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  // Derive sorted country list from loaded trips
+  const toggleGroup = (key: string) => setExpandedGroups(prev => {
+    const next = new Set(prev);
+    next.has(key) ? next.delete(key) : next.add(key);
+    return next;
+  });
+
   const countryMap: Record<string, true> = {};
   for (const t of trips) { countryMap[t.country || 'Other'] = true; }
   const availableCountries = Object.keys(countryMap).sort();
 
   const countryFiltered = selectedCountry ? trips.filter(t => (t.country || 'Other') === selectedCountry) : trips;
 
-  // Derive unique years from all trips for the year dropdown
   const yearMap: Record<number, true> = {};
   for (const t of trips) { yearMap[t.year || 2025] = true; }
   const availableYears = Object.keys(yearMap).map(Number).sort((a, b) => b - a);
@@ -273,10 +367,10 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
     return t.year === Number(yearFilter);
   };
   const matchesStatus = (t: HistoricalTrip) => statusFilter === 'all' || t.status === statusFilter;
+  const matchesMonth = (t: HistoricalTrip) => monthFilter === 'all' || (t.month || '') === monthFilter;
 
-  const filteredTrips = countryFiltered.filter(t => matchesYear(t) && matchesStatus(t));
+  const filteredTrips = countryFiltered.filter(t => matchesYear(t) && matchesStatus(t) && matchesMonth(t));
 
-  // Group filtered trips by year + status for dynamic table sections
   const groupMap: Record<string, HistoricalTrip[]> = {};
   for (const t of filteredTrips) {
     const key = `${t.year || 2025}|${t.status || 'budgeted'}`;
@@ -309,6 +403,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
           {error} — showing cached data.
         </div>
       )}
+
       {/* Filters */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
@@ -337,10 +432,18 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
               </select>
             </div>
             <div className="flex items-center gap-3">
+              <p className="text-xs text-ag-text-muted">Month</p>
+              <select value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} className="text-sm">
+                <option value="all">All Months</option>
+                {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
               <p className="text-xs text-ag-text-muted">Status</p>
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="text-sm">
                 <option value="all">All Statuses</option>
                 <option value="run">Run</option>
+                <option value="actuals">Actuals</option>
                 <option value="open-enrollment">Open Enrollment</option>
                 <option value="budgeted">Budgeted</option>
                 <option value="for-review">For Review</option>
@@ -479,16 +582,17 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
         </div>
       </div>
 
-      {/* Dynamic trip tables — one per year+status group */}
+      {/* Dynamic trip tables — one per year+status group, individually collapsible, default closed */}
       {tripGroups.length === 0 ? (
         <div className="card text-center text-ag-text-muted py-8 text-sm">
           No trips match the current filters.
         </div>
       ) : tripGroups.map(({ year, status, trips: groupTrips }) => {
+        const key = `${year}-${status}`;
         const isEditable = year >= currentYear;
         return (
           <TripTable
-            key={`${year}-${status}`}
+            key={key}
             trips={groupTrips}
             title={`${year} — ${STATUS_LABELS[status] || status}`}
             onLoadTrip={isEditable ? onLoadTrip : undefined}
@@ -499,6 +603,8 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
             onTripDeleted={isEditable ? onTripDeleted : undefined}
             expeditions={expeditions}
             onNotesUpdated={onNotesUpdated}
+            collapsed={!expandedGroups.has(key)}
+            onToggle={() => toggleGroup(key)}
           />
         );
       })}

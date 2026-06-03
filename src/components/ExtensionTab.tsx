@@ -98,6 +98,13 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
   const setExtSuppPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extSuppPerPax: val } }));
   const setExtDiscountsPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extDiscountsPerPax: val } }));
 
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set(['core', 'discounts', 'singleSupp', 'hotels', 'staff', 'logistics']));
+  const toggleSection = (key: string) => setCollapsedSections(prev => {
+    const next = new Set(prev);
+    next.has(key) ? next.delete(key) : next.add(key);
+    return next;
+  });
+
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   useEffect(() => {
     if (!openDropdown) return;
@@ -226,12 +233,15 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
       {/* Core Extension Details */}
       <div className={`card ${!ext.enabled ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Extension - Core Trip Details</h2>
+          <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => toggleSection('core')}>
+            <span className="text-ag-text-muted hover:text-ag-text text-sm">{collapsedSections.has('core') ? '▶' : '▼'}</span>
+            <h2 className="text-lg font-semibold">Extension - Core Trip Details</h2>
+          </div>
           <button onClick={() => updateExtension({ enabled: !ext.enabled })} className={`btn text-xs ${!ext.enabled ? 'btn-danger' : 'btn-primary'}`}>
             {!ext.enabled ? 'Inactive' : 'Active'}
           </button>
         </div>
-        {!ext.enabled ? (
+        {!collapsedSections.has('core') && (!ext.enabled ? (
           <p className="text-sm text-ag-text-muted">Extension is disabled — all extension revenue and costs are excluded from calculations.</p>
         ) : (
           <>
@@ -270,14 +280,17 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               </div>
             </div>
           </>
-        )}
+        ))}
       </div>
 
       {/* Extension Discounts */}
       {ext.enabled && (
         <div className={`card ${ext.discounts?.enabled === false ? 'opacity-60' : ''}`}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Extension - Discounts</h2>
+            <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => toggleSection('discounts')}>
+              <span className="text-ag-text-muted hover:text-ag-text text-sm">{collapsedSections.has('discounts') ? '▶' : '▼'}</span>
+              <h2 className="text-lg font-semibold">Extension - Discounts</h2>
+            </div>
             <div className="flex gap-2">
               {ext.discounts?.enabled !== false && (
                 <>
@@ -296,7 +309,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               </button>
             </div>
           </div>
-          {ext.discounts?.enabled === false ? (
+          {!collapsedSections.has('discounts') && (ext.discounts?.enabled === false ? (
             <p className="text-sm text-ag-text-muted">Section disabled — extension discounts will not be applied.</p>
           ) : ext.discounts.inheritFromMain ? (
             <div>
@@ -386,7 +399,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 </>
               )}
             </>
-          )}
+          ))}
         </div>
       )}
 
@@ -394,7 +407,10 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
       {ext.enabled && (
         <div className={`card ${ext.singleSupplement.enabled === false ? 'opacity-60' : ''}`}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Extension - Single Supplement</h2>
+            <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => toggleSection('singleSupp')}>
+              <span className="text-ag-text-muted hover:text-ag-text text-sm">{collapsedSections.has('singleSupp') ? '▶' : '▼'}</span>
+              <h2 className="text-lg font-semibold">Extension - Single Supplement</h2>
+            </div>
             <div className="flex gap-2">
               {ext.singleSupplement.enabled !== false && (
                 <>
@@ -413,7 +429,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               </button>
             </div>
           </div>
-          {ext.singleSupplement.enabled === false ? (
+          {!collapsedSections.has('singleSupp') && (ext.singleSupplement.enabled === false ? (
             <p className="text-sm text-ag-text-muted">Section disabled — extension single supplement will not be applied.</p>
           ) : ext.singleSupplement.inheritFromMain ? (
             <div>
@@ -473,7 +489,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 </div>
               )}
             </>
-          )}
+          ))}
         </div>
       )}
 
@@ -481,7 +497,10 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
       {ext.enabled && (
         <div className={`card ${ext.hotelsMeals.enabled === false ? 'opacity-60' : ''}`}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Extension - Hotels & Meals</h2>
+            <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => toggleSection('hotels')}>
+              <span className="text-ag-text-muted hover:text-ag-text text-sm">{collapsedSections.has('hotels') ? '▶' : '▼'}</span>
+              <h2 className="text-lg font-semibold">Extension - Hotels & Meals</h2>
+            </div>
             <div className="flex gap-2">
               {ext.hotelsMeals.enabled !== false && (
                 <>
@@ -500,7 +519,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               </button>
             </div>
           </div>
-          {ext.hotelsMeals.enabled === false ? (
+          {!collapsedSections.has('hotels') && (ext.hotelsMeals.enabled === false ? (
             <p className="text-sm text-ag-text-muted">Section disabled — extension hotels & meals will not be applied.</p>
           ) : ext.hotelsMeals.inheritFromMain ? (
             <div>
@@ -696,7 +715,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 )}
               </div>
             </>
-          )}
+          ))}
         </div>
       )}
 
@@ -704,7 +723,10 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
       {ext.enabled && (
         <div className={`card ${ext.staffConfig.enabled === false ? 'opacity-60' : ''}`}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Extension - Staff Configuration</h2>
+            <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => toggleSection('staff')}>
+              <span className="text-ag-text-muted hover:text-ag-text text-sm">{collapsedSections.has('staff') ? '▶' : '▼'}</span>
+              <h2 className="text-lg font-semibold">Extension - Staff Configuration</h2>
+            </div>
             <div className="flex gap-2">
               {ext.staffConfig.enabled !== false && (
                 <button onClick={() => updateExtStaff({ inheritFromMain: !ext.staffConfig.inheritFromMain })} className={`btn text-xs ${ext.staffConfig.inheritFromMain ? 'btn-secondary' : 'btn-primary'}`}>
@@ -716,7 +738,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               </button>
             </div>
           </div>
-          {ext.staffConfig.enabled === false ? (
+          {!collapsedSections.has('staff') && (ext.staffConfig.enabled === false ? (
             <p className="text-sm text-ag-text-muted">Section disabled — extension staff costs will not be applied.</p>
           ) : ext.staffConfig.inheritFromMain ? (
             <div>
@@ -854,7 +876,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 <NumInput type="number" value={ext.staffConfig.staffMealsCost || 0} onChange={(e) => updateExtStaff({ staffMealsCost: Number(e.target.value) })} className="w-48" />
               </div>
             </>
-          )}
+          ))}
         </div>
       )}
 
@@ -862,7 +884,10 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
       {ext.enabled && (
         <div className={`card ${ext.logisticsConfig?.enabled === false ? 'opacity-60' : ''}`}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Extension - Logistics</h2>
+            <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => toggleSection('logistics')}>
+              <span className="text-ag-text-muted hover:text-ag-text text-sm">{collapsedSections.has('logistics') ? '▶' : '▼'}</span>
+              <h2 className="text-lg font-semibold">Extension - Logistics</h2>
+            </div>
             <div className="flex gap-2">
               {ext.logisticsConfig?.enabled !== false && (
                 <>
@@ -881,7 +906,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
               </button>
             </div>
           </div>
-          {ext.logisticsConfig?.enabled === false ? (
+          {!collapsedSections.has('logistics') && (ext.logisticsConfig?.enabled === false ? (
             <p className="text-sm text-ag-text-muted">Section disabled — extension logistics will not be applied.</p>
           ) : ext.logisticsConfig.inheritFromMain ? (
             <div>
@@ -1060,7 +1085,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 )}
               </div>
             </>
-          )}
+          ))}
         </div>
       )}
     </div>

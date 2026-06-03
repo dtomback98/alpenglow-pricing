@@ -16,7 +16,7 @@ interface UseHistoricalDataReturn {
   setSelectedCategory: (category: string | null) => void;
   refresh: () => Promise<void>;
   deleteTrip: (id: string) => Promise<boolean>;
-  updateTrip: (id: string, updates: { status?: string; notes?: string; name?: string; country?: string }) => Promise<boolean>;
+  updateTrip: (id: string, updates: { status?: string; notes?: string; name?: string; country?: string; category?: string; year?: number; month?: string | null }) => Promise<boolean>;
 }
 
 export function useHistoricalData(): UseHistoricalDataReturn {
@@ -74,7 +74,7 @@ export function useHistoricalData(): UseHistoricalDataReturn {
     }
   }, [loadData, trips]);
 
-  const updateTrip = useCallback(async (id: string, updates: { status?: string; notes?: string; name?: string; country?: string }): Promise<boolean> => {
+  const updateTrip = useCallback(async (id: string, updates: { status?: string; notes?: string; name?: string; country?: string; category?: string; year?: number; month?: string | null }): Promise<boolean> => {
     try {
       const success = await updateHistoricalTrip(id, updates);
       if (success) {

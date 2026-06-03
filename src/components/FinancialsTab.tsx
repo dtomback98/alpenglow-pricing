@@ -10,6 +10,7 @@ import { TripConfiguration, FinancialBreakdown } from '@/lib/types';
 import { exportFinancialsBreakdown } from '@/lib/excelExport';
 
 const CATEGORIES = ['All', 'Beg', 'Inter', 'Adv', 'Ski', '8k E'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const FINANCIAL_CATEGORIES: { key: keyof FinancialBreakdown; label: string; shortLabel: string }[] = [
   { key: 'tripTravelLogistics',  label: 'Trip Travel / Logistics',        shortLabel: 'Travel & Logistics' },
@@ -30,6 +31,7 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
   const { trips, loading, error, selectedCategory, setSelectedCategory, refresh } = useHistoricalData();
   const [yearFilter, setYearFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [monthFilter, setMonthFilter] = useState<string>('all');
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [showNewExpedition, setShowNewExpedition] = useState(false);
   const [newExpeditionName, setNewExpeditionName] = useState('');
@@ -83,17 +85,18 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
   for (const t of nonRefTrips) { yearMap[t.year || new Date().getFullYear()] = true; }
   const availableYears = Object.keys(yearMap).map(Number).sort((a, b) => b - a);
 
-  // Apply year + status filters (category already filtered by the hook)
+  // Apply year + status + month filters (category already filtered by the hook)
   const filteredTrips = countryFiltered.filter(t => {
     if (yearFilter !== 'all' && t.year !== Number(yearFilter)) return false;
     if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+    if (monthFilter !== 'all' && (t.month || '') !== monthFilter) return false;
     return true;
   });
 
   // Clear selection when filters change
   useEffect(() => {
     setSelectedTripIds(new Set());
-  }, [yearFilter, statusFilter, selectedCategory, selectedCountry]);
+  }, [yearFilter, statusFilter, monthFilter, selectedCategory, selectedCountry]);
 
   // Compute financial breakdown for each filtered trip (single calculateForPax call per trip)
   const tripRows = filteredTrips.map(trip => {
@@ -188,10 +191,18 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
               </select>
             </div>
             <div className="flex items-center gap-3">
+              <p className="text-xs text-ag-text-muted">Month</p>
+              <select value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} className="text-sm">
+                <option value="all">All Months</option>
+                {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
               <p className="text-xs text-ag-text-muted">Status</p>
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="text-sm">
                 <option value="all">All Statuses</option>
                 <option value="run">Run</option>
+                <option value="actuals">Actuals</option>
                 <option value="open-enrollment">Open Enrollment</option>
                 <option value="budgeted">Budgeted</option>
                 <option value="for-review">For Review</option>
