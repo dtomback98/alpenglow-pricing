@@ -424,7 +424,8 @@ export async function saveToHistory(
   category: string,
   year?: number,
   status?: string,
-  country?: string
+  country?: string,
+  month?: string
 ): Promise<HistoricalTrip | null> {
   if (!supabase || !config.id || !Number.isFinite(pax) || pax <= 0) return null;
 
@@ -444,6 +445,7 @@ export async function saveToHistory(
     notes: config.notes || '',
     status: status || 'budgeted',
     country: country || 'Other',
+    month: month || null,
   };
 
   const { data, error } = await supabase
@@ -470,6 +472,7 @@ export async function saveToHistory(
     tripDate: data.trip_date,
     createdAt: data.created_at,
     year: data.year || new Date().getFullYear(),
+    month: data.month || undefined,
     tripConfigId: data.trip_config_id || undefined,
     status: data.status || 'budgeted',
     country: data.country || 'Other',

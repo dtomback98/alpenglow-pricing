@@ -5,12 +5,13 @@ import { TripConfiguration } from '@/lib/types';
 import { STATUS_LABELS, STATUS_BADGE_CLASSES } from '@/lib/constants';
 
 const CATEGORIES = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 interface HeaderProps {
   config: TripConfiguration;
   updateConfig: (updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>)) => void;
   saveTrip: () => Promise<void>;
-  saveTripsToHistory: (pax: number, category: string, year?: number, status?: string, country?: string) => Promise<boolean>;
+  saveTripsToHistory: (pax: number, category: string, year?: number, status?: string, country?: string, month?: string) => Promise<boolean>;
   createNewTrip: () => void;
   isDirty: boolean;
   isNewTrip: boolean;
@@ -22,6 +23,7 @@ interface HeaderProps {
   loadedCategory?: string;
   loadedYear?: number;
   loadedCountry?: string;
+  loadedMonth?: string;
   loading?: boolean;
   expeditions: string[];
 }
@@ -42,6 +44,7 @@ export default function Header({
   loadedCategory,
   loadedYear,
   loadedCountry,
+  loadedMonth,
   loading,
   expeditions,
 }: HeaderProps) {
@@ -53,8 +56,9 @@ export default function Header({
   const [saveWarning, setSaveWarning] = useState(false);
   const currentYear = new Date().getFullYear();
   const [historyYear, setHistoryYear] = useState(currentYear);
-  const [historyStatus, setHistoryStatus] = useState<'budgeted' | 'run' | 'scratch' | 'open-enrollment' | 'for-review'>('budgeted');
+  const [historyStatus, setHistoryStatus] = useState<'budgeted' | 'run' | 'actuals' | 'scratch' | 'open-enrollment' | 'for-review'>('budgeted');
   const [historyCountry, setHistoryCountry] = useState('Other');
+  const [historyMonth, setHistoryMonth] = useState('');
 
   const paxMin = config.paxMin || 1;
   const paxMax = config.paxMax || 16;
@@ -72,13 +76,15 @@ export default function Header({
       setHistoryYear(loadedYear ?? currentYear);
       setHistoryStatus((loadedStatus as typeof historyStatus) ?? 'budgeted');
       setHistoryCountry(loadedCountry ?? 'Other');
+      setHistoryMonth(loadedMonth ?? '');
     } else {
       setHistoryCategory('Beg');
       setHistoryYear(currentYear);
       setHistoryStatus('budgeted');
       setHistoryCountry('Other');
+      setHistoryMonth('');
     }
-  }, [loadedHistoryEntryId, loadedCategory, loadedYear, loadedStatus, loadedCountry, currentYear]);
+  }, [loadedHistoryEntryId, loadedCategory, loadedYear, loadedStatus, loadedCountry, loadedMonth, currentYear]);
 
   // Clear save warning when isDirty or isNewTrip changes
   useEffect(() => {
@@ -105,7 +111,7 @@ export default function Header({
     setHistorySuccess(false);
     const trimmed = historyCountry.trim();
     const normalizedCountry = expeditions.find(c => c.toLowerCase() === trimmed.toLowerCase()) ?? trimmed;
-    const success = await saveTripsToHistory(historyPax, historyCategory, historyYear, historyStatus, normalizedCountry);
+    const success = await saveTripsToHistory(historyPax, historyCategory, historyYear, historyStatus, normalizedCountry, historyMonth || undefined);
     setHistorySaving(false);
     if (success) {
       setHistorySuccess(true);
@@ -233,12 +239,21 @@ export default function Header({
                 </div>
 
                 <div className="form-group mb-3">
+                  <label className="form-label">Month</label>
+                  <select value={historyMonth} onChange={(e) => setHistoryMonth(e.target.value)} className="w-full">
+                    <option value="">N/A</option>
+                    {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+
+                <div className="form-group mb-3">
                   <label className="form-label">Status</label>
-                  <select value={historyStatus} onChange={(e) => setHistoryStatus(e.target.value as 'budgeted' | 'run' | 'scratch' | 'open-enrollment' | 'for-review')} className="w-full">
+                  <select value={historyStatus} onChange={(e) => setHistoryStatus(e.target.value as 'budgeted' | 'run' | 'actuals' | 'scratch' | 'open-enrollment' | 'for-review')} className="w-full">
                     <option value="budgeted">Budgeted</option>
                     <option value="open-enrollment">Open Enrollment</option>
                     <option value="for-review">For Review</option>
                     <option value="run">Run</option>
+                    <option value="actuals">Actuals</option>
                     <option value="scratch">Scratch</option>
                   </select>
                 </div>

@@ -61,6 +61,7 @@ export default function PricingTool() {
         loadedCategory={tripData.loadedHistoryEntry?.category}
         loadedYear={tripData.loadedHistoryEntry?.year}
         loadedCountry={tripData.loadedHistoryEntry?.country}
+        loadedMonth={tripData.loadedHistoryEntry?.month}
         loading={tripData.loading}
         expeditions={expeditions}
       />

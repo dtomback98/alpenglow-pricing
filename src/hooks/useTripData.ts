@@ -22,7 +22,7 @@ interface UseTripDataReturn {
   isNewTrip: boolean;
   loadFromHistory: (entry: HistoricalTrip) => Promise<void>;
   saveTrip: () => Promise<void>;
-  saveTripsToHistory: (pax: number, category: string, year?: number, status?: string, country?: string) => Promise<boolean>;
+  saveTripsToHistory: (pax: number, category: string, year?: number, status?: string, country?: string, month?: string) => Promise<boolean>;
   createNewTrip: () => void;
   syncLoadedTripName: () => Promise<void>;
   isDirty: boolean;
@@ -197,7 +197,8 @@ export function useTripData(): UseTripDataReturn {
     category: string,
     year?: number,
     status?: string,
-    country?: string
+    country?: string,
+    month?: string
   ): Promise<boolean> => {
     if (saving) return false;
     if (!isSupabaseConfigured()) {
@@ -217,7 +218,7 @@ export function useTripData(): UseTripDataReturn {
         return false;
       }
 
-      const historyEntry = await saveToHistory(newConfig, pax, category, year, status, country);
+      const historyEntry = await saveToHistory(newConfig, pax, category, year, status, country, month);
       if (!historyEntry) {
         setError('Failed to save to history');
         return false;
