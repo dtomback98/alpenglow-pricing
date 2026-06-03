@@ -337,7 +337,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
   }, [refreshKey, refresh]);
 
   const currentYear = new Date().getFullYear();
-  const [yearFilter, setYearFilter] = useState<string>('all');
+  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()));
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [monthFilter, setMonthFilter] = useState<string>('all');
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
