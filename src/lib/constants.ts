@@ -178,10 +178,11 @@ export const CATEGORY_COLORS: Record<string, string> = {
 };
 
 // Trip status constants
-export const STATUS_ORDER = ['for-review', 'open-enrollment', 'budgeted', 'run', 'scratch'];
+export const STATUS_ORDER = ['for-review', 'open-enrollment', 'budgeted', 'run', 'actuals', 'scratch'];
 
 export const STATUS_LABELS: Record<string, string> = {
   'run': 'Run',
+  'actuals': 'Actuals',
   'budgeted': 'Budgeted',
   'open-enrollment': 'Open Enrollment',
   'scratch': 'Scratch',
@@ -190,6 +191,7 @@ export const STATUS_LABELS: Record<string, string> = {
 
 export const STATUS_BADGE_CLASSES: Record<string, string> = {
   'run': 'bg-green-500/20 text-green-400',
+  'actuals': 'bg-teal-500/20 text-teal-400',
   'scratch': 'bg-red-500/20 text-red-400',
   'open-enrollment': 'bg-blue-500/20 text-blue-400',
   'budgeted': 'bg-yellow-500/20 text-yellow-400',
@@ -219,6 +221,10 @@ export const EXPEDITIONS = [
   'Privates - Other',
   'Other',
 ];
+
+// Month abbreviations (used in History, Financials, and Save to History modal)
+export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export const MONTH_ORDER: Record<string, number> = Object.fromEntries(MONTHS.map((m, i) => [m, i]));
 
 // Category labels
 export const CATEGORY_LABELS: Record<string, string> = {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useHistoricalData } from '@/hooks/useHistoricalData';
-import { CATEGORY_COLORS, CATEGORY_LABELS, STATUS_LABELS, STATUS_BADGE_CLASSES } from '@/lib/constants';
+import { CATEGORY_COLORS, CATEGORY_LABELS, STATUS_LABELS, STATUS_BADGE_CLASSES, MONTHS } from '@/lib/constants';
 import { formatCurrency, formatPercent, getMarginColor, calculateFinancialBreakdown, calculateForPax } from '@/lib/calculations';
 import { PaxCalculation } from '@/lib/types';
 import { fetchTripConfigurationsByIds } from '@/lib/supabase';
@@ -10,7 +10,6 @@ import { TripConfiguration, FinancialBreakdown } from '@/lib/types';
 import { exportFinancialsBreakdown } from '@/lib/excelExport';
 
 const CATEGORIES = ['All', 'Beg', 'Inter', 'Adv', 'Ski', '8k E'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const FINANCIAL_CATEGORIES: { key: keyof FinancialBreakdown; label: string; shortLabel: string }[] = [
   { key: 'tripTravelLogistics',  label: 'Trip Travel / Logistics',        shortLabel: 'Travel & Logistics' },

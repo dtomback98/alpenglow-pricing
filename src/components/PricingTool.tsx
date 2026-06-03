@@ -112,6 +112,11 @@ export default function PricingTool() {
                 tripData.updateConfig({ notes }, { silent: true });
               }
             }}
+            onEntryUpdated={(id, updates) => {
+              if (id === tripData.loadedHistoryEntry?.id) {
+                tripData.patchLoadedHistoryEntry(updates);
+              }
+            }}
           />
         )}
         {activeTab === 'financials' && (

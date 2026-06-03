@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useHistoricalData } from '@/hooks/useHistoricalData';
-import { CATEGORY_COLORS, CATEGORY_LABELS, STATUS_ORDER, STATUS_LABELS, STATUS_BADGE_CLASSES } from '@/lib/constants';
+import { CATEGORY_COLORS, CATEGORY_LABELS, STATUS_ORDER, STATUS_LABELS, STATUS_BADGE_CLASSES, MONTHS, MONTH_ORDER } from '@/lib/constants';
 import { formatCurrency, formatPercent, getMarginColor } from '@/lib/calculations';
 import { exportHistoricalTrips } from '@/lib/excelExport';
 import { HistoricalTrip } from '@/lib/types';
@@ -10,8 +10,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 const CATEGORIES = ['All', 'Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 const TRIP_CATEGORIES = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const MONTH_ORDER: Record<string, number> = Object.fromEntries(MONTHS.map((m, i) => [m, i]));
 
 interface HistoryTabProps {
   onLoadTrip?: (trip: HistoricalTrip) => void;
@@ -22,6 +20,7 @@ interface HistoryTabProps {
   expeditions: string[];
   addExpedition: (name: string) => boolean;
   onNotesUpdated?: (id: string, notes: string) => void;
+  onEntryUpdated?: (id: string, updates: Partial<HistoricalTrip>) => void;
 }
 
 function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted, expeditions, onNotesUpdated, collapsed, onToggle }: {
@@ -329,8 +328,17 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
   );
 }
 
-export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted, expeditions, addExpedition, onNotesUpdated }: HistoryTabProps) {
+export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed, loadedHistoryEntryId, onTripDeleted, expeditions, addExpedition, onNotesUpdated, onEntryUpdated }: HistoryTabProps) {
   const { trips, loading, error, selectedCategory, setSelectedCategory, deleteTrip, updateTrip, refresh } = useHistoricalData();
+
+  const wrappedUpdateTrip = async (id: string, updates: Parameters<typeof updateTrip>[1]): Promise<boolean> => {
+    const success = await updateTrip(id, updates);
+    if (success && onEntryUpdated) {
+      const patch = { ...updates, month: updates.month ?? undefined } as Partial<HistoricalTrip>;
+      onEntryUpdated(id, patch);
+    }
+    return success;
+  };
 
   useEffect(() => {
     if (refreshKey && refreshKey > 0) {
@@ -392,12 +400,14 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
     })
     .sort((a, b) => b.year - a.year || STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
 
-  const chartData = filteredTrips.map(trip => ({
-    name: trip.name,
-    margin: trip.margin,
-    grossProfit: trip.grossProfit,
-    category: trip.category,
-  }));
+  const chartData = filteredTrips
+    .filter(t => (t.year || 2025) > 2025)
+    .map(trip => ({
+      name: trip.name,
+      margin: trip.margin,
+      grossProfit: trip.grossProfit,
+      category: trip.category,
+    }));
 
   if (loading) {
     return <div className="text-center text-ag-text-muted py-8">Loading historical data...</div>;
@@ -605,7 +615,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
             title={`${year} — ${STATUS_LABELS[status] || status}`}
             onLoadTrip={canLoadDelete ? onLoadTrip : undefined}
             onDeleteTrip={canLoadDelete ? deleteTrip : undefined}
-            onUpdateTrip={updateTrip}
+            onUpdateTrip={wrappedUpdateTrip}
             onTripConfigRenamed={onTripConfigRenamed}
             loadedHistoryEntryId={loadedHistoryEntryId}
             onTripDeleted={canLoadDelete ? onTripDeleted : undefined}

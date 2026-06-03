@@ -25,6 +25,7 @@ interface UseTripDataReturn {
   saveTripsToHistory: (pax: number, category: string, year?: number, status?: string, country?: string, month?: string) => Promise<boolean>;
   createNewTrip: () => void;
   syncLoadedTripName: () => Promise<void>;
+  patchLoadedHistoryEntry: (updates: Partial<HistoricalTrip>) => void;
   isDirty: boolean;
   loading: boolean;
   saving: boolean;
@@ -245,6 +246,11 @@ export function useTripData(): UseTripDataReturn {
     setError(null);
   }, []);
 
+  // Patch loadedHistoryEntry in-memory after an inline history table edit (avoids stale modal state)
+  const patchLoadedHistoryEntry = useCallback((updates: Partial<HistoricalTrip>) => {
+    setLoadedHistoryEntry(prev => prev ? { ...prev, ...updates } : prev);
+  }, []);
+
   // Sync the loaded trip's name from DB (called after a rename on the history tab)
   const syncLoadedTripName = useCallback(async () => {
     if (!loadedHistoryEntry?.tripConfigId) return;
@@ -266,6 +272,7 @@ export function useTripData(): UseTripDataReturn {
     saveTripsToHistory,
     createNewTrip,
     syncLoadedTripName,
+    patchLoadedHistoryEntry,
     isDirty,
     loading,
     saving,

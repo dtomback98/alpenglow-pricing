@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { TripConfiguration } from '@/lib/types';
-import { STATUS_LABELS, STATUS_BADGE_CLASSES } from '@/lib/constants';
+import { STATUS_LABELS, STATUS_BADGE_CLASSES, MONTHS } from '@/lib/constants';
 
 const CATEGORIES = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 interface HeaderProps {
   config: TripConfiguration;
