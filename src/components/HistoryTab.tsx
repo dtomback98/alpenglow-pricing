@@ -401,7 +401,7 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
     .sort((a, b) => b.year - a.year || STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
 
   const chartData = filteredTrips
-    .filter(t => (t.year || 2025) > 2025)
+    .filter(t => yearFilter !== 'all' || (t.year || 2025) > 2025)
     .map(trip => ({
       name: trip.name,
       margin: trip.margin,
