@@ -11,6 +11,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const CATEGORIES = ['All', 'Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 const TRIP_CATEGORIES = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_ORDER: Record<string, number> = Object.fromEntries(MONTHS.map((m, i) => [m, i]));
 
 interface HistoryTabProps {
   onLoadTrip?: (trip: HistoricalTrip) => void;
@@ -380,7 +381,12 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
   const tripGroups = Object.entries(groupMap)
     .map(([key, groupTrips]) => {
       const [yearStr, status] = key.split('|');
-      const sorted = [...groupTrips].sort((a, b) => a.name.localeCompare(b.name));
+      const sorted = [...groupTrips].sort((a, b) => {
+        const ma = a.month ? (MONTH_ORDER[a.month] ?? 99) : 99;
+        const mb = b.month ? (MONTH_ORDER[b.month] ?? 99) : 99;
+        if (ma !== mb) return ma - mb;
+        return a.name.localeCompare(b.name);
+      });
       return { year: Number(yearStr), status, trips: sorted };
     })
     .sort((a, b) => b.year - a.year || STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
@@ -590,18 +596,18 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
         </div>
       ) : tripGroups.map(({ year, status, trips: groupTrips }) => {
         const key = `${year}-${status}`;
-        const isEditable = year >= currentYear;
+        const canLoadDelete = year >= currentYear;
         return (
           <TripTable
             key={key}
             trips={groupTrips}
             title={`${year} — ${STATUS_LABELS[status] || status}`}
-            onLoadTrip={isEditable ? onLoadTrip : undefined}
-            onDeleteTrip={isEditable ? deleteTrip : undefined}
-            onUpdateTrip={isEditable ? updateTrip : undefined}
-            onTripConfigRenamed={isEditable ? onTripConfigRenamed : undefined}
+            onLoadTrip={canLoadDelete ? onLoadTrip : undefined}
+            onDeleteTrip={canLoadDelete ? deleteTrip : undefined}
+            onUpdateTrip={updateTrip}
+            onTripConfigRenamed={onTripConfigRenamed}
             loadedHistoryEntryId={loadedHistoryEntryId}
-            onTripDeleted={isEditable ? onTripDeleted : undefined}
+            onTripDeleted={canLoadDelete ? onTripDeleted : undefined}
             expeditions={expeditions}
             onNotesUpdated={onNotesUpdated}
             collapsed={!expandedGroups.has(key)}
