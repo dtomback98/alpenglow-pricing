@@ -194,6 +194,7 @@ export default function FinancialsTab({ refreshKey, expeditions, addExpedition }
               <p className="text-xs text-ag-text-muted">Month</p>
               <select value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} className="text-sm">
                 <option value="all">All Months</option>
+                <option value="">N/A</option>
                 {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
