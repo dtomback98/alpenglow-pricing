@@ -138,7 +138,8 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
                           autoFocus
                           onChange={(e) => setEditYearValue(Number(e.target.value))}
                           onBlur={async () => {
-                            if (editYearValue && editYearValue !== trip.year && onUpdateTrip) {
+                            const displayedYear = trip.year || 2025;
+                            if (editYearValue && editYearValue !== displayedYear && onUpdateTrip) {
                               await onUpdateTrip(trip.id, { year: editYearValue });
                             }
                             setEditingYearId(null);
@@ -155,7 +156,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
                           onClick={() => {
                             if (onUpdateTrip) {
                               setEditingYearId(trip.id);
-                              setEditYearValue(trip.year || new Date().getFullYear());
+                              setEditYearValue(trip.year || 2025);
                             }
                           }}
                         >

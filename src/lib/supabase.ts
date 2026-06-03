@@ -394,7 +394,7 @@ export async function fetchHistoricalTrips(category?: string): Promise<Historica
     year: row.year || 2025,
     month: row.month || undefined,
     tripConfigId: row.trip_config_id || undefined,
-    status: (['run', 'budgeted', 'scratch', 'open-enrollment', 'for-review'].includes(row.status)) ? row.status : (row.year && row.year <= 2025 ? 'run' : 'budgeted'),
+    status: (['run', 'actuals', 'budgeted', 'scratch', 'open-enrollment', 'for-review'].includes(row.status)) ? row.status : (row.year && row.year <= 2025 ? 'run' : 'budgeted'),
     country: row.country || 'Other',
   }));
 }
