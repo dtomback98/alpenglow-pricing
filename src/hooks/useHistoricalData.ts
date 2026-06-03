@@ -76,6 +76,9 @@ export function useHistoricalData(): UseHistoricalDataReturn {
 
   const updateTrip = useCallback(async (id: string, updates: { status?: string; notes?: string; name?: string; country?: string; category?: string; year?: number; month?: string | null }): Promise<boolean> => {
     try {
+      // Optimistic update — eliminates visible snap-back on all inline selects
+      setTrips(prev => prev.map(t => t.id === id ? { ...t, ...(updates as Partial<HistoricalTrip>) } : t));
+
       const success = await updateHistoricalTrip(id, updates);
       if (success) {
         const trip = trips.find(t => t.id === id);
@@ -85,15 +88,24 @@ export function useHistoricalData(): UseHistoricalDataReturn {
         if (updates.notes !== undefined && trip?.tripConfigId) {
           await updateTripConfigurationNotes(trip.tripConfigId, updates.notes);
         }
-        await loadData();
+        // If the category changed and a server-side category filter is active,
+        // clear the filter so the trip remains visible in its new category
+        if (updates.category !== undefined && selectedCategory !== null) {
+          setSelectedCategory(null);
+        } else {
+          await loadData();
+        }
+      } else {
+        await loadData(); // revert optimistic update on failure
       }
       return success;
     } catch (err) {
       console.error('Failed to update trip:', err);
       setError('Failed to update trip');
+      await loadData();
       return false;
     }
-  }, [loadData, trips]);
+  }, [loadData, trips, selectedCategory]);
 
   return {
     trips,

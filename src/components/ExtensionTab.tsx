@@ -98,12 +98,17 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
   const setExtSuppPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extSuppPerPax: val } }));
   const setExtDiscountsPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extDiscountsPerPax: val } }));
 
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set(['core', 'discounts', 'singleSupp', 'hotels', 'staff', 'logistics']));
+  const ALL_SECTIONS = ['core', 'discounts', 'singleSupp', 'hotels', 'staff', 'logistics'];
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set(ALL_SECTIONS));
   const toggleSection = (key: string) => setCollapsedSections(prev => {
     const next = new Set(prev);
     next.has(key) ? next.delete(key) : next.add(key);
     return next;
   });
+  // Reset accordion state when a different trip is loaded
+  useEffect(() => {
+    setCollapsedSections(new Set(ALL_SECTIONS));
+  }, [config.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   useEffect(() => {

@@ -138,7 +138,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
                           onChange={(e) => setEditYearValue(Number(e.target.value))}
                           onBlur={async () => {
                             const displayedYear = trip.year || 2025;
-                            if (editYearValue && editYearValue !== displayedYear && onUpdateTrip) {
+                            if (editYearValue > 2000 && editYearValue !== displayedYear && onUpdateTrip) {
                               await onUpdateTrip(trip.id, { year: editYearValue });
                             }
                             setEditingYearId(null);
@@ -360,6 +360,20 @@ export default function HistoryTab({ onLoadTrip, refreshKey, onTripConfigRenamed
     next.has(key) ? next.delete(key) : next.add(key);
     return next;
   });
+
+  // Auto-expand the group containing the currently loaded trip whenever trips refresh
+  useEffect(() => {
+    if (!loadedHistoryEntryId || !trips.length) return;
+    const loaded = trips.find(t => t.id === loadedHistoryEntryId);
+    if (!loaded) return;
+    const key = `${loaded.year || 2025}-${loaded.status || 'budgeted'}`;
+    setExpandedGroups(prev => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+  }, [trips, loadedHistoryEntryId]);
 
   const countryMap: Record<string, true> = {};
   for (const t of trips) { countryMap[t.country || 'Other'] = true; }
