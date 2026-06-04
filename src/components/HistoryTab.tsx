@@ -138,7 +138,7 @@ function TripTable({ trips, title, onLoadTrip, onDeleteTrip, onUpdateTrip, onTri
                           onChange={(e) => setEditYearValue(Number(e.target.value))}
                           onBlur={async () => {
                             const displayedYear = trip.year || 2025;
-                            if (editYearValue > 2000 && editYearValue !== displayedYear && onUpdateTrip) {
+                            if (editYearValue > 2000 && editYearValue < 2100 && editYearValue !== displayedYear && onUpdateTrip) {
                               await onUpdateTrip(trip.id, { year: editYearValue });
                             }
                             setEditingYearId(null);
