@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TabType, HistoricalTrip } from '@/lib/types';
 import { useTripData } from '@/hooks/useTripData';
 import { useExpeditions } from '@/hooks/useExpeditions';
@@ -17,6 +17,12 @@ export default function PricingTool() {
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const tripData = useTripData();
+
+  const ALL_EXTENSION_SECTIONS = ['core', 'discounts', 'singleSupp', 'hotels', 'staff', 'logistics'];
+  const [extCollapsedSections, setExtCollapsedSections] = useState<Set<string>>(new Set(ALL_EXTENSION_SECTIONS));
+  useEffect(() => {
+    setExtCollapsedSections(new Set(ALL_EXTENSION_SECTIONS));
+  }, [tripData.config.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const { expeditions, addExpedition } = useExpeditions();
 
   const handleSaveTrip = async () => {
@@ -94,6 +100,8 @@ export default function PricingTool() {
           <ExtensionTab
             config={tripData.config}
             updateConfig={tripData.updateConfig}
+            collapsedSections={extCollapsedSections}
+            setCollapsedSections={setExtCollapsedSections}
           />
         )}
         {activeTab === 'history' && (

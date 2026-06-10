@@ -36,6 +36,8 @@ const ActiveDropdown = ({ id, value, onChange, openId, setOpenId }: ActiveDropdo
 interface ExtensionTabProps {
   config: TripConfiguration;
   updateConfig: (updates: Partial<TripConfiguration> | ((prev: TripConfiguration) => Partial<TripConfiguration>)) => void;
+  collapsedSections: Set<string>;
+  setCollapsedSections: React.Dispatch<React.SetStateAction<Set<string>>>;
 }
 
 // Shows empty string instead of "0" so users don't get a leading zero when they clear and retype a value
@@ -43,7 +45,7 @@ const NumInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
   <input {...props} type="number" value={(props.value as number) || ''} />
 );
 
-export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps) {
+export default function ExtensionTab({ config, updateConfig, collapsedSections, setCollapsedSections }: ExtensionTabProps) {
   const ext = config.extension;
 
   const updateExtension = (updates: Partial<TripConfiguration['extension']>) => {
@@ -98,17 +100,11 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
   const setExtSuppPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extSuppPerPax: val } }));
   const setExtDiscountsPerPax = (val: boolean) => updateConfig(prev => ({ uiPreferences: { ...prev.uiPreferences, extDiscountsPerPax: val } }));
 
-  const ALL_SECTIONS = ['core', 'discounts', 'singleSupp', 'hotels', 'staff', 'logistics'];
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set(ALL_SECTIONS));
   const toggleSection = (key: string) => setCollapsedSections(prev => {
     const next = new Set(prev);
     next.has(key) ? next.delete(key) : next.add(key);
     return next;
   });
-  // Reset accordion state when a different trip is loaded
-  useEffect(() => {
-    setCollapsedSections(new Set(ALL_SECTIONS));
-  }, [config.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   useEffect(() => {
@@ -381,7 +377,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                       {paxCounts.map((p) => (
                         <div key={p} className="form-group">
                           <label className="form-label text-center">{p} pax</label>
-                          <NumInput type="number" min="0" value={ext.discounts.earlyBirdCountByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, discounts: { ...prev.extension.discounts, earlyBirdCountByPax: { ...prev.extension.discounts.earlyBirdCountByPax, [p]: val } } } })); }} className="w-full text-center" />
+                          <NumInput type="number" min="0" max={ext.countByPax?.[p] ?? p} value={ext.discounts.earlyBirdCountByPax?.[p] ?? 0} onChange={(e) => { const val = Math.min(Number(e.target.value), ext.countByPax?.[p] ?? p); updateConfig(prev => ({ extension: { ...prev.extension, discounts: { ...prev.extension.discounts, earlyBirdCountByPax: { ...prev.extension.discounts.earlyBirdCountByPax, [p]: val } } } })); }} className="w-full text-center" />
                         </div>
                       ))}
                     </div>
@@ -396,7 +392,7 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                       {paxCounts.map((p) => (
                         <div key={p} className="form-group">
                           <label className="form-label text-center">{p} pax</label>
-                          <NumInput type="number" min="0" value={ext.discounts.loyaltyCountByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, discounts: { ...prev.extension.discounts, loyaltyCountByPax: { ...prev.extension.discounts.loyaltyCountByPax, [p]: val } } } })); }} className="w-full text-center" />
+                          <NumInput type="number" min="0" max={ext.countByPax?.[p] ?? p} value={ext.discounts.loyaltyCountByPax?.[p] ?? 0} onChange={(e) => { const val = Math.min(Number(e.target.value), ext.countByPax?.[p] ?? p); updateConfig(prev => ({ extension: { ...prev.extension, discounts: { ...prev.extension.discounts, loyaltyCountByPax: { ...prev.extension.discounts.loyaltyCountByPax, [p]: val } } } })); }} className="w-full text-center" />
                         </div>
                       ))}
                     </div>
@@ -481,13 +477,13 @@ export default function ExtensionTab({ config, updateConfig }: ExtensionTabProps
                 <div className="mt-4 pt-4 border-t border-ag-border">
                   <div className="flex items-center justify-between mb-2">
                     <label className="form-label mb-0">Single Supplement Guests by Pax</label>
-                    <button onClick={() => { const c: { [k: number]: number } = {}; const b = ext.singleSupplement.countByPax?.[paxCounts[0]] ?? 0; for (const p of paxCounts) c[p] = b; updateExtSingleSupplement({ countByPax: c }); }} className="btn btn-secondary text-xs">Apply First to All</button>
+                    <button onClick={() => { const c: { [k: number]: number } = {}; const b = ext.singleSupplement.countByPax?.[paxCounts[0]] ?? 0; for (const p of paxCounts) c[p] = Math.min(b, ext.countByPax?.[p] ?? p); updateExtSingleSupplement({ countByPax: c }); }} className="btn btn-secondary text-xs">Apply First to All</button>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
                     {paxCounts.map((p) => (
                       <div key={p} className="form-group">
                         <label className="form-label text-center">{p} pax</label>
-                        <NumInput type="number" min="0" value={ext.singleSupplement.countByPax?.[p] ?? 0} onChange={(e) => { const val = Number(e.target.value); updateConfig(prev => ({ extension: { ...prev.extension, singleSupplement: { ...prev.extension.singleSupplement, countByPax: { ...prev.extension.singleSupplement.countByPax, [p]: val } } } })); }} className="w-full text-center" />
+                        <NumInput type="number" min="0" max={ext.countByPax?.[p] ?? p} value={ext.singleSupplement.countByPax?.[p] ?? 0} onChange={(e) => { const val = Math.min(Number(e.target.value), ext.countByPax?.[p] ?? p); updateConfig(prev => ({ extension: { ...prev.extension, singleSupplement: { ...prev.extension.singleSupplement, countByPax: { ...prev.extension.singleSupplement.countByPax, [p]: val } } } })); }} className="w-full text-center" />
                       </div>
                     ))}
                   </div>
