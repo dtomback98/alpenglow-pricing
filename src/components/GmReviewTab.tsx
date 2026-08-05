@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useHistoricalData } from '@/hooks/useHistoricalData';
-import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants';
+import { CATEGORY_COLORS, CATEGORY_LABELS, MONTHS, MONTH_ORDER } from '@/lib/constants';
 import { formatCurrency, calculateForPax, calculateFinancialBreakdown } from '@/lib/calculations';
 import { fetchTripConfigurationsByIds } from '@/lib/supabase';
 import { TripConfiguration, HistoricalTrip, PaxCalculation } from '@/lib/types';
@@ -16,6 +16,8 @@ interface ActualTrip {
   id: string;
   masterName: string;
   category: string;          // Beg | Inter | Adv | Ski | 8k E
+  year: number;
+  month: string | null;
   acctComplete: boolean;
   revenue: number | null;    // gross revenue from reporting sheet Master tab
   totalCogs: number;
@@ -36,14 +38,13 @@ const BUCKET_ORDER: { key: string; label: string }[] = [
 ];
 
 const SECTION_ORDER = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
-
 const LINKS_STORAGE_KEY = 'gm-review-budget-links';
+const NUM = 'text-right whitespace-nowrap tabular-nums';
 
 interface BudgetBuckets {
   totals: { [key: string]: number };
   lines: { [key: string]: ActualLine[] };
   total: number;           // COGS-only budget total (insurance excluded)
-  insuranceExcluded: number;
 }
 
 // ---------------------------------------------------------------- budget helpers
@@ -66,8 +67,7 @@ function tsItemAmount(
 
 /**
  * Budget bucketed to match the reporting-sheet conventions used for actuals:
- * - staff meals shown under Trip Travel/Logistics (sheet convention), not Guide Wages
- * - insurance excluded entirely (admin cost — actuals are COGS-only)
+ * staff meals under Trip Travel/Logistics, insurance excluded (COGS-only).
  */
 function computeBudgetBuckets(pax: number, config: TripConfiguration, calc: PaxCalculation): BudgetBuckets {
   const breakdown = calculateFinancialBreakdown(pax, config, calc);
@@ -87,12 +87,8 @@ function computeBudgetBuckets(pax: number, config: TripConfiguration, calc: PaxC
   };
 
   const lines: { [key: string]: ActualLine[] } = {
-    tripTravelLogistics: [],
-    guideWages: [],
-    tripSupplies: [],
-    commercialLicensing: [],
-    tripCommunications: [],
-    otherTripCosts: [],
+    tripTravelLogistics: [], guideWages: [], tripSupplies: [],
+    commercialLicensing: [], tripCommunications: [], otherTripCosts: [],
   };
   const push = (key: string, label: string, amount: number) => {
     if (amount !== 0) lines[key].push({ label, amount });
@@ -109,7 +105,6 @@ function computeBudgetBuckets(pax: number, config: TripConfiguration, calc: PaxC
   push('tripTravelLogistics', 'Ext. hotels', calc.extensionHotelsCost);
   push('tripTravelLogistics', 'Ext. meals', calc.extensionMealsCost);
   push('tripTravelLogistics', 'Ext. single rooms', calc.extensionSingleRoomCost);
-
   push('guideWages', 'Staff wages', calc.staffCost);
   push('guideWages', 'Ext. staff', calc.extensionStaffCost);
 
@@ -129,22 +124,20 @@ function computeBudgetBuckets(pax: number, config: TripConfiguration, calc: PaxC
     }
   }
 
-  return { totals, lines, total: breakdown.total - insurance, insuranceExcluded: insurance };
+  return { totals, lines, total: breakdown.total - insurance };
 }
 
 // ---------------------------------------------------------------- formatting
 
 const fmtDelta = (v: number) => (
   <span className={v < 0 ? 'text-ag-danger' : 'text-ag-success'}>
-    {v < 0 ? `(${formatCurrency(Math.abs(v)).replace('$', '$')})` : formatCurrency(v)}
+    {v < 0 ? `(${formatCurrency(Math.abs(v))})` : formatCurrency(v)}
   </span>
 );
-
 const fmtGm = (v: number) => `${(v * 100).toFixed(1)}%`;
-
 const fmtGmDelta = (v: number) => (
   <span className={v < 0 ? 'text-ag-danger' : 'text-ag-success'}>
-    {v < 0 ? `(${Math.abs(v * 100).toFixed(1)}%)` : `${(v * 100).toFixed(1)}%`}
+    {v < 0 ? `(${Math.abs(v * 100).toFixed(1)}%)` : `+${(v * 100).toFixed(1)}%`}
   </span>
 );
 
@@ -157,12 +150,14 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
   const [expandedTrips, setExpandedTrips] = useState<Set<string>>(new Set());
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
   const [linkOverrides, setLinkOverrides] = useState<{ [actualId: string]: string }>({});
+  const [yearFilter, setYearFilter] = useState<string>('all');
+  const [monthFilter, setMonthFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   useEffect(() => {
     if (refreshKey && refreshKey > 0) refresh();
   }, [refreshKey, refresh]);
 
-  // Load saved budget-link overrides
   useEffect(() => {
     try {
       const saved = localStorage.getItem(LINKS_STORAGE_KEY);
@@ -178,7 +173,21 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
     });
   };
 
-  // Resolve each actual trip to a history trip (override wins; else name match from JSON)
+  // ---- filters
+  const availableYears = Array.from(new Set(ACTUALS.map(a => a.year))).sort((a, b) => b - a);
+  const availableMonths = MONTHS.filter(m => ACTUALS.some(a => a.month === m));
+  const hasNoMonth = ACTUALS.some(a => !a.month);
+
+  const filtered = ACTUALS.filter(a => {
+    if (yearFilter !== 'all' && a.year !== Number(yearFilter)) return false;
+    if (monthFilter !== 'all') {
+      if (monthFilter === 'none' ? a.month !== null : a.month !== monthFilter) return false;
+    }
+    if (categoryFilter !== 'all' && a.category !== categoryFilter) return false;
+    return true;
+  });
+
+  // ---- budget resolution
   const linkedTripIds = useMemo(() => {
     const byName = new Map<string, HistoricalTrip>();
     for (const t of historyTrips) byName.set(t.name.trim(), t);
@@ -198,7 +207,6 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
     return map;
   }, [historyTrips, linkOverrides]);
 
-  // Fetch configs for all linked history trips
   useEffect(() => {
     const ids = Array.from(new Set(
       Array.from(linkedTripIds.values())
@@ -213,7 +221,6 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
     });
   }, [linkedTripIds]);
 
-  // Budget buckets per actual trip
   const budgets = useMemo(() => {
     const map = new Map<string, BudgetBuckets>();
     linkedTripIds.forEach((histTrip, actualId) => {
@@ -225,23 +232,38 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
     return map;
   }, [linkedTripIds, configMap]);
 
-  const toggle = (set: Set<string>, id: string, setter: (s: Set<string>) => void) => {
-    const next = new Set(set);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    setter(next);
+  // ---- expand helpers
+  const allExpanded = filtered.length > 0 && filtered.every(a => expandedTrips.has(a.id));
+  const toggleExpandAll = () => {
+    if (allExpanded) {
+      setExpandedTrips(new Set());
+      setExpandedCats(new Set());
+    } else {
+      setExpandedTrips(new Set(filtered.map(a => a.id)));
+    }
   };
+  const toggleTrip = (id: string) => setExpandedTrips(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const toggleCat = (id: string) => setExpandedCats(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
+  // ---- totals for filtered set
   const sections = SECTION_ORDER
-    .map(cat => ({ cat, trips: ACTUALS.filter(a => a.category === cat).sort((a, b) => a.masterRow - b.masterRow) }))
+    .map(cat => ({ cat, trips: filtered.filter(a => a.category === cat).sort((a, b) => a.masterRow - b.masterRow) }))
     .filter(s => s.trips.length > 0);
 
-  // Grand totals
-  const grand = { revenue: 0, budget: 0, budgetRevenue: 0, actual: 0 };
-  for (const a of ACTUALS) {
-    grand.revenue += a.revenue || 0;
-    grand.actual += a.totalCogs;
+  const totals = { revenue: 0, budget: 0, budgetRevenue: 0, actual: 0, linked: 0 };
+  for (const a of filtered) {
+    totals.revenue += a.revenue || 0;
+    totals.actual += a.totalCogs;
     const b = budgets.get(a.id);
-    if (b) { grand.budget += b.total; grand.budgetRevenue += a.revenue || 0; }
+    if (b) { totals.budget += b.total; totals.budgetRevenue += a.revenue || 0; totals.linked += 1; }
   }
 
   if (loading || configsLoading) {
@@ -252,84 +274,151 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
 
   return (
     <div className="space-y-6">
+      {/* Filters */}
       <div className="card">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">2026 Budget vs. Actuals — Gross Margin Review</h2>
-            <p className="text-xs text-ag-text-muted mt-1">
-              Actuals from the 2026 reporting sheet (as of Aug 5, 2026) · Budgets computed live from each trip&apos;s linked
-              budget in History · Delta = Budgeted − Actual, red = over budget
-            </p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-ag-text-muted">Year</p>
+              <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="text-sm">
+                <option value="all">All Years</option>
+                {availableYears.map(y => <option key={y} value={String(y)}>{y}</option>)}
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-ag-text-muted">Month</p>
+              <select value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} className="text-sm">
+                <option value="all">All Months</option>
+                {availableMonths.map(m => <option key={m} value={m}>{m}</option>)}
+                {hasNoMonth && <option value="none">No date set</option>}
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-ag-text-muted">Category</p>
+              <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="text-sm">
+                <option value="all">All Categories</option>
+                {SECTION_ORDER.map(c => <option key={c} value={c}>{CATEGORY_LABELS[c] || c}</option>)}
+              </select>
+            </div>
           </div>
-          <div className="text-right text-sm">
-            <div className="text-ag-text-muted text-xs">Total Actual COGS</div>
-            <div className="font-bold text-lg">{formatCurrency(grand.actual)}</div>
-          </div>
+          <button onClick={toggleExpandAll} className="btn btn-secondary text-sm">
+            {allExpanded ? 'Collapse All' : 'Expand All'}
+          </button>
         </div>
       </div>
 
-      <div className="card overflow-x-auto">
-        <table className="pricing-table">
-          <thead>
-            <tr>
-              <th className="w-8"></th>
-              <th>Trip</th>
-              <th className="text-center" title="Accounting complete on the reporting sheet">Acct ✓</th>
-              <th className="text-right">Revenue</th>
-              <th className="text-right">Budgeted</th>
-              <th className="text-right">Actuals</th>
-              <th className="text-right">Delta</th>
-              <th className="text-right" title="(Revenue − Budgeted) / Revenue">Budg. GM</th>
-              <th className="text-right" title="(Revenue − Actuals) / Revenue">Actual GM</th>
-              <th className="text-right" title="Actual GM − Budgeted GM">GM Δ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sections.map(({ cat, trips: sectionTrips }) => {
-              const sec = { revenue: 0, budget: 0, hasBudget: false, actual: 0 };
-              for (const a of sectionTrips) {
-                sec.revenue += a.revenue || 0;
-                sec.actual += a.totalCogs;
-                const b = budgets.get(a.id);
-                if (b) { sec.budget += b.total; sec.hasBudget = true; }
-              }
-              const secBudgGm = sec.revenue > 0 && sec.hasBudget ? (sec.revenue - sec.budget) / sec.revenue : null;
-              const secActGm = sec.revenue > 0 ? (sec.revenue - sec.actual) / sec.revenue : null;
-              return (
-                <SectionRows
-                  key={cat}
-                  cat={cat}
-                  trips={sectionTrips}
-                  budgets={budgets}
-                  linkedTripIds={linkedTripIds}
-                  expandedTrips={expandedTrips}
-                  expandedCats={expandedCats}
-                  onToggleTrip={(id) => toggle(expandedTrips, id, setExpandedTrips)}
-                  onToggleCat={(id) => toggle(expandedCats, id, setExpandedCats)}
-                  historyTrips={sortedHistoryTrips}
-                  linkOverrides={linkOverrides}
-                  onLinkChange={saveOverride}
-                  sectionTotals={{ ...sec, budgGm: secBudgGm, actGm: secActGm }}
-                />
-              );
-            })}
-            {/* Grand total */}
-            <tr className="font-bold border-t-2 border-ag-text">
-              <td></td>
-              <td>Total All Trips</td>
-              <td></td>
-              <td className="text-right whitespace-nowrap">{formatCurrency(grand.revenue)}</td>
-              <td className="text-right whitespace-nowrap">{grand.budget > 0 ? formatCurrency(grand.budget) : '—'}</td>
-              <td className="text-right whitespace-nowrap">{formatCurrency(grand.actual)}</td>
-              <td className="text-right whitespace-nowrap">{grand.budget > 0 ? fmtDelta(grand.budget - grand.actual) : '—'}</td>
-              <td className="text-right">{grand.budgetRevenue > 0 ? fmtGm((grand.budgetRevenue - grand.budget) / grand.budgetRevenue) : '—'}</td>
-              <td className="text-right">{grand.revenue > 0 ? fmtGm((grand.revenue - grand.actual) / grand.revenue) : '—'}</td>
-              <td></td>
-            </tr>
-          </tbody>
-        </table>
+      {/* Summary tiles */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="bg-ag-card rounded-lg p-4 border border-ag-border">
+          <div className="text-xs text-ag-text-muted mb-1">Revenue</div>
+          <div className="text-xl font-bold tabular-nums">{formatCurrency(totals.revenue)}</div>
+          <div className="text-xs text-ag-text-muted mt-1">{filtered.length} trip{filtered.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div className="bg-ag-card rounded-lg p-4 border border-ag-border">
+          <div className="text-xs text-ag-text-muted mb-1">Budgeted COGS</div>
+          <div className="text-xl font-bold tabular-nums">{totals.linked > 0 ? formatCurrency(totals.budget) : '—'}</div>
+          <div className="text-xs text-ag-text-muted mt-1">{totals.linked} of {filtered.length} linked</div>
+        </div>
+        <div className="bg-ag-card rounded-lg p-4 border border-ag-border">
+          <div className="text-xs text-ag-text-muted mb-1">Actual COGS</div>
+          <div className="text-xl font-bold tabular-nums">{formatCurrency(totals.actual)}</div>
+          <div className="text-xs text-ag-text-muted mt-1">from reporting sheet</div>
+        </div>
+        <div className="bg-ag-card rounded-lg p-4 border border-ag-border">
+          <div className="text-xs text-ag-text-muted mb-1">Delta (linked trips)</div>
+          <div className="text-xl font-bold tabular-nums">
+            {totals.linked > 0
+              ? fmtDelta(totals.budget - filtered.reduce((s, a) => s + (budgets.get(a.id) ? a.totalCogs : 0), 0))
+              : '—'}
+          </div>
+          <div className="text-xs text-ag-text-muted mt-1">budget − actual</div>
+        </div>
+        <div className="bg-ag-card rounded-lg p-4 border border-ag-border">
+          <div className="text-xs text-ag-text-muted mb-1">Actual GM</div>
+          <div className="text-xl font-bold tabular-nums">
+            {totals.revenue > 0 ? fmtGm((totals.revenue - totals.actual) / totals.revenue) : '—'}
+          </div>
+          <div className="text-xs text-ag-text-muted mt-1">on filtered trips</div>
+        </div>
       </div>
 
+      {/* Table */}
+      <div className="card overflow-x-auto">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-lg font-semibold">Budget vs. Actuals by Trip</h2>
+          <p className="text-xs text-ag-text-muted">Click a trip for QB categories · click a category for line items</p>
+        </div>
+        {filtered.length === 0 ? (
+          <p className="text-sm text-ag-text-muted py-4">No trips match the current filters.</p>
+        ) : (
+          <table className="pricing-table">
+            <thead>
+              <tr>
+                <th className="w-6"></th>
+                <th>Trip</th>
+                <th className="text-center whitespace-nowrap" title="Accounting complete on the reporting sheet">Acct ✓</th>
+                <th className={NUM}>Revenue</th>
+                <th className={NUM}>Budgeted</th>
+                <th className={NUM}>Actuals</th>
+                <th className={NUM}>Delta</th>
+                <th className={NUM} title="(Revenue − Budgeted) / Revenue">Budg. GM</th>
+                <th className={NUM} title="(Revenue − Actuals) / Revenue">Act. GM</th>
+                <th className={NUM} title="Actual GM − Budgeted GM">GM Δ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sections.map(({ cat, trips: sectionTrips }) => {
+                const color = CATEGORY_COLORS[cat] || '#3b82f6';
+                const sec = { revenue: 0, budget: 0, hasBudget: false, actual: 0, actualLinked: 0 };
+                for (const a of sectionTrips) {
+                  sec.revenue += a.revenue || 0;
+                  sec.actual += a.totalCogs;
+                  const b = budgets.get(a.id);
+                  if (b) { sec.budget += b.total; sec.hasBudget = true; sec.actualLinked += a.totalCogs; }
+                }
+                return (
+                  <SectionBlock
+                    key={cat}
+                    cat={cat}
+                    color={color}
+                    trips={sectionTrips}
+                    sec={sec}
+                    budgets={budgets}
+                    linkedTripIds={linkedTripIds}
+                    expandedTrips={expandedTrips}
+                    expandedCats={expandedCats}
+                    toggleTrip={toggleTrip}
+                    toggleCat={toggleCat}
+                    historyTrips={sortedHistoryTrips}
+                    linkOverrides={linkOverrides}
+                    onLinkChange={saveOverride}
+                  />
+                );
+              })}
+              {sections.length > 1 && (
+                <tr className="font-bold">
+                  <td className="border-t-2 border-ag-text-muted"></td>
+                  <td className="border-t-2 border-ag-text-muted pt-3">Total All Trips</td>
+                  <td className="border-t-2 border-ag-text-muted"></td>
+                  <td className={`${NUM} border-t-2 border-ag-text-muted pt-3`}>{formatCurrency(totals.revenue)}</td>
+                  <td className={`${NUM} border-t-2 border-ag-text-muted pt-3`}>{totals.linked > 0 ? formatCurrency(totals.budget) : '—'}</td>
+                  <td className={`${NUM} border-t-2 border-ag-text-muted pt-3`}>{formatCurrency(totals.actual)}</td>
+                  <td className={`${NUM} border-t-2 border-ag-text-muted pt-3`}>
+                    {totals.linked > 0
+                      ? fmtDelta(totals.budget - filtered.reduce((s, a) => s + (budgets.get(a.id) ? a.totalCogs : 0), 0))
+                      : '—'}
+                  </td>
+                  <td className={`${NUM} border-t-2 border-ag-text-muted pt-3`}>{totals.budgetRevenue > 0 ? fmtGm((totals.budgetRevenue - totals.budget) / totals.budgetRevenue) : '—'}</td>
+                  <td className={`${NUM} border-t-2 border-ag-text-muted pt-3`}>{totals.revenue > 0 ? fmtGm((totals.revenue - totals.actual) / totals.revenue) : '—'}</td>
+                  <td className="border-t-2 border-ag-text-muted"></td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Notes */}
       <div className="card text-sm text-ag-text-muted space-y-1">
         <div className="font-medium text-ag-text mb-2">Notes</div>
         <p>· Actuals are COGS line items from each trip tab&apos;s EXPENSES block on the reporting sheet — admin costs (Insurance, AE Overhead Fee, Gear Replacement) excluded. To match, budget-side insurance is also excluded.</p>
@@ -345,31 +434,36 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
 
 // ---------------------------------------------------------------- section + trip rows
 
-interface SectionRowsProps {
+interface SectionBlockProps {
   cat: string;
+  color: string;
   trips: ActualTrip[];
+  sec: { revenue: number; budget: number; hasBudget: boolean; actual: number; actualLinked: number };
   budgets: Map<string, BudgetBuckets>;
   linkedTripIds: Map<string, HistoricalTrip>;
   expandedTrips: Set<string>;
   expandedCats: Set<string>;
-  onToggleTrip: (id: string) => void;
-  onToggleCat: (id: string) => void;
+  toggleTrip: (id: string) => void;
+  toggleCat: (id: string) => void;
   historyTrips: HistoricalTrip[];
   linkOverrides: { [actualId: string]: string };
   onLinkChange: (actualId: string, historyTripId: string) => void;
-  sectionTotals: { revenue: number; budget: number; hasBudget: boolean; actual: number; budgGm: number | null; actGm: number | null };
 }
 
-function SectionRows({
-  cat, trips, budgets, linkedTripIds, expandedTrips, expandedCats,
-  onToggleTrip, onToggleCat, historyTrips, linkOverrides, onLinkChange, sectionTotals,
-}: SectionRowsProps) {
-  const color = CATEGORY_COLORS[cat] || '#3b82f6';
+function SectionBlock({
+  cat, color, trips, sec, budgets, linkedTripIds, expandedTrips, expandedCats,
+  toggleTrip, toggleCat, historyTrips, linkOverrides, onLinkChange,
+}: SectionBlockProps) {
   return (
     <>
       <tr>
-        <td colSpan={10} className="pt-5">
-          <span className="font-semibold text-base" style={{ color }}>{CATEGORY_LABELS[cat] || cat} Trips</span>
+        <td colSpan={10} className="pt-6 pb-1 border-b-0">
+          <span
+            className="inline-block text-xs font-bold uppercase tracking-widest px-2 py-1 rounded"
+            style={{ color, backgroundColor: `${color}1a` }}
+          >
+            {CATEGORY_LABELS[cat] || cat}
+          </span>
         </td>
       </tr>
       {trips.map(a => {
@@ -387,8 +481,8 @@ function SectionRows({
             linked={linked}
             isOpen={isOpen}
             expandedCats={expandedCats}
-            onToggleTrip={onToggleTrip}
-            onToggleCat={onToggleCat}
+            toggleTrip={toggleTrip}
+            toggleCat={toggleCat}
             historyTrips={historyTrips}
             linkOverrides={linkOverrides}
             onLinkChange={onLinkChange}
@@ -397,16 +491,16 @@ function SectionRows({
           />
         );
       })}
-      <tr className="font-semibold border-t border-ag-border">
+      <tr className="font-semibold bg-ag-card-lighter/20">
         <td></td>
         <td>Total {CATEGORY_LABELS[cat] || cat}</td>
         <td></td>
-        <td className="text-right whitespace-nowrap">{formatCurrency(sectionTotals.revenue)}</td>
-        <td className="text-right whitespace-nowrap">{sectionTotals.hasBudget ? formatCurrency(sectionTotals.budget) : '—'}</td>
-        <td className="text-right whitespace-nowrap">{formatCurrency(sectionTotals.actual)}</td>
-        <td className="text-right whitespace-nowrap">{sectionTotals.hasBudget ? fmtDelta(sectionTotals.budget - sectionTotals.actual) : '—'}</td>
-        <td className="text-right">{sectionTotals.budgGm !== null ? fmtGm(sectionTotals.budgGm) : '—'}</td>
-        <td className="text-right">{sectionTotals.actGm !== null ? fmtGm(sectionTotals.actGm) : '—'}</td>
+        <td className={NUM}>{formatCurrency(sec.revenue)}</td>
+        <td className={NUM}>{sec.hasBudget ? formatCurrency(sec.budget) : '—'}</td>
+        <td className={NUM}>{formatCurrency(sec.actual)}</td>
+        <td className={NUM}>{sec.hasBudget ? fmtDelta(sec.budget - sec.actualLinked) : '—'}</td>
+        <td className={NUM}>{sec.revenue > 0 && sec.hasBudget ? fmtGm((sec.revenue - sec.budget) / sec.revenue) : '—'}</td>
+        <td className={NUM}>{sec.revenue > 0 ? fmtGm((sec.revenue - sec.actual) / sec.revenue) : '—'}</td>
         <td></td>
       </tr>
     </>
@@ -419,8 +513,8 @@ interface TripRowsProps {
   linked?: HistoricalTrip;
   isOpen: boolean;
   expandedCats: Set<string>;
-  onToggleTrip: (id: string) => void;
-  onToggleCat: (id: string) => void;
+  toggleTrip: (id: string) => void;
+  toggleCat: (id: string) => void;
   historyTrips: HistoricalTrip[];
   linkOverrides: { [actualId: string]: string };
   onLinkChange: (actualId: string, historyTripId: string) => void;
@@ -430,34 +524,39 @@ interface TripRowsProps {
 
 function TripRows({
   actual: a, budget: b, linked, isOpen, expandedCats,
-  onToggleTrip, onToggleCat, historyTrips, linkOverrides, onLinkChange, budgGm, actGm,
+  toggleTrip, toggleCat, historyTrips, linkOverrides, onLinkChange, budgGm, actGm,
 }: TripRowsProps) {
   const overrideValue = linkOverrides[a.id] !== undefined
     ? linkOverrides[a.id]
     : (linked ? linked.id : '');
   return (
     <>
-      <tr className="hover:bg-ag-card-lighter/40 cursor-pointer" onClick={() => onToggleTrip(a.id)}>
-        <td className="text-ag-text-muted select-none">{isOpen ? '▾' : '▸'}</td>
-        <td className="font-medium">{a.masterName}</td>
-        <td className="text-center">{a.acctComplete ? '✓' : ''}</td>
-        <td className="text-right whitespace-nowrap">{a.revenue !== null ? formatCurrency(a.revenue) : '—'}</td>
-        <td className="text-right whitespace-nowrap">{b ? formatCurrency(b.total) : <span className="text-ag-text-muted italic text-xs">no budget linked</span>}</td>
-        <td className="text-right whitespace-nowrap">{formatCurrency(a.totalCogs)}</td>
-        <td className="text-right whitespace-nowrap">{b ? fmtDelta(b.total - a.totalCogs) : '—'}</td>
-        <td className="text-right">{budgGm !== null ? fmtGm(budgGm) : '—'}</td>
-        <td className="text-right">{actGm !== null ? fmtGm(actGm) : '—'}</td>
-        <td className="text-right">{budgGm !== null && actGm !== null ? fmtGmDelta(actGm - budgGm) : '—'}</td>
+      <tr
+        className={`cursor-pointer hover:bg-ag-card-lighter/40 ${isOpen ? 'bg-ag-card-lighter/30' : ''}`}
+        onClick={() => toggleTrip(a.id)}
+      >
+        <td className="text-ag-accent select-none text-xs">{isOpen ? '▼' : '▶'}</td>
+        <td className="font-medium">
+          {a.masterName}
+          {a.month && <span className="text-xs text-ag-text-muted ml-2">{a.month} {a.year}</span>}
+        </td>
+        <td className="text-center text-ag-success">{a.acctComplete ? '✓' : ''}</td>
+        <td className={NUM}>{a.revenue !== null ? formatCurrency(a.revenue) : '—'}</td>
+        <td className={NUM}>{b ? formatCurrency(b.total) : <span className="text-ag-text-muted italic text-xs whitespace-nowrap">no budget linked</span>}</td>
+        <td className={NUM}>{formatCurrency(a.totalCogs)}</td>
+        <td className={NUM}>{b ? fmtDelta(b.total - a.totalCogs) : '—'}</td>
+        <td className={NUM}>{budgGm !== null ? fmtGm(budgGm) : '—'}</td>
+        <td className={NUM}>{actGm !== null ? fmtGm(actGm) : '—'}</td>
+        <td className={NUM}>{budgGm !== null && actGm !== null ? fmtGmDelta(actGm - budgGm) : '—'}</td>
       </tr>
       {isOpen && (
-        <tr>
+        <tr className="bg-ag-card-lighter/10">
           <td></td>
-          <td colSpan={9} className="py-2">
+          <td colSpan={9} className="py-2" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2 text-xs text-ag-text-muted">
               <span>Budget source:</span>
               <select
                 value={overrideValue}
-                onClick={(e) => e.stopPropagation()}
                 onChange={(e) => onLinkChange(a.id, e.target.value)}
                 className="text-xs py-1"
               >
@@ -468,7 +567,7 @@ function TripRows({
                   </option>
                 ))}
               </select>
-              {linked && <span>{linked.pax} pax @ saved budget</span>}
+              {linked && <span>· computed at {linked.pax} pax</span>}
             </div>
           </td>
         </tr>
@@ -491,7 +590,7 @@ function TripRows({
             actTotal={actTotal}
             hasBudget={Boolean(b)}
             catOpen={catOpen}
-            onToggleCat={onToggleCat}
+            toggleCat={toggleCat}
           />
         );
       })}
@@ -508,40 +607,46 @@ interface CatRowsProps {
   actTotal: number;
   hasBudget: boolean;
   catOpen: boolean;
-  onToggleCat: (id: string) => void;
+  toggleCat: (id: string) => void;
 }
 
-function CatRows({ catId, label, actLines, budLines, budTotal, actTotal, hasBudget, catOpen, onToggleCat }: CatRowsProps) {
+function CatRows({ catId, label, actLines, budLines, budTotal, actTotal, hasBudget, catOpen, toggleCat }: CatRowsProps) {
   return (
     <>
-      <tr className="text-sm hover:bg-ag-card-lighter/30 cursor-pointer" onClick={() => onToggleCat(catId)}>
-        <td className="text-ag-text-muted select-none text-xs text-right">{catOpen ? '▾' : '▸'}</td>
-        <td className="pl-8 text-ag-text">{label}</td>
+      <tr
+        className="text-sm cursor-pointer bg-ag-card-lighter/10 hover:bg-ag-card-lighter/30"
+        onClick={() => toggleCat(catId)}
+      >
+        <td></td>
+        <td className="pl-6">
+          <span className="text-ag-accent text-[10px] mr-2 select-none">{catOpen ? '▼' : '▶'}</span>
+          {label}
+        </td>
         <td></td>
         <td></td>
-        <td className="text-right whitespace-nowrap">{hasBudget && budTotal !== null ? formatCurrency(budTotal) : ''}</td>
-        <td className="text-right whitespace-nowrap">{formatCurrency(actTotal)}</td>
-        <td className="text-right whitespace-nowrap">{hasBudget && budTotal !== null ? fmtDelta(budTotal - actTotal) : ''}</td>
+        <td className={NUM}>{hasBudget && budTotal !== null ? formatCurrency(budTotal) : ''}</td>
+        <td className={NUM}>{formatCurrency(actTotal)}</td>
+        <td className={NUM}>{hasBudget && budTotal !== null ? fmtDelta(budTotal - actTotal) : ''}</td>
         <td colSpan={3}></td>
       </tr>
       {catOpen && budLines.map((l, i) => (
-        <tr key={`b${i}`} className="text-xs text-ag-text-muted italic">
+        <tr key={`b${i}`} className="text-xs text-ag-text-muted bg-ag-card-lighter/5">
           <td></td>
-          <td className="pl-14">{l.label}</td>
+          <td className="pl-14 italic">{l.label} <span className="not-italic opacity-60">(budget)</span></td>
           <td></td>
           <td></td>
-          <td className="text-right whitespace-nowrap">{formatCurrency(l.amount)}</td>
+          <td className={`${NUM} italic`}>{formatCurrency(l.amount)}</td>
           <td colSpan={5}></td>
         </tr>
       ))}
       {catOpen && actLines.map((l, i) => (
-        <tr key={`a${i}`} className="text-xs text-ag-text-muted italic">
+        <tr key={`a${i}`} className="text-xs text-ag-text-muted bg-ag-card-lighter/5">
           <td></td>
-          <td className="pl-14">{l.label}</td>
+          <td className="pl-14 italic">{l.label}</td>
           <td></td>
           <td></td>
           <td></td>
-          <td className="text-right whitespace-nowrap">{formatCurrency(l.amount)}</td>
+          <td className={`${NUM} italic`}>{formatCurrency(l.amount)}</td>
           <td colSpan={4}></td>
         </tr>
       ))}
