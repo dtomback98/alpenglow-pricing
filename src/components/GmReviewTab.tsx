@@ -415,21 +415,21 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
                 );
               })}
               {sections.length > 1 && (
-                <tr className="font-bold">
-                  <td className="border-t-2 border-ag-text-muted"></td>
-                  <td className="border-t-2 border-ag-text-muted pt-3">Total All Trips</td>
-                  <td className="border-t-2 border-ag-text-muted"></td>
-                  <td className={`${NUM} border-t-2 border-ag-text-muted pt-3`}>{formatCurrency(totals.revenue)}</td>
-                  <td className={`${NUM} border-t-2 border-ag-text-muted pt-3`}>{totals.linked > 0 ? formatCurrency(totals.budget) : '—'}</td>
-                  <td className={`${NUM} border-t-2 border-ag-text-muted pt-3`}>{formatCurrency(totals.actual)}</td>
-                  <td className={`${NUM} border-t-2 border-ag-text-muted pt-3`}>
+                <tr className="font-bold bg-ag-accent/10">
+                  <td className="border-t-2 border-ag-accent"></td>
+                  <td className="border-t-2 border-ag-accent pt-3">Total All Trips</td>
+                  <td className="border-t-2 border-ag-accent"></td>
+                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{formatCurrency(totals.revenue)}</td>
+                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{totals.linked > 0 ? formatCurrency(totals.budget) : '—'}</td>
+                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{formatCurrency(totals.actual)}</td>
+                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>
                     {totals.linked > 0
                       ? fmtDelta(totals.budget - filtered.reduce((s, a) => s + (budgets.get(a.id) ? a.totalCogs : 0), 0))
                       : '—'}
                   </td>
-                  <td className={`${NUM} border-t-2 border-ag-text-muted pt-3`}>{totals.budgetRevenue > 0 ? fmtGm((totals.budgetRevenue - totals.budget) / totals.budgetRevenue) : '—'}</td>
-                  <td className={`${NUM} border-t-2 border-ag-text-muted pt-3`}>{totals.revenue > 0 ? fmtGm((totals.revenue - totals.actual) / totals.revenue) : '—'}</td>
-                  <td className="border-t-2 border-ag-text-muted"></td>
+                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{totals.budgetRevenue > 0 ? fmtGm((totals.budgetRevenue - totals.budget) / totals.budgetRevenue) : '—'}</td>
+                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{totals.revenue > 0 ? fmtGm((totals.revenue - totals.actual) / totals.revenue) : '—'}</td>
+                  <td className="border-t-2 border-ag-accent"></td>
                 </tr>
               )}
             </tbody>
@@ -512,17 +512,19 @@ function SectionBlock({
           />
         );
       })}
-      <tr className="font-semibold bg-ag-card-lighter/20">
-        <td></td>
-        <td>Total {CATEGORY_LABELS[cat] || cat}</td>
-        <td></td>
-        <td className={NUM}>{formatCurrency(sec.revenue)}</td>
-        <td className={NUM}>{sec.hasBudget ? formatCurrency(sec.budget) : '—'}</td>
-        <td className={NUM}>{formatCurrency(sec.actual)}</td>
-        <td className={NUM}>{sec.hasBudget ? fmtDelta(sec.budget - sec.actualLinked) : '—'}</td>
-        <td className={NUM}>{sec.revenue > 0 && sec.hasBudget ? fmtGm((sec.revenue - sec.budget) / sec.revenue) : '—'}</td>
-        <td className={NUM}>{sec.revenue > 0 ? fmtGm((sec.revenue - sec.actual) / sec.revenue) : '—'}</td>
-        <td></td>
+      <tr className="font-bold bg-ag-card-lighter/60">
+        <td className="border-t-2 border-ag-border"></td>
+        <td className="border-t-2 border-ag-border uppercase text-xs tracking-wider" style={{ color }}>
+          Total {CATEGORY_LABELS[cat] || cat}
+        </td>
+        <td className="border-t-2 border-ag-border"></td>
+        <td className={`${NUM} border-t-2 border-ag-border`}>{formatCurrency(sec.revenue)}</td>
+        <td className={`${NUM} border-t-2 border-ag-border`}>{sec.hasBudget ? formatCurrency(sec.budget) : '—'}</td>
+        <td className={`${NUM} border-t-2 border-ag-border`}>{formatCurrency(sec.actual)}</td>
+        <td className={`${NUM} border-t-2 border-ag-border`}>{sec.hasBudget ? fmtDelta(sec.budget - sec.actualLinked) : '—'}</td>
+        <td className={`${NUM} border-t-2 border-ag-border`}>{sec.revenue > 0 && sec.hasBudget ? fmtGm((sec.revenue - sec.budget) / sec.revenue) : '—'}</td>
+        <td className={`${NUM} border-t-2 border-ag-border`}>{sec.revenue > 0 ? fmtGm((sec.revenue - sec.actual) / sec.revenue) : '—'}</td>
+        <td className="border-t-2 border-ag-border"></td>
       </tr>
     </>
   );
