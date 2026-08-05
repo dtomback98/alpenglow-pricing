@@ -12,6 +12,7 @@ import InputsTab from './InputsTab';
 import ExtensionTab from './ExtensionTab';
 import HistoryTab from './HistoryTab';
 import FinancialsTab from './FinancialsTab';
+import GmReviewTab from './GmReviewTab';
 
 export default function PricingTool() {
   const [activeTab, setActiveTab] = useState<TabType>('summary');
@@ -133,6 +134,9 @@ export default function PricingTool() {
             expeditions={expeditions}
             addExpedition={addExpedition}
           />
+        )}
+        {activeTab === 'gm-review' && (
+          <GmReviewTab refreshKey={historyRefreshKey} />
         )}
       </div>
     </div>
