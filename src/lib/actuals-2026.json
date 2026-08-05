@@ -3,6 +3,8 @@
   "id": "aconcagua3jan10232026",
   "masterName": "Aconcagua#3 - Jan10-23, 2026",
   "category": "Inter",
+  "year": 2026,
+  "month": "Jan",
   "acctComplete": true,
   "revenue": 183739.66,
   "totalCogs": 128475,
@@ -14,7 +16,7 @@
     "lines": [
      {
       "label": "Chad inter-trip expenses - Split w/Feb ECS",
-      "amount": 355.0
+      "amount": 355
      },
      {
       "label": "Chad airfares - Split w/Feb ECS",
@@ -22,11 +24,11 @@
      },
      {
       "label": "Logistics AV - Aconcagua Vision",
-      "amount": 96740.0
+      "amount": 96740
      },
      {
       "label": "Meals - Chad Peele",
-      "amount": 27.0
+      "amount": 27
      }
     ]
    },
@@ -39,29 +41,29 @@
      },
      {
       "label": "Guide Wages - Chad Peele",
-      "amount": 3750.0
+      "amount": 3750
      }
     ]
    },
    "tripSupplies": {
-    "total": 11292.0,
+    "total": 11292,
     "lines": [
      {
       "label": "Trip Supplies - Gaspar inv",
-      "amount": 387.0
+      "amount": 387
      },
      {
       "label": "Hypoxico - Christian, Kathryn, Mattie, Kimberly, Li",
-      "amount": 10905.0
+      "amount": 10905
      }
     ]
    },
    "commercialLicensing": {
-    "total": 11340.0,
+    "total": 11340,
     "lines": [
      {
       "label": "Discounted permits (9 pax)",
-      "amount": 11340.0
+      "amount": 11340
      }
     ]
    }
@@ -71,6 +73,8 @@
   "id": "privatecotorabaugh",
   "masterName": "Private Coto RA Baugh",
   "category": "Inter",
+  "year": 2026,
+  "month": "Jan",
   "acctComplete": true,
   "revenue": 6746.5,
   "totalCogs": 3585.51,
@@ -78,11 +82,11 @@
   "masterRow": 3,
   "buckets": {
    "guideWages": {
-    "total": 1250.0,
+    "total": 1250,
     "lines": [
      {
       "label": "Lead guide salaries - Ignacio Espinosa invoice",
-      "amount": 1250.0
+      "amount": 1250
      }
     ]
    },
@@ -95,7 +99,7 @@
      },
      {
       "label": "Food - Ignacio Espinosa invoice",
-      "amount": 60.0
+      "amount": 60
      }
     ]
    },
@@ -104,7 +108,7 @@
     "lines": [
      {
       "label": "Guide expenses - Ignacio Espinosa invoice (transportation",
-      "amount": 360.0
+      "amount": 360
      },
      {
       "label": "Hypoxico",
@@ -118,6 +122,8 @@
   "id": "privateorizabafatzinger",
   "masterName": "Private Orizaba Fatzinger",
   "category": "Beg",
+  "year": 2026,
+  "month": "Jan",
   "acctComplete": true,
   "revenue": 14479.87,
   "totalCogs": 8094.47,
@@ -145,7 +151,7 @@
      },
      {
       "label": "Groceries - Misc. and groceries",
-      "amount": 160.0
+      "amount": 160
      },
      {
       "label": "Transportation - Alredo - driver for trip",
@@ -176,6 +182,8 @@
   "id": "japanbcski1",
   "masterName": "Japan BC Ski #1",
   "category": "Ski",
+  "year": 2026,
+  "month": "Jan",
   "acctComplete": true,
   "revenue": 25285,
   "totalCogs": 21954.21,
@@ -196,7 +204,7 @@
     "lines": [
      {
       "label": "Portam hotel - 8411.76",
-      "amount": 1085.0
+      "amount": 1085
      },
      {
       "label": "Portam hotel - Prepaid",
@@ -208,7 +216,7 @@
      },
      {
       "label": "Furano Lodging",
-      "amount": 3486.0
+      "amount": 3486
      },
      {
       "label": "Furano Lodging",
@@ -238,6 +246,8 @@
   "id": "japanbcski2",
   "masterName": "Japan BC Ski #2",
   "category": "Ski",
+  "year": 2026,
+  "month": "Jan",
   "acctComplete": true,
   "revenue": 47447.5,
   "totalCogs": 29402.76,
@@ -301,6 +311,8 @@
   "id": "japanbcski3",
   "masterName": "Japan BC Ski #3",
   "category": "Ski",
+  "year": 2026,
+  "month": "Feb",
   "acctComplete": true,
   "revenue": 38808,
   "totalCogs": 26912.38,
@@ -316,7 +328,7 @@
      },
      {
       "label": "Portam Hotel",
-      "amount": 1630.0
+      "amount": 1630
      },
      {
       "label": "Niseko lodging - Sydney invoice",
@@ -376,6 +388,8 @@
   "id": "privatejapanzintak",
   "masterName": "Private Japan Zintak",
   "category": "Ski",
+  "year": 2026,
+  "month": "Feb",
   "acctComplete": true,
   "revenue": 6800,
   "totalCogs": 3526,
@@ -383,16 +397,16 @@
   "masterRow": 8,
   "buckets": {
    "guideWages": {
-    "total": 2100.0,
+    "total": 2100,
     "lines": [
      {
       "label": "Guide Wages",
-      "amount": 2100.0
+      "amount": 2100
      }
     ]
    },
    "tripTravelLogistics": {
-    "total": 1196.0,
+    "total": 1196,
     "lines": [
      {
       "label": "Travel - flight/hotel/taxi",
@@ -400,16 +414,16 @@
      },
      {
       "label": "Meals",
-      "amount": 420.0
+      "amount": 420
      }
     ]
    },
    "tripSupplies": {
-    "total": 230.0,
+    "total": 230,
     "lines": [
      {
       "label": "Ski Passes",
-      "amount": 230.0
+      "amount": 230
      }
     ]
    }
@@ -419,6 +433,8 @@
   "id": "cotopaxirafeb",
   "masterName": "Cotopaxi RA Feb",
   "category": "Inter",
+  "year": 2026,
+  "month": "Feb",
   "acctComplete": true,
   "revenue": 51943.18,
   "totalCogs": 28948.54,
@@ -460,19 +476,19 @@
     ]
    },
    "guideWages": {
-    "total": 8000.0,
+    "total": 8000,
     "lines": [
      {
       "label": "Guide Salaries - Nico invoice",
-      "amount": 4000.0
+      "amount": 4000
      },
      {
       "label": "Guide Salaries - Chad Peele inv",
-      "amount": 2000.0
+      "amount": 2000
      },
      {
       "label": "Guide Salaries - Roberto Morales invoice",
-      "amount": 2000.0
+      "amount": 2000
      }
     ]
    }
@@ -482,6 +498,8 @@
   "id": "ecuadorclimbingschoolfeb",
   "masterName": "Ecuador Climbing School FEB",
   "category": "Beg",
+  "year": 2026,
+  "month": "Feb",
   "acctComplete": true,
   "revenue": 76869,
   "totalCogs": 45183.63,
@@ -505,7 +523,7 @@
      },
      {
       "label": "Travel - Christian Llivicura",
-      "amount": 120.0
+      "amount": 120
      },
      {
       "label": "Meals - Chad Peele invoice",
@@ -514,23 +532,23 @@
     ]
    },
    "guideWages": {
-    "total": 17658.0,
+    "total": 17658,
     "lines": [
      {
       "label": "Guide Wages - Ignacio invoice",
-      "amount": 4150.0
+      "amount": 4150
      },
      {
       "label": "Guide Wages - Christian Llivicura",
-      "amount": 4000.0
+      "amount": 4000
      },
      {
       "label": "Guide Wages - Mike Pond - addtl taxes",
-      "amount": 4558.0
+      "amount": 4558
      },
      {
       "label": "Guide Wages - Fernando Davila invoice",
-      "amount": 1575.0
+      "amount": 1575
      },
      {
       "label": "Guide Wages - Chad Peele invoice",
@@ -557,6 +575,8 @@
   "id": "privateboliviastay",
   "masterName": "Private Bolivia Stay",
   "category": "Inter",
+  "year": 2026,
+  "month": "Apr",
   "acctComplete": false,
   "revenue": 9050,
   "totalCogs": 6556.5,
@@ -568,7 +588,7 @@
     "lines": [
      {
       "label": "Expedition Logistics",
-      "amount": 2860.0
+      "amount": 2860
      },
      {
       "label": "Expendition Logistics - Roberto Morales invoice",
@@ -577,11 +597,11 @@
     ]
    },
    "guideWages": {
-    "total": 2250.0,
+    "total": 2250,
     "lines": [
      {
       "label": "Guide Wages - Roberto Morales invoice",
-      "amount": 2250.0
+      "amount": 2250
      }
     ]
    }
@@ -591,6 +611,8 @@
   "id": "privateskibolivia1",
   "masterName": "Private Ski Bolivia #1",
   "category": "Ski",
+  "year": 2026,
+  "month": "Apr",
   "acctComplete": true,
   "revenue": 33690,
   "totalCogs": 21298.91,
@@ -610,7 +632,7 @@
      },
      {
       "label": "cash advance - Fabricio invoice",
-      "amount": 10000.0
+      "amount": 10000
      },
      {
       "label": "Expedition Logistics - inv with 10k advance  applied",
@@ -623,15 +645,15 @@
     ]
    },
    "guideWages": {
-    "total": 7875.0,
+    "total": 7875,
     "lines": [
      {
       "label": "Guide wages - Gaspar Navarrete invoice",
-      "amount": 4125.0
+      "amount": 4125
      },
      {
       "label": "Guide wages - Diego Saez invoice",
-      "amount": 3750.0
+      "amount": 3750
      }
     ]
    },
@@ -650,6 +672,8 @@
   "id": "privateskibolivia2",
   "masterName": "Private Ski Bolivia #2",
   "category": "Ski",
+  "year": 2026,
+  "month": "May",
   "acctComplete": false,
   "revenue": 27020,
   "totalCogs": 11225.91,
@@ -661,11 +685,11 @@
     "lines": [
      {
       "label": "Guide airfares - Gaspar Navarrete flights",
-      "amount": 150.0
+      "amount": 150
      },
      {
       "label": "Expedition Logistics",
-      "amount": 6080.0
+      "amount": 6080
      },
      {
       "label": "Expedition Logistics - Gaspar Navarrete invoice",
@@ -674,11 +698,11 @@
     ]
    },
    "guideWages": {
-    "total": 4700.0,
+    "total": 4700,
     "lines": [
      {
       "label": "Guide Wages - Gaspar Navarrete invoice",
-      "amount": 4700.0
+      "amount": 4700
      }
     ]
    }
@@ -688,6 +712,8 @@
   "id": "privatechimborazosandifer",
   "masterName": "Private Chimborazo Sandifer",
   "category": "Beg",
+  "year": 2026,
+  "month": "Apr",
   "acctComplete": true,
   "revenue": 9733.5,
   "totalCogs": 5086.32,
@@ -713,11 +739,11 @@
     ]
    },
    "tripSupplies": {
-    "total": 150.0,
+    "total": 150,
     "lines": [
      {
       "label": "Client Jacket",
-      "amount": 150.0
+      "amount": 150
      }
     ]
    }
@@ -727,6 +753,8 @@
   "id": "privateillinizasantisanaliao",
   "masterName": "Private Illinizas/Antisana Liao",
   "category": "Beg",
+  "year": 2026,
+  "month": "Apr",
   "acctComplete": false,
   "revenue": 23800,
   "totalCogs": 10094.23,
@@ -747,7 +775,7 @@
     "lines": [
      {
       "label": "Guide Wages - Ignacio Espinosa inv",
-      "amount": 1360.0
+      "amount": 1360
      },
      {
       "label": "Guide wages - Christian Llivicura inv",
@@ -756,11 +784,11 @@
     ]
    },
    "tripSupplies": {
-    "total": 450.0,
+    "total": 450,
     "lines": [
      {
       "label": "Jackets",
-      "amount": 450.0
+      "amount": 450
      }
     ]
    }
@@ -770,6 +798,8 @@
   "id": "privatecotochimbobrannon",
   "masterName": "Private Coto/Chimbo Brannon",
   "category": "Inter",
+  "year": 2026,
+  "month": "Apr",
   "acctComplete": false,
   "revenue": 11840.95,
   "totalCogs": 6660.96,
@@ -777,11 +807,11 @@
   "masterRow": 16,
   "buckets": {
    "guideWages": {
-    "total": 3425.0,
+    "total": 3425,
     "lines": [
      {
       "label": "Guide Wages - Jaime Guide Wages",
-      "amount": 3425.0
+      "amount": 3425
      }
     ]
    },
@@ -790,7 +820,7 @@
     "lines": [
      {
       "label": "Guide Expenses",
-      "amount": 185.0
+      "amount": 185
      },
      {
       "label": "Trip Logistics - APU Climbs inv",
@@ -807,7 +837,7 @@
      },
      {
       "label": "Jacket",
-      "amount": 150.0
+      "amount": 150
      }
     ]
    }
@@ -817,6 +847,8 @@
   "id": "privateboliviarabrougher",
   "masterName": "Private Bolivia RA Brougher",
   "category": "Inter",
+  "year": 2026,
+  "month": "May",
   "acctComplete": false,
   "revenue": 21050,
   "totalCogs": 13128.85,
@@ -837,7 +869,7 @@
     "lines": [
      {
       "label": "Expedition Logistics",
-      "amount": 7675.0
+      "amount": 7675
      },
      {
       "label": "Expedition Logistics - Roberto Morales inv",
@@ -846,11 +878,11 @@
     ]
    },
    "guideWages": {
-    "total": 4350.0,
+    "total": 4350,
     "lines": [
      {
       "label": "Guide Wages - Roberto Morales inv",
-      "amount": 4350.0
+      "amount": 4350
      }
     ]
    }
@@ -860,18 +892,20 @@
   "id": "privatechopirahossein",
   "masterName": "Private Chopi RA Hossein",
   "category": "Inter",
+  "year": 2026,
+  "month": "Jun",
   "acctComplete": false,
-  "revenue": 23145.0,
+  "revenue": 23145,
   "totalCogs": 94,
   "budgetTripName": null,
   "masterRow": 19,
   "buckets": {
    "tripTravelLogistics": {
-    "total": 94.0,
+    "total": 94,
     "lines": [
      {
       "label": "Transportation - Laddy invoice",
-      "amount": 94.0
+      "amount": 94
      }
     ]
    }
@@ -881,6 +915,8 @@
   "id": "peruclimbingschool",
   "masterName": "Peru Climbing School",
   "category": "Beg",
+  "year": 2026,
+  "month": "Jun",
   "acctComplete": false,
   "revenue": 37992.5,
   "totalCogs": 8507.78,
@@ -892,7 +928,7 @@
     "lines": [
      {
       "label": "Transportation - Laddy invoice",
-      "amount": 538.0
+      "amount": 538
      },
      {
       "label": "Airfare - Ignacio 1/2 inv",
@@ -905,24 +941,24 @@
     ]
    },
    "guideWages": {
-    "total": 5750.0,
+    "total": 5750,
     "lines": [
      {
       "label": "Guide Wages - Ignacia inv",
-      "amount": 4000.0
+      "amount": 4000
      },
      {
       "label": "Guide Wages - Nico inv",
-      "amount": 1750.0
+      "amount": 1750
      }
     ]
    },
    "tripSupplies": {
-    "total": 550.0,
+    "total": 550,
     "lines": [
      {
       "label": "Trip Supplies - Ignacia inv",
-      "amount": 550.0
+      "amount": 550
      }
     ]
    }
@@ -932,6 +968,8 @@
   "id": "privatedenalistay",
   "masterName": "Private Denali - Stay",
   "category": "Adv",
+  "year": 2026,
+  "month": "Jun",
   "acctComplete": false,
   "revenue": 65050,
   "totalCogs": 35250,
@@ -939,15 +977,15 @@
   "masterRow": 21,
   "buckets": {
    "tripTravelLogistics": {
-    "total": 35250.0,
+    "total": 35250,
     "lines": [
      {
       "label": "Mountain trip logistics - Deposit",
-      "amount": 7050.0
+      "amount": 7050
      },
      {
       "label": "Mountain trip logistics - balance payment",
-      "amount": 28200.0
+      "amount": 28200
      }
     ]
    }
@@ -957,6 +995,8 @@
   "id": "privatecotopaxiragorovitz",
   "masterName": "Private Cotopaxi RA - Gorovitz",
   "category": "Inter",
+  "year": 2026,
+  "month": "Jun",
   "acctComplete": false,
   "revenue": 6750,
   "totalCogs": 3692.01,
@@ -972,29 +1012,29 @@
      },
      {
       "label": "Vehicle - Fernando Davila inv",
-      "amount": 360.0
+      "amount": 360
      },
      {
       "label": "Food - Fernando Davila inv",
-      "amount": 75.0
+      "amount": 75
      }
     ]
    },
    "tripSupplies": {
-    "total": 1410.0,
+    "total": 1410,
     "lines": [
      {
       "label": "Hypoxico - We applied this charge toward our credit",
-      "amount": 1410.0
+      "amount": 1410
      }
     ]
    },
    "guideWages": {
-    "total": 900.0,
+    "total": 900,
     "lines": [
      {
       "label": "Guide Wages - Fernando Davila inv",
-      "amount": 900.0
+      "amount": 900
      }
     ]
    }
@@ -1004,6 +1044,8 @@
   "id": "privatecotopaxikletter",
   "masterName": "Private Cotopaxi Kletter",
   "category": "Inter",
+  "year": 2026,
+  "month": "Jun",
   "acctComplete": false,
   "revenue": 7830,
   "totalCogs": 4928.51,
@@ -1019,29 +1061,29 @@
      },
      {
       "label": "Trip Travel/Logistics - Jaime Avila inv",
-      "amount": 500.0
+      "amount": 500
      }
     ]
    },
    "tripSupplies": {
-    "total": 1950.0,
+    "total": 1950,
     "lines": [
      {
       "label": "Hypoxico - We applied these charges $990+$880 (2nd ",
-      "amount": 1870.0
+      "amount": 1870
      },
      {
       "label": "Trip Supplies - Jaime Avila inv",
-      "amount": 80.0
+      "amount": 80
      }
     ]
    },
    "guideWages": {
-    "total": 1425.0,
+    "total": 1425,
     "lines": [
      {
       "label": "Guide Wages - Jaime Avila inv",
-      "amount": 1425.0
+      "amount": 1425
      }
     ]
    }
@@ -1051,8 +1093,10 @@
   "id": "privateyanachopigoebel",
   "masterName": "Private Yana/Chopi Goebel",
   "category": "Inter",
+  "year": 2026,
+  "month": "Jun",
   "acctComplete": false,
-  "revenue": 17500.0,
+  "revenue": 17500,
   "totalCogs": 5493.5,
   "budgetTripName": null,
   "masterRow": 24,
@@ -1062,7 +1106,7 @@
     "lines": [
      {
       "label": "Hypoxico",
-      "amount": 1040.0
+      "amount": 1040
      },
      {
       "label": "Trip Expenses - Nicolas Navarrete inv",
@@ -1071,11 +1115,11 @@
     ]
    },
    "tripTravelLogistics": {
-    "total": 236.0,
+    "total": 236,
     "lines": [
      {
       "label": "Transportation - Laddy invoice",
-      "amount": 236.0
+      "amount": 236
      }
     ]
    },
@@ -1094,8 +1138,10 @@
   "id": "privatechopiliao",
   "masterName": "Private Chopi Liao",
   "category": "Inter",
+  "year": 2026,
+  "month": "Jun",
   "acctComplete": false,
-  "revenue": 7150.0,
+  "revenue": 7150,
   "totalCogs": 1583.63,
   "budgetTripName": null,
   "masterRow": 25,
@@ -1105,7 +1151,7 @@
     "lines": [
      {
       "label": "Transportation - Laddy invoice",
-      "amount": 37.0
+      "amount": 37
      },
      {
       "label": "Trip Travel/Logistics - Christian Llivicura inv",
@@ -1114,11 +1160,11 @@
     ]
    },
    "guideWages": {
-    "total": 1375.0,
+    "total": 1375,
     "lines": [
      {
       "label": "Guide Wages - Christian Llivicura inv",
-      "amount": 1375.0
+      "amount": 1375
      }
     ]
    },
@@ -1137,8 +1183,10 @@
   "id": "alpamayo",
   "masterName": "Alpamayo",
   "category": "Adv",
+  "year": 2026,
+  "month": "Jun",
   "acctComplete": false,
-  "revenue": 37753.0,
+  "revenue": 37753,
   "totalCogs": 4544.45,
   "budgetTripName": null,
   "masterRow": 26,
@@ -1148,7 +1196,7 @@
     "lines": [
      {
       "label": "Transportation - Laddy invoice",
-      "amount": 408.0
+      "amount": 408
      },
      {
       "label": "Airfare - Ignacio 1/2 inv",
@@ -1165,11 +1213,11 @@
     ]
    },
    "guideWages": {
-    "total": 2875.0,
+    "total": 2875,
     "lines": [
      {
       "label": "Guide Wages - Christian Llivicura inv",
-      "amount": 2875.0
+      "amount": 2875
      }
     ]
    }
@@ -1179,6 +1227,8 @@
   "id": "kilimanjarojune",
   "masterName": "Kilimanjaro JUNE",
   "category": "Beg",
+  "year": 2026,
+  "month": "Jun",
   "acctComplete": false,
   "revenue": 40380.93,
   "totalCogs": 30781.16,
@@ -1190,7 +1240,7 @@
     "lines": [
      {
       "label": "Travel and Logistics - Snow Africa Adventures invoice",
-      "amount": 25630.0
+      "amount": 25630
      },
      {
       "label": "Trip Travel/Logistics - Jaime Avila invoice",
@@ -1199,11 +1249,11 @@
     ]
    },
    "guideWages": {
-    "total": 4175.0,
+    "total": 4175,
     "lines": [
      {
       "label": "Guide Wages - Jaime Avila invoice",
-      "amount": 4175.0
+      "amount": 4175
      }
     ]
    },
@@ -1222,18 +1272,20 @@
   "id": "privatesantacruztrekstraw",
   "masterName": "Private Santa Cruz Trek - Strawbridge",
   "category": "Beg",
+  "year": 2026,
+  "month": null,
   "acctComplete": false,
-  "revenue": 48500.0,
+  "revenue": 48500,
   "totalCogs": 2120,
   "budgetTripName": null,
   "masterRow": 28,
   "buckets": {
    "tripTravelLogistics": {
-    "total": 2120.0,
+    "total": 2120,
     "lines": [
      {
       "label": "Trip Logistics",
-      "amount": 2120.0
+      "amount": 2120
      }
     ]
    }
@@ -1243,31 +1295,33 @@
   "id": "privateboliviaraolson",
   "masterName": "Private Bolivia RA - Olson",
   "category": "Inter",
+  "year": 2026,
+  "month": null,
   "acctComplete": false,
-  "revenue": 19125.0,
+  "revenue": 19125,
   "totalCogs": 8589.89,
   "budgetTripName": null,
   "masterRow": 29,
   "buckets": {
    "tripSupplies": {
-    "total": 1090.0,
+    "total": 1090,
     "lines": [
      {
       "label": "Hypoxico - We applied this charge toward our credit",
-      "amount": 1090.0
+      "amount": 1090
      }
     ]
    },
    "tripTravelLogistics": {
-    "total": 5225.0,
+    "total": 5225,
     "lines": [
      {
       "label": "Trip Logistics",
-      "amount": 5030.0
+      "amount": 5030
      },
      {
       "label": "Trip Travel/Logistics - Gaspar Navarrete inv",
-      "amount": 195.0
+      "amount": 195
      }
     ]
    },
@@ -1286,8 +1340,10 @@
   "id": "mountainsofbolivia",
   "masterName": "Mountains of Bolivia",
   "category": "Inter",
+  "year": 2026,
+  "month": null,
   "acctComplete": false,
-  "revenue": 79750.0,
+  "revenue": 79750,
   "totalCogs": 2888.42,
   "budgetTripName": null,
   "masterRow": 30,
@@ -1311,18 +1367,20 @@
   "id": "patagoniabcski",
   "masterName": "Patagonia BC Ski",
   "category": "Ski",
+  "year": 2026,
+  "month": null,
   "acctComplete": false,
-  "revenue": 26100.0,
+  "revenue": 26100,
   "totalCogs": 965,
   "budgetTripName": null,
   "masterRow": 32,
   "buckets": {
    "tripTravelLogistics": {
-    "total": 965.0,
+    "total": 965,
     "lines": [
      {
       "label": "Lodging Deposit",
-      "amount": 965.0
+      "amount": 965
      }
     ]
    }
@@ -1332,6 +1390,8 @@
   "id": "privatechooyurajones",
   "masterName": "Private Cho Oyu RA Jones",
   "category": "8k E",
+  "year": 2026,
+  "month": null,
   "acctComplete": false,
   "revenue": null,
   "totalCogs": 2588,
@@ -1339,11 +1399,11 @@
   "masterRow": 35,
   "buckets": {
    "tripSupplies": {
-    "total": 2588.0,
+    "total": 2588,
     "lines": [
      {
       "label": "Hypoxico - Susie & Paxton",
-      "amount": 2588.0
+      "amount": 2588
      }
     ]
    }
