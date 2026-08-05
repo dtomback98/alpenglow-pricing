@@ -40,6 +40,7 @@ const BUCKET_ORDER: { key: string; label: string }[] = [
 const SECTION_ORDER = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 const LINKS_STORAGE_KEY = 'gm-review-budget-links';
 const NUM = 'text-right whitespace-nowrap tabular-nums';
+const GRP = NUM + ' border-l border-ag-border/40';
 
 interface BudgetBuckets {
   totals: { [key: string]: number };
@@ -147,20 +148,24 @@ function HeaderRows() {
   return (
     <>
       <tr>
-        <th className="w-6" rowSpan={2}></th>
-        <th rowSpan={2}>Trip</th>
-        <th className="text-center whitespace-nowrap" rowSpan={2} title="Accounting complete on the reporting sheet">Acct ✓</th>
-        <th className={NUM} rowSpan={2}>Revenue</th>
-        <th colSpan={3} className="text-center">COGS</th>
-        <th colSpan={3} className="text-center">Gross Margin</th>
+        <th className="w-6 sticky top-0 z-20" rowSpan={2}></th>
+        <th className="sticky top-0 z-20 !py-1.5" rowSpan={2}>Trip</th>
+        <th className="text-center whitespace-nowrap sticky top-0 z-20 !py-1.5" rowSpan={2} title="Accounting complete on the reporting sheet">✓</th>
+        <th className={`${NUM} sticky top-0 z-20 !py-1.5`} rowSpan={2}>Revenue</th>
+        <th colSpan={3} className="sticky top-0 z-20 !py-1 h-6 border-l border-ag-border/40">
+          <div className="mx-4 border-b border-ag-text-muted/50 pb-0.5 text-center text-[10px] font-bold tracking-[0.15em] text-ag-text">COGS</div>
+        </th>
+        <th colSpan={3} className="sticky top-0 z-20 !py-1 h-6 border-l border-ag-border/40">
+          <div className="mx-4 border-b border-ag-text-muted/50 pb-0.5 text-center text-[10px] font-bold tracking-[0.15em] text-ag-text">Gross Margin</div>
+        </th>
       </tr>
       <tr>
-        <th className={NUM}>Budgeted</th>
-        <th className={NUM}>Actuals</th>
-        <th className={NUM} title="Budgeted − Actuals; red = over budget">Delta</th>
-        <th className={NUM} title="(Revenue − Budgeted) / Revenue">Budgeted</th>
-        <th className={NUM} title="(Revenue − Actuals) / Revenue">Actuals</th>
-        <th className={NUM} title="Actual GM − Budgeted GM">Delta</th>
+        <th className={`${GRP} sticky top-6 z-20 !py-1 text-[11px]`}>Budgeted</th>
+        <th className={`${NUM} sticky top-6 z-20 !py-1 text-[11px]`}>Actuals</th>
+        <th className={`${NUM} sticky top-6 z-20 !py-1 text-[11px]`} title="Budgeted − Actuals; red = over budget">Delta</th>
+        <th className={`${GRP} sticky top-6 z-20 !py-1 text-[11px]`} title="(Revenue − Budgeted) / Revenue">Budgeted</th>
+        <th className={`${NUM} sticky top-6 z-20 !py-1 text-[11px]`} title="(Revenue − Actuals) / Revenue">Actuals</th>
+        <th className={`${NUM} sticky top-6 z-20 !py-1 text-[11px]`} title="Actual GM − Budgeted GM">Delta</th>
       </tr>
     </>
   );
@@ -397,7 +402,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
       </div>
 
       {/* Table */}
-      <div className="card overflow-x-auto">
+      <div className="card overflow-x-auto lg:overflow-visible">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-lg font-semibold">Budget vs. Actuals by Trip</h2>
           <p className="text-xs text-ag-text-muted">Click a trip for QB categories · click a category for line items</p>
@@ -405,7 +410,10 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
         {filtered.length === 0 ? (
           <p className="text-sm text-ag-text-muted py-4">No trips match the current filters.</p>
         ) : (
-          <table className="pricing-table">
+          <table className="pricing-table [&_td]:!py-2.5">
+            <thead>
+              <HeaderRows />
+            </thead>
             <tbody>
               {sections.map(({ cat, trips: sectionTrips }) => {
                 const color = CATEGORY_COLORS[cat] || '#3b82f6';
@@ -442,14 +450,14 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
                   <td className="border-t-2 border-ag-accent pt-3">Total All Trips</td>
                   <td className="border-t-2 border-ag-accent"></td>
                   <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{formatCurrency(totals.revenue)}</td>
-                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{totals.linked > 0 ? formatCurrency(totals.budget) : '—'}</td>
+                  <td className={`${GRP} border-t-2 border-ag-accent pt-3`}>{totals.linked > 0 ? formatCurrency(totals.budget) : '—'}</td>
                   <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{formatCurrency(totals.actual)}</td>
                   <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>
                     {totals.linked > 0
                       ? fmtDelta(totals.budget - filtered.reduce((s, a) => s + (budgets.get(a.id) ? a.totalCogs : 0), 0))
                       : '—'}
                   </td>
-                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{totals.budgetRevenue > 0 ? fmtGm((totals.budgetRevenue - totals.budget) / totals.budgetRevenue) : '—'}</td>
+                  <td className={`${GRP} border-t-2 border-ag-accent pt-3`}>{totals.budgetRevenue > 0 ? fmtGm((totals.budgetRevenue - totals.budget) / totals.budgetRevenue) : '—'}</td>
                   <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{totals.revenue > 0 ? fmtGm((totals.revenue - totals.actual) / totals.revenue) : '—'}</td>
                   <td className="border-t-2 border-ag-accent"></td>
                 </tr>
@@ -499,7 +507,7 @@ function SectionBlock({
   return (
     <>
       <tr>
-        <td colSpan={10} className="pt-6 pb-1 border-b-0">
+        <td colSpan={10} className="pt-5 pb-1 border-b-0">
           <span
             className="inline-block text-xs font-bold uppercase tracking-widest px-2 py-1 rounded"
             style={{ color, backgroundColor: `${color}1a` }}
@@ -508,7 +516,6 @@ function SectionBlock({
           </span>
         </td>
       </tr>
-      <HeaderRows />
       {trips.map(a => {
         const b = budgets.get(a.id);
         const linked = linkedTripIds.get(a.id);
@@ -542,10 +549,10 @@ function SectionBlock({
         </td>
         <td className="border-t-2 border-ag-border"></td>
         <td className={`${NUM} border-t-2 border-ag-border`}>{formatCurrency(sec.revenue)}</td>
-        <td className={`${NUM} border-t-2 border-ag-border`}>{sec.hasBudget ? formatCurrency(sec.budget) : '—'}</td>
+        <td className={`${GRP} border-t-2 border-ag-border`}>{sec.hasBudget ? formatCurrency(sec.budget) : '—'}</td>
         <td className={`${NUM} border-t-2 border-ag-border`}>{formatCurrency(sec.actual)}</td>
         <td className={`${NUM} border-t-2 border-ag-border`}>{sec.hasBudget ? fmtDelta(sec.budget - sec.actualLinked) : '—'}</td>
-        <td className={`${NUM} border-t-2 border-ag-border`}>{sec.revenue > 0 && sec.hasBudget ? fmtGm((sec.revenue - sec.budget) / sec.revenue) : '—'}</td>
+        <td className={`${GRP} border-t-2 border-ag-border`}>{sec.revenue > 0 && sec.hasBudget ? fmtGm((sec.revenue - sec.budget) / sec.revenue) : '—'}</td>
         <td className={`${NUM} border-t-2 border-ag-border`}>{sec.revenue > 0 ? fmtGm((sec.revenue - sec.actual) / sec.revenue) : '—'}</td>
         <td className="border-t-2 border-ag-border"></td>
       </tr>
@@ -589,10 +596,10 @@ function TripRows({
         </td>
         <td className="text-center text-ag-success">{a.acctComplete ? '✓' : ''}</td>
         <td className={NUM}>{a.revenue !== null ? formatCurrency(a.revenue) : '—'}</td>
-        <td className={NUM}>{b ? formatCurrency(b.total) : <span className="text-ag-text-muted italic text-xs whitespace-nowrap">no budget linked</span>}</td>
+        <td className={GRP}>{b ? formatCurrency(b.total) : <span className="text-ag-text-muted italic text-xs whitespace-nowrap">no budget linked</span>}</td>
         <td className={NUM}>{formatCurrency(a.totalCogs)}</td>
         <td className={NUM}>{b ? fmtDelta(b.total - a.totalCogs) : '—'}</td>
-        <td className={NUM}>{budgGm !== null ? fmtGm(budgGm) : '—'}</td>
+        <td className={GRP}>{budgGm !== null ? fmtGm(budgGm) : '—'}</td>
         <td className={NUM}>{actGm !== null ? fmtGm(actGm) : '—'}</td>
         <td className={NUM}>{budgGm !== null && actGm !== null ? fmtGmDelta(actGm - budgGm) : '—'}</td>
       </tr>
@@ -672,10 +679,10 @@ function CatRows({ catId, label, actLines, budLines, budTotal, actTotal, hasBudg
         </td>
         <td></td>
         <td></td>
-        <td className={NUM}>{hasBudget && budTotal !== null ? formatCurrency(budTotal) : ''}</td>
+        <td className={GRP}>{hasBudget && budTotal !== null ? formatCurrency(budTotal) : ''}</td>
         <td className={NUM}>{formatCurrency(actTotal)}</td>
         <td className={NUM}>{hasBudget && budTotal !== null ? fmtDelta(budTotal - actTotal) : ''}</td>
-        <td colSpan={3}></td>
+        <td className="border-l border-ag-border/40" colSpan={3}></td>
       </tr>
       {catOpen && budLines.map((l, i) => (
         <tr key={`b${i}`} className="text-xs text-ag-text-muted bg-ag-card-lighter/5">
@@ -683,8 +690,9 @@ function CatRows({ catId, label, actLines, budLines, budTotal, actTotal, hasBudg
           <td className="pl-14 italic">{l.label} <span className="not-italic opacity-60">(budget)</span></td>
           <td></td>
           <td></td>
-          <td className={`${NUM} italic`}>{formatCurrency(l.amount)}</td>
-          <td colSpan={5}></td>
+          <td className={`${GRP} italic`}>{formatCurrency(l.amount)}</td>
+          <td colSpan={2}></td>
+          <td className="border-l border-ag-border/40" colSpan={3}></td>
         </tr>
       ))}
       {catOpen && actLines.map((l, i) => (
@@ -693,9 +701,10 @@ function CatRows({ catId, label, actLines, budLines, budTotal, actTotal, hasBudg
           <td className="pl-14 italic">{l.label}</td>
           <td></td>
           <td></td>
-          <td></td>
+          <td className="border-l border-ag-border/40"></td>
           <td className={`${NUM} italic`}>{formatCurrency(l.amount)}</td>
-          <td colSpan={4}></td>
+          <td></td>
+          <td className="border-l border-ag-border/40" colSpan={3}></td>
         </tr>
       ))}
     </>
