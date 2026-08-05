@@ -125,3 +125,5 @@ alpenglow-pricing/
 ## License
 
 Private - Alpenglow Expeditions
+
+<!-- deploy: GM Review sticky header redesign -->
