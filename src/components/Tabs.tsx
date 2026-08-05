@@ -13,6 +13,7 @@ const tabs: { id: TabType; label: string }[] = [
   { id: 'inputs-extension', label: 'Inputs - Extension' },
   { id: 'history', label: 'History' },
   { id: 'financials', label: 'Financials' },
+  { id: 'gm-review', label: 'GM Review' },
 ];
 
 export default function Tabs({ activeTab, setActiveTab }: TabsProps) {
