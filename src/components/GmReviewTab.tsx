@@ -37,6 +37,76 @@ const BUCKET_ORDER: { key: string; label: string }[] = [
   { key: 'otherTripCosts', label: 'Other Trip Costs' },
 ];
 
+// Ordered keyword rules pairing actual line labels to budget lines within a
+// bucket. First pattern that matches (and whose target budget line exists for
+// the trip) wins. Tested against the label's prefix (before " - ") first, then
+// the full label.
+const LINE_RULES: { [bucket: string]: { pattern: RegExp; target: string }[] } = {
+  tripTravelLogistics: [
+    { pattern: /airfare|flight/, target: 'Guide flights' },
+    { pattern: /hotel|lodg|hostal|hacienda|hosteria|refug|accommodat/, target: 'Hotels' },
+    { pattern: /staff meal|guide meal|guide food/, target: 'Staff meals' },
+    { pattern: /meal|food|grocer|restaurant/, target: 'Meals' },
+    { pattern: /transport|vehicle|driver|shuttle/, target: 'Transport' },
+    { pattern: /single/, target: 'Single rooms' },
+    { pattern: /logistic|travel|expedition/, target: 'Logistics' },
+  ],
+  guideWages: [
+    { pattern: /ext\b|extension/, target: 'Ext. staff' },
+    { pattern: /[\s\S]*/, target: 'Staff wages' },
+  ],
+  tripSupplies: [
+    { pattern: /jacket|apparel|parka/, target: 'Jackets / apparel' },
+    { pattern: /hypoxico|altitude tent/, target: 'Hypoxico' },
+    { pattern: /equipment|gear|suppl/, target: 'Equipment' },
+  ],
+  commercialLicensing: [
+    { pattern: /[\s\S]*/, target: 'Permits' },
+  ],
+  tripCommunications: [],
+  otherTripCosts: [
+    { pattern: /contingen/, target: 'Contingency' },
+    { pattern: /other|general|misc/, target: 'Other costs' },
+  ],
+};
+
+const GENERIC_WORDS = new Set(['trip', 'trips', 'cost', 'costs', 'other', 'guide', 'guides', 'expense', 'expenses', 'invoice', 'fees']);
+
+/** Pair actual lines to budget lines within one QB bucket. */
+function pairLines(bucketKey: string, budLines: ActualLine[], actLines: ActualLine[]) {
+  const budLabels = new Set(budLines.map(l => l.label));
+  const matched = new Map<string, ActualLine[]>();
+  const unmatched: ActualLine[] = [];
+  const rules = LINE_RULES[bucketKey] || [];
+  for (const al of actLines) {
+    const norm = al.label.toLowerCase();
+    const primary = norm.split(' - ')[0];
+    let target: string | null = null;
+    for (const text of [primary, norm]) {
+      for (const r of rules) {
+        if (r.pattern.test(text) && budLabels.has(r.target)) { target = r.target; break; }
+      }
+      if (target) break;
+    }
+    // custom budget lines (Other Trip Costs): pair on a shared distinctive word
+    if (!target && bucketKey === 'otherTripCosts') {
+      const at = new Set(primary.replace(/[^a-z ]/g, ' ').split(/\s+/).filter(w => w.length >= 4 && !GENERIC_WORDS.has(w)));
+      for (const bl of budLines) {
+        const bt = bl.label.toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(w => w.length >= 4 && !GENERIC_WORDS.has(w));
+        if (bt.some(w => at.has(w))) { target = bl.label; break; }
+      }
+    }
+    if (target) {
+      const arr = matched.get(target) || [];
+      arr.push(al);
+      matched.set(target, arr);
+    } else {
+      unmatched.push(al);
+    }
+  }
+  return { matched, unmatched };
+}
+
 const SECTION_ORDER = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 const LINKS_STORAGE_KEY = 'gm-review-budget-links';
 const NUM = 'text-right whitespace-nowrap tabular-nums';
@@ -475,6 +545,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
         <p>· Budget staff meals are shown under Trip Travel/Logistics to match the reporting sheet&apos;s convention for actuals.</p>
         <p>· Budg. GM = (Revenue − Budgeted) / Revenue on the sheet&apos;s actual revenue; GM Δ = Actual GM − Budg. GM (red = margin below budget).</p>
         <p>· Trips with partial accounting (no ✓) overstate Actual GM until all costs land. Everest 2026 is excluded (its reporting tab has a different layout with no Actuals column).</p>
+        <p>· Line items inside a category are auto-paired by label (e.g. &quot;Guide Wages - Ignacio&quot; → Staff wages, &quot;Client Jacket&quot; → Jackets / apparel); when several actuals hit one budget line they sum on that row with the detail indented beneath. Lines with no counterpart show &quot;(not budgeted)&quot; or a &quot;—&quot; actual, and line deltas add up to the category delta.</p>
         <p>· Expand a trip to change which budgeted trip it compares against (Run-status trips only; auto-matched guesses are flagged; your picks save in this browser). Actuals refresh by regenerating actuals-2026.json from the reporting sheet.</p>
       </div>
     </div>
@@ -638,6 +709,7 @@ function TripRows({
           <CatRows
             key={catId}
             catId={catId}
+            bucketKey={key}
             label={label}
             actLines={act ? act.lines : []}
             budLines={b ? b.lines[key] || [] : []}
@@ -655,6 +727,7 @@ function TripRows({
 
 interface CatRowsProps {
   catId: string;
+  bucketKey: string;
   label: string;
   actLines: ActualLine[];
   budLines: ActualLine[];
@@ -665,7 +738,10 @@ interface CatRowsProps {
   toggleCat: (id: string) => void;
 }
 
-function CatRows({ catId, label, actLines, budLines, budTotal, actTotal, hasBudget, catOpen, toggleCat }: CatRowsProps) {
+function CatRows({ catId, bucketKey, label, actLines, budLines, budTotal, actTotal, hasBudget, catOpen, toggleCat }: CatRowsProps) {
+  const { matched, unmatched } = catOpen
+    ? pairLines(bucketKey, budLines, actLines)
+    : { matched: new Map<string, ActualLine[]>(), unmatched: [] as ActualLine[] };
   return (
     <>
       <tr
@@ -684,25 +760,63 @@ function CatRows({ catId, label, actLines, budLines, budTotal, actTotal, hasBudg
         <td className={NUM}>{hasBudget && budTotal !== null ? fmtDelta(budTotal - actTotal) : ''}</td>
         <td className="border-l border-ag-border/40" colSpan={3}></td>
       </tr>
-      {catOpen && budLines.map((l, i) => (
-        <tr key={`b${i}`} className="text-xs text-ag-text-muted bg-ag-card-lighter/5">
+      {catOpen && budLines.map((bl, i) => {
+        const acts = matched.get(bl.label) || [];
+        const actSum = acts.reduce((s, l) => s + l.amount, 0);
+        return (
+          <BudgetLineRows key={`b${i}`} budLine={bl} acts={acts} actSum={actSum} />
+        );
+      })}
+      {catOpen && unmatched.map((l, i) => (
+        <tr key={`u${i}`} className="text-xs text-ag-text-muted bg-ag-card-lighter/5">
           <td></td>
-          <td className="pl-14 italic">{l.label} <span className="not-italic opacity-60">(budget)</span></td>
+          <td className="pl-14 italic">
+            <span title={l.label}>{l.label}</span>
+            {hasBudget && <span className="not-italic opacity-60 ml-2">(not budgeted)</span>}
+          </td>
           <td></td>
           <td></td>
-          <td className={`${GRP} italic`}>{formatCurrency(l.amount)}</td>
-          <td colSpan={2}></td>
+          <td className={`${GRP} opacity-60`}>{hasBudget ? '—' : ''}</td>
+          <td className={`${NUM} italic`}>{formatCurrency(l.amount)}</td>
+          <td className={NUM}>{hasBudget ? fmtDelta(-l.amount) : ''}</td>
           <td className="border-l border-ag-border/40" colSpan={3}></td>
         </tr>
       ))}
-      {catOpen && actLines.map((l, i) => (
-        <tr key={`a${i}`} className="text-xs text-ag-text-muted bg-ag-card-lighter/5">
+    </>
+  );
+}
+
+/** One budget line paired with its matched actual lines. */
+function BudgetLineRows({ budLine, acts, actSum }: { budLine: ActualLine; acts: ActualLine[]; actSum: number }) {
+  return (
+    <>
+      <tr className="text-xs text-ag-text-muted bg-ag-card-lighter/5">
+        <td></td>
+        <td className="pl-14">
+          {budLine.label}
+          {acts.length === 1 && (
+            <span className="italic opacity-60 ml-2 inline-block max-w-[260px] truncate align-bottom" title={acts[0].label}>
+              · {acts[0].label}
+            </span>
+          )}
+        </td>
+        <td></td>
+        <td></td>
+        <td className={GRP}>{formatCurrency(budLine.amount)}</td>
+        <td className={NUM}>{acts.length > 0 ? formatCurrency(actSum) : <span className="opacity-60">—</span>}</td>
+        <td className={NUM}>{fmtDelta(budLine.amount - actSum)}</td>
+        <td className="border-l border-ag-border/40" colSpan={3}></td>
+      </tr>
+      {acts.length > 1 && acts.map((al, j) => (
+        <tr key={`s${j}`} className="text-[11px] text-ag-text-muted bg-ag-card-lighter/5">
           <td></td>
-          <td className="pl-14 italic">{l.label}</td>
+          <td className="pl-20 italic opacity-80">
+            <span title={al.label}>{al.label}</span>
+          </td>
           <td></td>
           <td></td>
           <td className="border-l border-ag-border/40"></td>
-          <td className={`${NUM} italic`}>{formatCurrency(l.amount)}</td>
+          <td className={`${NUM} italic opacity-80`}>{formatCurrency(al.amount)}</td>
           <td></td>
           <td className="border-l border-ag-border/40" colSpan={3}></td>
         </tr>
