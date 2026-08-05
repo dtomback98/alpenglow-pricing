@@ -380,4 +380,4 @@ export interface FinancialBreakdown {
   total: number;
 }
 
-export type TabType = 'summary' | 'inputs-core' | 'inputs-extension' | 'history' | 'financials';
+export type TabType = 'summary' | 'inputs-core' | 'inputs-extension' | 'history' | 'financials' | 'gm-review';
