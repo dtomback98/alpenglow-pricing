@@ -187,11 +187,17 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
     return true;
   });
 
-  // ---- budget resolution
-  const linkedTripIds = useMemo(() => {
+  // ---- budget resolution: override → saved name match → best-guess among Run trips
+  const { map: linkedTripIds, guessed: guessedIds } = useMemo(() => {
     const byName = new Map<string, HistoricalTrip>();
     for (const t of historyTrips) byName.set(t.name.trim(), t);
+    const runOnly = historyTrips.filter(t => t.status === 'run');
+    const STOP = new Set(['private', 'pvt', 'the', 'and', 'trip', 'open', 'day', 'pax', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'january', 'february', 'march', 'april', 'june', 'july', 'august', 'september', 'october', 'november', 'december']);
+    const tokens = (s: string) => new Set(
+      s.toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !STOP.has(w))
+    );
     const map = new Map<string, HistoricalTrip>();
+    const guessed = new Set<string>();
     for (const a of ACTUALS) {
       const overrideId = linkOverrides[a.id];
       if (overrideId === '') continue; // explicitly unlinked
@@ -201,10 +207,20 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
       }
       if (a.budgetTripName) {
         const t = byName.get(a.budgetTripName.trim());
-        if (t) map.set(a.id, t);
+        if (t) { map.set(a.id, t); continue; }
       }
+      // best guess: needs at least 2 shared meaningful name words with a Run-status trip
+      const at = tokens(a.masterName);
+      let best: HistoricalTrip | null = null;
+      let bestScore = 1;
+      for (const t of runOnly) {
+        let score = 0;
+        tokens(t.name).forEach(w => { if (at.has(w)) score += 1; });
+        if (score > bestScore) { best = t; bestScore = score; }
+      }
+      if (best) { map.set(a.id, best); guessed.add(a.id); }
     }
-    return map;
+    return { map, guessed };
   }, [historyTrips, linkOverrides]);
 
   useEffect(() => {
@@ -270,7 +286,9 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
     return <div className="text-center text-ag-text-muted py-8">Loading GM review data...</div>;
   }
 
-  const sortedHistoryTrips = [...historyTrips].sort((x, y) => x.name.localeCompare(y.name));
+  const runTrips = historyTrips
+    .filter(t => t.status === 'run')
+    .sort((x, y) => x.name.localeCompare(y.name));
 
   return (
     <div className="space-y-6">
@@ -389,7 +407,8 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
                     expandedCats={expandedCats}
                     toggleTrip={toggleTrip}
                     toggleCat={toggleCat}
-                    historyTrips={sortedHistoryTrips}
+                    historyTrips={runTrips}
+                    guessedIds={guessedIds}
                     linkOverrides={linkOverrides}
                     onLinkChange={saveOverride}
                   />
@@ -426,7 +445,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
         <p>· Budget staff meals are shown under Trip Travel/Logistics to match the reporting sheet&apos;s convention for actuals.</p>
         <p>· Budg. GM = (Revenue − Budgeted) / Revenue on the sheet&apos;s actual revenue; GM Δ = Actual GM − Budg. GM (red = margin below budget).</p>
         <p>· Trips with partial accounting (no ✓) overstate Actual GM until all costs land. Everest 2026 is excluded (its reporting tab has a different layout with no Actuals column).</p>
-        <p>· Expand a trip to change which budgeted trip it compares against (saved in this browser). Actuals refresh by regenerating actuals-2026.json from the reporting sheet.</p>
+        <p>· Expand a trip to change which budgeted trip it compares against (Run-status trips only; auto-matched guesses are flagged; your picks save in this browser). Actuals refresh by regenerating actuals-2026.json from the reporting sheet.</p>
       </div>
     </div>
   );
@@ -446,13 +465,14 @@ interface SectionBlockProps {
   toggleTrip: (id: string) => void;
   toggleCat: (id: string) => void;
   historyTrips: HistoricalTrip[];
+  guessedIds: Set<string>;
   linkOverrides: { [actualId: string]: string };
   onLinkChange: (actualId: string, historyTripId: string) => void;
 }
 
 function SectionBlock({
   cat, color, trips, sec, budgets, linkedTripIds, expandedTrips, expandedCats,
-  toggleTrip, toggleCat, historyTrips, linkOverrides, onLinkChange,
+  toggleTrip, toggleCat, historyTrips, guessedIds, linkOverrides, onLinkChange,
 }: SectionBlockProps) {
   return (
     <>
@@ -484,6 +504,7 @@ function SectionBlock({
             toggleTrip={toggleTrip}
             toggleCat={toggleCat}
             historyTrips={historyTrips}
+            isGuessed={guessedIds.has(a.id)}
             linkOverrides={linkOverrides}
             onLinkChange={onLinkChange}
             budgGm={budgGm}
@@ -516,6 +537,7 @@ interface TripRowsProps {
   toggleTrip: (id: string) => void;
   toggleCat: (id: string) => void;
   historyTrips: HistoricalTrip[];
+  isGuessed: boolean;
   linkOverrides: { [actualId: string]: string };
   onLinkChange: (actualId: string, historyTripId: string) => void;
   budgGm: number | null;
@@ -524,7 +546,7 @@ interface TripRowsProps {
 
 function TripRows({
   actual: a, budget: b, linked, isOpen, expandedCats,
-  toggleTrip, toggleCat, historyTrips, linkOverrides, onLinkChange, budgGm, actGm,
+  toggleTrip, toggleCat, historyTrips, isGuessed, linkOverrides, onLinkChange, budgGm, actGm,
 }: TripRowsProps) {
   const overrideValue = linkOverrides[a.id] !== undefined
     ? linkOverrides[a.id]
@@ -561,13 +583,14 @@ function TripRows({
                 className="text-xs py-1"
               >
                 <option value="">— none —</option>
-                {historyTrips.map(t => (
+                {(linked && !historyTrips.some(t => t.id === linked.id) ? [linked, ...historyTrips] : historyTrips).map(t => (
                   <option key={t.id} value={t.id}>
-                    {t.name} ({t.pax} pax{t.status ? `, ${t.status}` : ''})
+                    {t.name} ({t.pax} pax)
                   </option>
                 ))}
               </select>
               {linked && <span>· computed at {linked.pax} pax</span>}
+              {isGuessed && <span className="text-ag-accent">· auto-matched — confirm or change</span>}
             </div>
           </td>
         </tr>
