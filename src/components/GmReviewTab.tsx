@@ -141,6 +141,31 @@ const fmtGmDelta = (v: number) => (
   </span>
 );
 
+// ---------------------------------------------------------------- column headers
+
+function HeaderRows() {
+  return (
+    <>
+      <tr>
+        <th className="w-6" rowSpan={2}></th>
+        <th rowSpan={2}>Trip</th>
+        <th className="text-center whitespace-nowrap" rowSpan={2} title="Accounting complete on the reporting sheet">Acct ✓</th>
+        <th className={NUM} rowSpan={2}>Revenue</th>
+        <th colSpan={3} className="text-center">COGS</th>
+        <th colSpan={3} className="text-center">Gross Margin</th>
+      </tr>
+      <tr>
+        <th className={NUM}>Budgeted</th>
+        <th className={NUM}>Actuals</th>
+        <th className={NUM} title="Budgeted − Actuals; red = over budget">Delta</th>
+        <th className={NUM} title="(Revenue − Budgeted) / Revenue">Budgeted</th>
+        <th className={NUM} title="(Revenue − Actuals) / Revenue">Actuals</th>
+        <th className={NUM} title="Actual GM − Budgeted GM">Delta</th>
+      </tr>
+    </>
+  );
+}
+
 // ---------------------------------------------------------------- component
 
 export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
@@ -153,6 +178,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
   const [yearFilter, setYearFilter] = useState<string>('all');
   const [monthFilter, setMonthFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [acctFilter, setAcctFilter] = useState<string>('all');
 
   useEffect(() => {
     if (refreshKey && refreshKey > 0) refresh();
@@ -184,6 +210,8 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
       if (monthFilter === 'none' ? a.month !== null : a.month !== monthFilter) return false;
     }
     if (categoryFilter !== 'all' && a.category !== categoryFilter) return false;
+    if (acctFilter === 'complete' && !a.acctComplete) return false;
+    if (acctFilter === 'incomplete' && a.acctComplete) return false;
     return true;
   });
 
@@ -318,6 +346,14 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
                 {SECTION_ORDER.map(c => <option key={c} value={c}>{CATEGORY_LABELS[c] || c}</option>)}
               </select>
             </div>
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-ag-text-muted">Accounting</p>
+              <select value={acctFilter} onChange={(e) => setAcctFilter(e.target.value)} className="text-sm">
+                <option value="all">All Trips</option>
+                <option value="complete">Complete ✓</option>
+                <option value="incomplete">In Progress</option>
+              </select>
+            </div>
           </div>
           <button onClick={toggleExpandAll} className="btn btn-secondary text-sm">
             {allExpanded ? 'Collapse All' : 'Expand All'}
@@ -370,20 +406,6 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
           <p className="text-sm text-ag-text-muted py-4">No trips match the current filters.</p>
         ) : (
           <table className="pricing-table">
-            <thead>
-              <tr>
-                <th className="w-6"></th>
-                <th>Trip</th>
-                <th className="text-center whitespace-nowrap" title="Accounting complete on the reporting sheet">Acct ✓</th>
-                <th className={NUM}>Revenue</th>
-                <th className={NUM}>Budgeted</th>
-                <th className={NUM}>Actuals</th>
-                <th className={NUM}>Delta</th>
-                <th className={NUM} title="(Revenue − Budgeted) / Revenue">Budg. GM</th>
-                <th className={NUM} title="(Revenue − Actuals) / Revenue">Act. GM</th>
-                <th className={NUM} title="Actual GM − Budgeted GM">GM Δ</th>
-              </tr>
-            </thead>
             <tbody>
               {sections.map(({ cat, trips: sectionTrips }) => {
                 const color = CATEGORY_COLORS[cat] || '#3b82f6';
@@ -486,6 +508,7 @@ function SectionBlock({
           </span>
         </td>
       </tr>
+      <HeaderRows />
       {trips.map(a => {
         const b = budgets.get(a.id);
         const linked = linkedTripIds.get(a.id);
