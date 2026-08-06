@@ -52,7 +52,7 @@ const LINE_RULES: { [bucket: string]: { pattern: RegExp; target: string }[] } = 
     { pattern: /logistic|travel|expedition/, target: 'Logistics' },
   ],
   guideWages: [
-    { pattern: /ext\b|extension/, target: 'Ext. staff' },
+    { pattern: /\bext\b|extension/, target: 'Ext. staff' },
     { pattern: /[\s\S]*/, target: 'Staff wages' },
   ],
   tripSupplies: [
@@ -545,7 +545,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
         <p>· Budget staff meals are shown under Trip Travel/Logistics to match the reporting sheet&apos;s convention for actuals.</p>
         <p>· Budg. GM = (Revenue − Budgeted) / Revenue on the sheet&apos;s actual revenue; GM Δ = Actual GM − Budg. GM (red = margin below budget).</p>
         <p>· Trips with partial accounting (no ✓) overstate Actual GM until all costs land. Everest 2026 is excluded (its reporting tab has a different layout with no Actuals column).</p>
-        <p>· Invoices are matched to budget lines only on clear label evidence (wages → Staff wages, lodging → Hotels, &quot;Client Jacket&quot; → Jackets / apparel). Ambiguous invoices are left under &quot;Unmatched invoices&quot; rather than force-fit — they may correspond to costs budgeted under a different line. When the whole category is a single budget line (e.g. Guide Wages), expanding it goes straight to the invoices.</p>
+        <p>· Invoices are matched to budget lines only on clear label evidence (wages → Staff wages, lodging → Hotels, &quot;Client Jacket&quot; → Jackets / apparel). An ambiguous invoice stays on its own row marked &quot;(unmatched)&quot; rather than being force-fit — it may correspond to costs budgeted under a different line. When a category has no budget detail to pair against, or its whole budget is a single line (e.g. Guide Wages), expanding it just lists the invoices.</p>
         <p>· One-sided rows — budget lines with no invoices yet, and unmatched invoices — have dimmed deltas since they aren&apos;t a like-for-like comparison. Line deltas still add up to the category delta, and categories to the trip.</p>
         <p>· Expand a trip to change which budgeted trip it compares against (Run-status trips only; auto-matched guesses are flagged; your picks save in this browser). Actuals refresh by regenerating actuals-2026.json from the reporting sheet.</p>
       </div>
@@ -764,10 +764,16 @@ function CatRows({ catId, bucketKey, label, actLines, budLines, budTotal, actTot
   const { matched, unmatched } = catOpen
     ? pairLines(bucketKey, budLines, actLines)
     : { matched: new Map<string, ActualLine[]>(), unmatched: [] as ActualLine[] };
-  // A category whose budget is a single line covering every actual (e.g. Guide
-  // Wages → Staff wages) doesn't need the intermediate row — the category row
-  // already carries the same comparison, so expanding goes straight to detail.
-  const collapseSingle = catOpen && budLines.length === 1 && unmatched.length === 0 && actLines.length > 0;
+  // Flat mode: no budget detail to pair against (no budget linked, or this
+  // category's budget has no component lines) — or a single budget line that
+  // covers every invoice (e.g. Guide Wages → Staff wages). Either way the
+  // category row already carries the whole comparison, so expanding goes
+  // straight to the invoice list with no intermediate rows or tags.
+  const flatMode = catOpen && (
+    budLines.length === 0 ||
+    (budLines.length === 1 && unmatched.length === 0 && actLines.length > 0)
+  );
+  const seenLabels = new Set<string>();
   return (
     <>
       <tr
@@ -786,11 +792,13 @@ function CatRows({ catId, bucketKey, label, actLines, budLines, budTotal, actTot
         <td className={NUM}>{hasBudget && budTotal !== null ? fmtDelta(budTotal - actTotal) : ''}</td>
         <td className="border-l border-ag-border/40" colSpan={3}></td>
       </tr>
-      {collapseSingle && actLines.map((l, i) => (
+      {flatMode && actLines.map((l, i) => (
         <DetailRow key={`d${i}`} line={l} indent="pl-14" />
       ))}
-      {catOpen && !collapseSingle && budLines.map((bl, i) => {
-        const acts = matched.get(bl.label) || [];
+      {catOpen && !flatMode && budLines.map((bl, i) => {
+        // guard against duplicate budget labels: matched invoices attach only once
+        const acts = seenLabels.has(bl.label) ? [] : (matched.get(bl.label) || []);
+        seenLabels.add(bl.label);
         const actSum = acts.reduce((s, l) => s + l.amount, 0);
         const lineId = `${catId}|${bl.label}`;
         return (
@@ -804,67 +812,27 @@ function CatRows({ catId, bucketKey, label, actLines, budLines, budTotal, actTot
           />
         );
       })}
-      {catOpen && !collapseSingle && unmatched.length === 1 && (
-        <tr className="text-xs text-ag-text-muted bg-ag-card-lighter/5">
+      {catOpen && !flatMode && unmatched.map((l, i) => (
+        <tr key={`u${i}`} className="text-xs text-ag-text-muted bg-ag-card-lighter/5">
           <td></td>
           <td className="pl-14 italic">
             <span className="inline-block w-4"></span>
-            <span title={l0(unmatched).label}>{l0(unmatched).label}</span>
-            {hasBudget && <span className="not-italic opacity-60 ml-2" title={UNMATCHED_HINT}>(unmatched)</span>}
+            <span title={l.label}>{l.label}</span>
+            <span className="not-italic opacity-60 ml-2" title={UNMATCHED_HINT}>(unmatched)</span>
           </td>
           <td></td>
           <td></td>
-          <td className={`${GRP} opacity-60`}>{hasBudget ? '—' : ''}</td>
-          <td className={`${NUM} italic`}>{formatCurrency(l0(unmatched).amount)}</td>
-          <td className={NUM}>{hasBudget ? <span className="opacity-60">{fmtDelta(-l0(unmatched).amount)}</span> : ''}</td>
+          <td className={`${GRP} opacity-60`}>—</td>
+          <td className={`${NUM} italic`}>{formatCurrency(l.amount)}</td>
+          <td className={NUM}><span className="opacity-60">{fmtDelta(-l.amount)}</span></td>
           <td className="border-l border-ag-border/40" colSpan={3}></td>
         </tr>
-      )}
-      {catOpen && !collapseSingle && unmatched.length > 1 && (
-        <UnmatchedGroup
-          lines={unmatched}
-          hasBudget={hasBudget}
-          open={expandedCats.has(`${catId}|__unmatched`)}
-          onToggle={() => toggleCat(`${catId}|__unmatched`)}
-        />
-      )}
+      ))}
     </>
   );
 }
 
 const UNMATCHED_HINT = 'Not confidently matched to a specific budget line — may correspond to costs budgeted under a different line, so no like-for-like comparison is shown.';
-const l0 = (arr: ActualLine[]) => arr[0];
-
-/** Roll-up row for invoices that couldn't be confidently matched to a budget line. */
-function UnmatchedGroup({ lines, hasBudget, open, onToggle }: {
-  lines: ActualLine[]; hasBudget: boolean; open: boolean; onToggle: () => void;
-}) {
-  const sum = lines.reduce((s, l) => s + l.amount, 0);
-  return (
-    <>
-      <tr
-        className="text-xs text-ag-text-muted bg-ag-card-lighter/5 cursor-pointer hover:bg-ag-card-lighter/20"
-        onClick={onToggle}
-      >
-        <td></td>
-        <td className="pl-14">
-          <span className="text-ag-accent text-[9px] mr-2 select-none inline-block w-2">{open ? '▼' : '▶'}</span>
-          <span title={UNMATCHED_HINT}>Unmatched invoices</span>
-          <span className="italic opacity-60 ml-2">· {lines.length} items</span>
-        </td>
-        <td></td>
-        <td></td>
-        <td className={`${GRP} opacity-60`}>{hasBudget ? '—' : ''}</td>
-        <td className={NUM}>{formatCurrency(sum)}</td>
-        <td className={NUM}>{hasBudget ? <span className="opacity-60">{fmtDelta(-sum)}</span> : ''}</td>
-        <td className="border-l border-ag-border/40" colSpan={3}></td>
-      </tr>
-      {open && lines.map((al, j) => (
-        <DetailRow key={`u${j}`} line={al} indent="pl-20" />
-      ))}
-    </>
-  );
-}
 
 /** One budget line paired with its matched actual lines. Expandable when several actuals roll up into it. */
 function BudgetLineRows({ budLine, acts, actSum, open, onToggle }: {
