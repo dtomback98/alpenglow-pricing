@@ -39,8 +39,8 @@ const BUCKET_ORDER: { key: string; label: string }[] = [
 
 // Ordered keyword rules pairing actual line labels to budget lines within a
 // bucket. First pattern that matches (and whose target budget line exists for
-// the trip) wins. Tested against the label's prefix (before " - ") first, then
-// the full label.
+// the trip) wins. Only the label's prefix (before " - ") is tested — the note
+// after the dash is free text and matching on it force-fits mixed expenses.
 const LINE_RULES: { [bucket: string]: { pattern: RegExp; target: string }[] } = {
   tripTravelLogistics: [
     { pattern: /airfare|flight/, target: 'Guide flights' },
@@ -79,14 +79,10 @@ function pairLines(bucketKey: string, budLines: ActualLine[], actLines: ActualLi
   const unmatched: ActualLine[] = [];
   const rules = LINE_RULES[bucketKey] || [];
   for (const al of actLines) {
-    const norm = al.label.toLowerCase();
-    const primary = norm.split(' - ')[0];
+    const primary = al.label.toLowerCase().split(' - ')[0];
     let target: string | null = null;
-    for (const text of [primary, norm]) {
-      for (const r of rules) {
-        if (r.pattern.test(text) && budLabels.has(r.target)) { target = r.target; break; }
-      }
-      if (target) break;
+    for (const r of rules) {
+      if (r.pattern.test(primary) && budLabels.has(r.target)) { target = r.target; break; }
     }
     // custom budget lines (Other Trip Costs): pair on a shared distinctive word
     if (!target && bucketKey === 'otherTripCosts') {
@@ -109,6 +105,7 @@ function pairLines(bucketKey: string, budLines: ActualLine[], actLines: ActualLi
 
 const SECTION_ORDER = ['Beg', 'Inter', 'Adv', 'Ski', '8k E'];
 const LINKS_STORAGE_KEY = 'gm-review-budget-links';
+const ACCT_STORAGE_KEY = 'gm-review-acct-overrides';
 const NUM = 'text-right whitespace-nowrap tabular-nums';
 const GRP = NUM + ' border-l border-ag-border/40';
 
@@ -116,6 +113,7 @@ interface BudgetBuckets {
   totals: { [key: string]: number };
   lines: { [key: string]: ActualLine[] };
   total: number;           // COGS-only budget total (insurance excluded)
+  revenue: number;         // forecasted revenue at the linked trip's pax
 }
 
 // ---------------------------------------------------------------- budget helpers
@@ -195,7 +193,7 @@ function computeBudgetBuckets(pax: number, config: TripConfiguration, calc: PaxC
     }
   }
 
-  return { totals, lines, total: breakdown.total - insurance };
+  return { totals, lines, total: breakdown.total - insurance, revenue: calc.totalRevenue };
 }
 
 // ---------------------------------------------------------------- formatting
@@ -233,8 +231,8 @@ function HeaderRows() {
         <th className={`${GRP} sticky top-6 z-20 !py-1 text-[11px]`}>Budgeted</th>
         <th className={`${NUM} sticky top-6 z-20 !py-1 text-[11px]`}>Actuals</th>
         <th className={`${NUM} sticky top-6 z-20 !py-1 text-[11px]`} title="Budgeted − Actuals; red = over budget">Delta</th>
-        <th className={`${GRP} sticky top-6 z-20 !py-1 text-[11px]`} title="(Revenue − Budgeted) / Revenue">Budgeted</th>
-        <th className={`${NUM} sticky top-6 z-20 !py-1 text-[11px]`} title="(Revenue − Actuals) / Revenue">Actuals</th>
+        <th className={`${GRP} sticky top-6 z-20 !py-1 text-[11px]`} title="(Budgeted Revenue − Budgeted COGS) / Budgeted Revenue — the original forecast at the linked trip's pax">Budgeted</th>
+        <th className={`${NUM} sticky top-6 z-20 !py-1 text-[11px]`} title="(Actual Revenue − Actual COGS) / Actual Revenue">Actuals</th>
         <th className={`${NUM} sticky top-6 z-20 !py-1 text-[11px]`} title="Actual GM − Budgeted GM">Delta</th>
       </tr>
     </>
@@ -250,6 +248,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
   const [expandedTrips, setExpandedTrips] = useState<Set<string>>(new Set());
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
   const [linkOverrides, setLinkOverrides] = useState<{ [actualId: string]: string }>({});
+  const [acctOverrides, setAcctOverrides] = useState<{ [actualId: string]: boolean }>({});
   const [yearFilter, setYearFilter] = useState<string>('all');
   const [monthFilter, setMonthFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -263,8 +262,24 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
     try {
       const saved = localStorage.getItem(LINKS_STORAGE_KEY);
       if (saved) setLinkOverrides(JSON.parse(saved));
+      const savedAcct = localStorage.getItem(ACCT_STORAGE_KEY);
+      if (savedAcct) setAcctOverrides(JSON.parse(savedAcct));
     } catch { /* ignore */ }
   }, []);
+
+  /** Effective accounting-complete: manual override here wins over the sheet. */
+  const effAcct = (a: ActualTrip) => acctOverrides[a.id] !== undefined ? acctOverrides[a.id] : a.acctComplete;
+
+  const toggleAcct = (id: string) => {
+    setAcctOverrides(prev => {
+      const sheetVal = ACTUALS.find(a => a.id === id)?.acctComplete ?? false;
+      const cur = prev[id] !== undefined ? prev[id] : sheetVal;
+      const next = { ...prev, [id]: !cur };
+      if (next[id] === sheetVal) delete next[id]; // back in agreement with the sheet — drop the override
+      try { localStorage.setItem(ACCT_STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
 
   const saveOverride = (actualId: string, historyTripId: string) => {
     setLinkOverrides(prev => {
@@ -285,8 +300,8 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
       if (monthFilter === 'none' ? a.month !== null : a.month !== monthFilter) return false;
     }
     if (categoryFilter !== 'all' && a.category !== categoryFilter) return false;
-    if (acctFilter === 'complete' && !a.acctComplete) return false;
-    if (acctFilter === 'incomplete' && a.acctComplete) return false;
+    if (acctFilter === 'complete' && !effAcct(a)) return false;
+    if (acctFilter === 'incomplete' && effAcct(a)) return false;
     return true;
   });
 
@@ -382,7 +397,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
     totals.revenue += a.revenue || 0;
     totals.actual += a.totalCogs;
     const b = budgets.get(a.id);
-    if (b) { totals.budget += b.total; totals.budgetRevenue += a.revenue || 0; totals.linked += 1; }
+    if (b) { totals.budget += b.total; totals.budgetRevenue += b.revenue; totals.linked += 1; }
   }
 
   if (loading || configsLoading) {
@@ -487,12 +502,12 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
             <tbody>
               {sections.map(({ cat, trips: sectionTrips }) => {
                 const color = CATEGORY_COLORS[cat] || '#3b82f6';
-                const sec = { revenue: 0, budget: 0, hasBudget: false, actual: 0, actualLinked: 0 };
+                const sec = { revenue: 0, budget: 0, budgetRevenue: 0, hasBudget: false, actual: 0, actualLinked: 0 };
                 for (const a of sectionTrips) {
                   sec.revenue += a.revenue || 0;
                   sec.actual += a.totalCogs;
                   const b = budgets.get(a.id);
-                  if (b) { sec.budget += b.total; sec.hasBudget = true; sec.actualLinked += a.totalCogs; }
+                  if (b) { sec.budget += b.total; sec.budgetRevenue += b.revenue; sec.hasBudget = true; sec.actualLinked += a.totalCogs; }
                 }
                 return (
                   <SectionBlock
@@ -511,6 +526,8 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
                     guessedIds={guessedIds}
                     linkOverrides={linkOverrides}
                     onLinkChange={saveOverride}
+                    acctOverrides={acctOverrides}
+                    onToggleAcct={toggleAcct}
                   />
                 );
               })}
@@ -543,7 +560,8 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
         <p>· Actuals are COGS line items from each trip tab&apos;s EXPENSES block on the reporting sheet — admin costs (Insurance, AE Overhead Fee, Gear Replacement) excluded. To match, budget-side insurance is also excluded.</p>
         <p>· QB bucketing verified against the reporting sheet&apos;s own rollup blocks (8 of 9 tie exactly; Aconcagua #3&apos;s sheet block leaves its $11,340 permits unassigned — shown here under Commercial Use so the trip ties to its subtotal).</p>
         <p>· Budget staff meals are shown under Trip Travel/Logistics to match the reporting sheet&apos;s convention for actuals.</p>
-        <p>· Budg. GM = (Revenue − Budgeted) / Revenue on the sheet&apos;s actual revenue; GM Δ = Actual GM − Budg. GM (red = margin below budget).</p>
+        <p>· Budgeted GM uses the budget&apos;s own forecasted revenue at the linked pax — not the sheet&apos;s actual revenue — so scope added after budgeting (e.g. a Hypoxico sold later, raising both revenue and cost) doesn&apos;t distort the original forecast. Expand a trip to see budgeted vs actual revenue side by side. GM Δ = Actual GM − Budgeted GM.</p>
+        <p>· The ✓ column is clickable — toggle accounting complete here without waiting for the reporting sheet (saved in this browser; a small * marks values that differ from the sheet).</p>
         <p>· Trips with partial accounting (no ✓) overstate Actual GM until all costs land. Everest 2026 is excluded (its reporting tab has a different layout with no Actuals column).</p>
         <p>· Invoices are matched to budget lines only on clear label evidence (wages → Staff wages, lodging → Hotels, &quot;Client Jacket&quot; → Jackets / apparel). An ambiguous invoice stays on its own row marked &quot;(unmatched)&quot; rather than being force-fit — it may correspond to costs budgeted under a different line. When a category has no budget detail to pair against, or its whole budget is a single line (e.g. Guide Wages), expanding it just lists the invoices.</p>
         <p>· One-sided rows — budget lines with no invoices yet, and unmatched invoices — have dimmed deltas since they aren&apos;t a like-for-like comparison. Line deltas still add up to the category delta, and categories to the trip.</p>
@@ -559,7 +577,7 @@ interface SectionBlockProps {
   cat: string;
   color: string;
   trips: ActualTrip[];
-  sec: { revenue: number; budget: number; hasBudget: boolean; actual: number; actualLinked: number };
+  sec: { revenue: number; budget: number; budgetRevenue: number; hasBudget: boolean; actual: number; actualLinked: number };
   budgets: Map<string, BudgetBuckets>;
   linkedTripIds: Map<string, HistoricalTrip>;
   expandedTrips: Set<string>;
@@ -570,11 +588,14 @@ interface SectionBlockProps {
   guessedIds: Set<string>;
   linkOverrides: { [actualId: string]: string };
   onLinkChange: (actualId: string, historyTripId: string) => void;
+  acctOverrides: { [actualId: string]: boolean };
+  onToggleAcct: (actualId: string) => void;
 }
 
 function SectionBlock({
   cat, color, trips, sec, budgets, linkedTripIds, expandedTrips, expandedCats,
   toggleTrip, toggleCat, historyTrips, guessedIds, linkOverrides, onLinkChange,
+  acctOverrides, onToggleAcct,
 }: SectionBlockProps) {
   return (
     <>
@@ -593,7 +614,7 @@ function SectionBlock({
         const linked = linkedTripIds.get(a.id);
         const isOpen = expandedTrips.has(a.id);
         const rev = a.revenue;
-        const budgGm = rev && b ? (rev - b.total) / rev : null;
+        const budgGm = b && b.revenue > 0 ? (b.revenue - b.total) / b.revenue : null;
         const actGm = rev ? (rev - a.totalCogs) / rev : null;
         return (
           <TripRows
@@ -609,6 +630,8 @@ function SectionBlock({
             isGuessed={guessedIds.has(a.id)}
             linkOverrides={linkOverrides}
             onLinkChange={onLinkChange}
+            acctOverrides={acctOverrides}
+            onToggleAcct={onToggleAcct}
             budgGm={budgGm}
             actGm={actGm}
           />
@@ -624,7 +647,7 @@ function SectionBlock({
         <td className={`${GRP} border-t-2 border-ag-border`}>{sec.hasBudget ? formatCurrency(sec.budget) : '—'}</td>
         <td className={`${NUM} border-t-2 border-ag-border`}>{formatCurrency(sec.actual)}</td>
         <td className={`${NUM} border-t-2 border-ag-border`}>{sec.hasBudget ? fmtDelta(sec.budget - sec.actualLinked) : '—'}</td>
-        <td className={`${GRP} border-t-2 border-ag-border`}>{sec.revenue > 0 && sec.hasBudget ? fmtGm((sec.revenue - sec.budget) / sec.revenue) : '—'}</td>
+        <td className={`${GRP} border-t-2 border-ag-border`}>{sec.hasBudget && sec.budgetRevenue > 0 ? fmtGm((sec.budgetRevenue - sec.budget) / sec.budgetRevenue) : '—'}</td>
         <td className={`${NUM} border-t-2 border-ag-border`}>{sec.revenue > 0 ? fmtGm((sec.revenue - sec.actual) / sec.revenue) : '—'}</td>
         <td className="border-t-2 border-ag-border"></td>
       </tr>
@@ -644,17 +667,22 @@ interface TripRowsProps {
   isGuessed: boolean;
   linkOverrides: { [actualId: string]: string };
   onLinkChange: (actualId: string, historyTripId: string) => void;
+  acctOverrides: { [actualId: string]: boolean };
+  onToggleAcct: (actualId: string) => void;
   budgGm: number | null;
   actGm: number | null;
 }
 
 function TripRows({
   actual: a, budget: b, linked, isOpen, expandedCats,
-  toggleTrip, toggleCat, historyTrips, isGuessed, linkOverrides, onLinkChange, budgGm, actGm,
+  toggleTrip, toggleCat, historyTrips, isGuessed, linkOverrides, onLinkChange,
+  acctOverrides, onToggleAcct, budgGm, actGm,
 }: TripRowsProps) {
   const overrideValue = linkOverrides[a.id] !== undefined
     ? linkOverrides[a.id]
     : (linked ? linked.id : '');
+  const acct = acctOverrides[a.id] !== undefined ? acctOverrides[a.id] : a.acctComplete;
+  const acctOverridden = acctOverrides[a.id] !== undefined;
   return (
     <>
       <tr
@@ -666,7 +694,16 @@ function TripRows({
           {a.masterName}
           {a.month && <span className="text-xs text-ag-text-muted ml-2">{a.month} {a.year}</span>}
         </td>
-        <td className="text-center text-ag-success">{a.acctComplete ? '✓' : ''}</td>
+        <td
+          className="text-center select-none cursor-pointer hover:bg-ag-card-lighter/50"
+          onClick={(e) => { e.stopPropagation(); onToggleAcct(a.id); }}
+          title={`Accounting ${acct ? 'complete' : 'in progress'} — click to toggle${acctOverridden ? ` (set here; reporting sheet says ${a.acctComplete ? 'complete' : 'in progress'})` : ''}`}
+        >
+          {acct
+            ? <span className="text-ag-success">✓</span>
+            : <span className="text-ag-text-muted opacity-30">○</span>}
+          {acctOverridden && <span className="text-ag-accent text-[9px] align-top ml-0.5">*</span>}
+        </td>
         <td className={NUM}>{a.revenue !== null ? formatCurrency(a.revenue) : '—'}</td>
         <td className={GRP}>{b ? formatCurrency(b.total) : <span className="text-ag-text-muted italic text-xs whitespace-nowrap">no budget linked</span>}</td>
         <td className={NUM}>{formatCurrency(a.totalCogs)}</td>
@@ -694,6 +731,11 @@ function TripRows({
                 ))}
               </select>
               {linked && <span>· computed at {linked.pax} pax</span>}
+              {b && (
+                <span title="The budget's own forecasted revenue vs the reporting sheet's actual revenue. A gap usually means scope changed after budgeting (e.g. an add-on sold later).">
+                  · budgeted revenue {formatCurrency(b.revenue)}{a.revenue !== null ? <> vs actual {formatCurrency(a.revenue)}</> : null}
+                </span>
+              )}
               {isGuessed && <span className="text-ag-accent">· auto-matched — confirm or change</span>}
             </div>
           </td>
