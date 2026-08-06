@@ -45,7 +45,7 @@ const LINE_RULES: { [bucket: string]: { pattern: RegExp; target: string }[] } = 
   tripTravelLogistics: [
     { pattern: /airfare|flight/, target: 'Guide flights' },
     { pattern: /hotel|lodg|hostal|hacienda|hosteria|refug|accommodat/, target: 'Hotels' },
-    { pattern: /staff meal|guide meal|guide food/, target: 'Staff meals' },
+    { pattern: /staff meal|guide meal/, target: 'Staff meals' },
     { pattern: /meal|food|grocer|restaurant/, target: 'Meals' },
     { pattern: /transport|vehicle|driver|shuttle/, target: 'Transport' },
     { pattern: /single/, target: 'Single rooms' },
@@ -58,7 +58,7 @@ const LINE_RULES: { [bucket: string]: { pattern: RegExp; target: string }[] } = 
   tripSupplies: [
     { pattern: /jacket|apparel|parka/, target: 'Jackets / apparel' },
     { pattern: /hypoxico|altitude tent/, target: 'Hypoxico' },
-    { pattern: /equipment|gear|suppl/, target: 'Equipment' },
+    { pattern: /equipment|gear/, target: 'Equipment' },
   ],
   commercialLicensing: [
     { pattern: /[\s\S]*/, target: 'Permits' },
@@ -545,7 +545,8 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
         <p>· Budget staff meals are shown under Trip Travel/Logistics to match the reporting sheet&apos;s convention for actuals.</p>
         <p>· Budg. GM = (Revenue − Budgeted) / Revenue on the sheet&apos;s actual revenue; GM Δ = Actual GM − Budg. GM (red = margin below budget).</p>
         <p>· Trips with partial accounting (no ✓) overstate Actual GM until all costs land. Everest 2026 is excluded (its reporting tab has a different layout with no Actuals column).</p>
-        <p>· Line items inside a category are auto-paired by label (e.g. &quot;Guide Wages - Ignacio&quot; → Staff wages, &quot;Client Jacket&quot; → Jackets / apparel). When the whole category is one budget line (e.g. Guide Wages), expanding it goes straight to the individual invoices; otherwise budget lines with several invoices get their own ▶ arrow. Lines with no counterpart show &quot;(not budgeted)&quot; or a &quot;—&quot; actual, and line deltas add up to the category delta.</p>
+        <p>· Invoices are matched to budget lines only on clear label evidence (wages → Staff wages, lodging → Hotels, &quot;Client Jacket&quot; → Jackets / apparel). Ambiguous invoices are left under &quot;Unmatched invoices&quot; rather than force-fit — they may correspond to costs budgeted under a different line. When the whole category is a single budget line (e.g. Guide Wages), expanding it goes straight to the invoices.</p>
+        <p>· One-sided rows — budget lines with no invoices yet, and unmatched invoices — have dimmed deltas since they aren&apos;t a like-for-like comparison. Line deltas still add up to the category delta, and categories to the trip.</p>
         <p>· Expand a trip to change which budgeted trip it compares against (Run-status trips only; auto-matched guesses are flagged; your picks save in this browser). Actuals refresh by regenerating actuals-2026.json from the reporting sheet.</p>
       </div>
     </div>
@@ -803,21 +804,63 @@ function CatRows({ catId, bucketKey, label, actLines, budLines, budTotal, actTot
           />
         );
       })}
-      {catOpen && !collapseSingle && unmatched.map((l, i) => (
-        <tr key={`u${i}`} className="text-xs text-ag-text-muted bg-ag-card-lighter/5">
+      {catOpen && !collapseSingle && unmatched.length === 1 && (
+        <tr className="text-xs text-ag-text-muted bg-ag-card-lighter/5">
           <td></td>
           <td className="pl-14 italic">
             <span className="inline-block w-4"></span>
-            <span title={l.label}>{l.label}</span>
-            {hasBudget && <span className="not-italic opacity-60 ml-2">(not budgeted)</span>}
+            <span title={l0(unmatched).label}>{l0(unmatched).label}</span>
+            {hasBudget && <span className="not-italic opacity-60 ml-2" title={UNMATCHED_HINT}>(unmatched)</span>}
           </td>
           <td></td>
           <td></td>
           <td className={`${GRP} opacity-60`}>{hasBudget ? '—' : ''}</td>
-          <td className={`${NUM} italic`}>{formatCurrency(l.amount)}</td>
-          <td className={NUM}>{hasBudget ? fmtDelta(-l.amount) : ''}</td>
+          <td className={`${NUM} italic`}>{formatCurrency(l0(unmatched).amount)}</td>
+          <td className={NUM}>{hasBudget ? <span className="opacity-60">{fmtDelta(-l0(unmatched).amount)}</span> : ''}</td>
           <td className="border-l border-ag-border/40" colSpan={3}></td>
         </tr>
+      )}
+      {catOpen && !collapseSingle && unmatched.length > 1 && (
+        <UnmatchedGroup
+          lines={unmatched}
+          hasBudget={hasBudget}
+          open={expandedCats.has(`${catId}|__unmatched`)}
+          onToggle={() => toggleCat(`${catId}|__unmatched`)}
+        />
+      )}
+    </>
+  );
+}
+
+const UNMATCHED_HINT = 'Not confidently matched to a specific budget line — may correspond to costs budgeted under a different line, so no like-for-like comparison is shown.';
+const l0 = (arr: ActualLine[]) => arr[0];
+
+/** Roll-up row for invoices that couldn't be confidently matched to a budget line. */
+function UnmatchedGroup({ lines, hasBudget, open, onToggle }: {
+  lines: ActualLine[]; hasBudget: boolean; open: boolean; onToggle: () => void;
+}) {
+  const sum = lines.reduce((s, l) => s + l.amount, 0);
+  return (
+    <>
+      <tr
+        className="text-xs text-ag-text-muted bg-ag-card-lighter/5 cursor-pointer hover:bg-ag-card-lighter/20"
+        onClick={onToggle}
+      >
+        <td></td>
+        <td className="pl-14">
+          <span className="text-ag-accent text-[9px] mr-2 select-none inline-block w-2">{open ? '▼' : '▶'}</span>
+          <span title={UNMATCHED_HINT}>Unmatched invoices</span>
+          <span className="italic opacity-60 ml-2">· {lines.length} items</span>
+        </td>
+        <td></td>
+        <td></td>
+        <td className={`${GRP} opacity-60`}>{hasBudget ? '—' : ''}</td>
+        <td className={NUM}>{formatCurrency(sum)}</td>
+        <td className={NUM}>{hasBudget ? <span className="opacity-60">{fmtDelta(-sum)}</span> : ''}</td>
+        <td className="border-l border-ag-border/40" colSpan={3}></td>
+      </tr>
+      {open && lines.map((al, j) => (
+        <DetailRow key={`u${j}`} line={al} indent="pl-20" />
       ))}
     </>
   );
@@ -828,6 +871,10 @@ function BudgetLineRows({ budLine, acts, actSum, open, onToggle }: {
   budLine: ActualLine; acts: ActualLine[]; actSum: number; open: boolean; onToggle?: () => void;
 }) {
   const expandable = Boolean(onToggle);
+  // Echo the invoice label only when it says more than the budget line already does
+  const echo = acts.length === 1
+    && acts[0].label.trim().toLowerCase() !== budLine.label.trim().toLowerCase();
+  const oneSided = acts.length === 0;
   return (
     <>
       <tr
@@ -840,7 +887,7 @@ function BudgetLineRows({ budLine, acts, actSum, open, onToggle }: {
             ? <span className="text-ag-accent text-[9px] mr-2 select-none inline-block w-2">{open ? '▼' : '▶'}</span>
             : <span className="inline-block w-4"></span>}
           {budLine.label}
-          {acts.length === 1 && (
+          {echo && (
             <span className="italic opacity-60 ml-2 inline-block max-w-[260px] truncate align-bottom" title={acts[0].label}>
               · {acts[0].label}
             </span>
@@ -848,12 +895,17 @@ function BudgetLineRows({ budLine, acts, actSum, open, onToggle }: {
           {expandable && (
             <span className="italic opacity-60 ml-2">· {acts.length} items</span>
           )}
+          {oneSided && (
+            <span className="italic opacity-60 ml-2" title="Budgeted, but no invoice matched to this line yet.">· no invoices yet</span>
+          )}
         </td>
         <td></td>
         <td></td>
         <td className={GRP}>{formatCurrency(budLine.amount)}</td>
         <td className={NUM}>{acts.length > 0 ? formatCurrency(actSum) : <span className="opacity-60">—</span>}</td>
-        <td className={NUM}>{fmtDelta(budLine.amount - actSum)}</td>
+        <td className={NUM}>{oneSided
+          ? <span className="opacity-60">{fmtDelta(budLine.amount)}</span>
+          : fmtDelta(budLine.amount - actSum)}</td>
         <td className="border-l border-ag-border/40" colSpan={3}></td>
       </tr>
       {expandable && open && acts.map((al, j) => (
