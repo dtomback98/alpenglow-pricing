@@ -545,7 +545,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
         <p>· Budget staff meals are shown under Trip Travel/Logistics to match the reporting sheet&apos;s convention for actuals.</p>
         <p>· Budg. GM = (Revenue − Budgeted) / Revenue on the sheet&apos;s actual revenue; GM Δ = Actual GM − Budg. GM (red = margin below budget).</p>
         <p>· Trips with partial accounting (no ✓) overstate Actual GM until all costs land. Everest 2026 is excluded (its reporting tab has a different layout with no Actuals column).</p>
-        <p>· Line items inside a category are auto-paired by label (e.g. &quot;Guide Wages - Ignacio&quot; → Staff wages, &quot;Client Jacket&quot; → Jackets / apparel); when several actuals hit one budget line they sum on that row with the detail indented beneath. Lines with no counterpart show &quot;(not budgeted)&quot; or a &quot;—&quot; actual, and line deltas add up to the category delta.</p>
+        <p>· Line items inside a category are auto-paired by label (e.g. &quot;Guide Wages - Ignacio&quot; → Staff wages, &quot;Client Jacket&quot; → Jackets / apparel). When the whole category is one budget line (e.g. Guide Wages), expanding it goes straight to the individual invoices; otherwise budget lines with several invoices get their own ▶ arrow. Lines with no counterpart show &quot;(not budgeted)&quot; or a &quot;—&quot; actual, and line deltas add up to the category delta.</p>
         <p>· Expand a trip to change which budgeted trip it compares against (Run-status trips only; auto-matched guesses are flagged; your picks save in this browser). Actuals refresh by regenerating actuals-2026.json from the reporting sheet.</p>
       </div>
     </div>
@@ -718,6 +718,7 @@ function TripRows({
             hasBudget={Boolean(b)}
             catOpen={catOpen}
             toggleCat={toggleCat}
+            expandedCats={expandedCats}
           />
         );
       })}
@@ -736,12 +737,36 @@ interface CatRowsProps {
   hasBudget: boolean;
   catOpen: boolean;
   toggleCat: (id: string) => void;
+  expandedCats: Set<string>;
 }
 
-function CatRows({ catId, bucketKey, label, actLines, budLines, budTotal, actTotal, hasBudget, catOpen, toggleCat }: CatRowsProps) {
+/** Indented actual-detail row (no delta — the roll-up row above carries it). */
+function DetailRow({ line, indent }: { line: ActualLine; indent: string }) {
+  return (
+    <tr className="text-[11px] text-ag-text-muted bg-ag-card-lighter/5">
+      <td></td>
+      <td className={`${indent} italic opacity-80`}>
+        <span className="mr-2 opacity-60 select-none">└</span>
+        <span title={line.label}>{line.label}</span>
+      </td>
+      <td></td>
+      <td></td>
+      <td className="border-l border-ag-border/40"></td>
+      <td className={`${NUM} italic opacity-80`}>{formatCurrency(line.amount)}</td>
+      <td></td>
+      <td className="border-l border-ag-border/40" colSpan={3}></td>
+    </tr>
+  );
+}
+
+function CatRows({ catId, bucketKey, label, actLines, budLines, budTotal, actTotal, hasBudget, catOpen, toggleCat, expandedCats }: CatRowsProps) {
   const { matched, unmatched } = catOpen
     ? pairLines(bucketKey, budLines, actLines)
     : { matched: new Map<string, ActualLine[]>(), unmatched: [] as ActualLine[] };
+  // A category whose budget is a single line covering every actual (e.g. Guide
+  // Wages → Staff wages) doesn't need the intermediate row — the category row
+  // already carries the same comparison, so expanding goes straight to detail.
+  const collapseSingle = catOpen && budLines.length === 1 && unmatched.length === 0 && actLines.length > 0;
   return (
     <>
       <tr
@@ -760,17 +785,29 @@ function CatRows({ catId, bucketKey, label, actLines, budLines, budTotal, actTot
         <td className={NUM}>{hasBudget && budTotal !== null ? fmtDelta(budTotal - actTotal) : ''}</td>
         <td className="border-l border-ag-border/40" colSpan={3}></td>
       </tr>
-      {catOpen && budLines.map((bl, i) => {
+      {collapseSingle && actLines.map((l, i) => (
+        <DetailRow key={`d${i}`} line={l} indent="pl-14" />
+      ))}
+      {catOpen && !collapseSingle && budLines.map((bl, i) => {
         const acts = matched.get(bl.label) || [];
         const actSum = acts.reduce((s, l) => s + l.amount, 0);
+        const lineId = `${catId}|${bl.label}`;
         return (
-          <BudgetLineRows key={`b${i}`} budLine={bl} acts={acts} actSum={actSum} />
+          <BudgetLineRows
+            key={`b${i}`}
+            budLine={bl}
+            acts={acts}
+            actSum={actSum}
+            open={expandedCats.has(lineId)}
+            onToggle={acts.length > 1 ? () => toggleCat(lineId) : undefined}
+          />
         );
       })}
-      {catOpen && unmatched.map((l, i) => (
+      {catOpen && !collapseSingle && unmatched.map((l, i) => (
         <tr key={`u${i}`} className="text-xs text-ag-text-muted bg-ag-card-lighter/5">
           <td></td>
           <td className="pl-14 italic">
+            <span className="inline-block w-4"></span>
             <span title={l.label}>{l.label}</span>
             {hasBudget && <span className="not-italic opacity-60 ml-2">(not budgeted)</span>}
           </td>
@@ -786,18 +823,30 @@ function CatRows({ catId, bucketKey, label, actLines, budLines, budTotal, actTot
   );
 }
 
-/** One budget line paired with its matched actual lines. */
-function BudgetLineRows({ budLine, acts, actSum }: { budLine: ActualLine; acts: ActualLine[]; actSum: number }) {
+/** One budget line paired with its matched actual lines. Expandable when several actuals roll up into it. */
+function BudgetLineRows({ budLine, acts, actSum, open, onToggle }: {
+  budLine: ActualLine; acts: ActualLine[]; actSum: number; open: boolean; onToggle?: () => void;
+}) {
+  const expandable = Boolean(onToggle);
   return (
     <>
-      <tr className="text-xs text-ag-text-muted bg-ag-card-lighter/5">
+      <tr
+        className={`text-xs text-ag-text-muted bg-ag-card-lighter/5 ${expandable ? 'cursor-pointer hover:bg-ag-card-lighter/20' : ''}`}
+        onClick={onToggle}
+      >
         <td></td>
         <td className="pl-14">
+          {expandable
+            ? <span className="text-ag-accent text-[9px] mr-2 select-none inline-block w-2">{open ? '▼' : '▶'}</span>
+            : <span className="inline-block w-4"></span>}
           {budLine.label}
           {acts.length === 1 && (
             <span className="italic opacity-60 ml-2 inline-block max-w-[260px] truncate align-bottom" title={acts[0].label}>
               · {acts[0].label}
             </span>
+          )}
+          {expandable && (
+            <span className="italic opacity-60 ml-2">· {acts.length} items</span>
           )}
         </td>
         <td></td>
@@ -807,19 +856,8 @@ function BudgetLineRows({ budLine, acts, actSum }: { budLine: ActualLine; acts: 
         <td className={NUM}>{fmtDelta(budLine.amount - actSum)}</td>
         <td className="border-l border-ag-border/40" colSpan={3}></td>
       </tr>
-      {acts.length > 1 && acts.map((al, j) => (
-        <tr key={`s${j}`} className="text-[11px] text-ag-text-muted bg-ag-card-lighter/5">
-          <td></td>
-          <td className="pl-20 italic opacity-80">
-            <span title={al.label}>{al.label}</span>
-          </td>
-          <td></td>
-          <td></td>
-          <td className="border-l border-ag-border/40"></td>
-          <td className={`${NUM} italic opacity-80`}>{formatCurrency(al.amount)}</td>
-          <td></td>
-          <td className="border-l border-ag-border/40" colSpan={3}></td>
-        </tr>
+      {expandable && open && acts.map((al, j) => (
+        <DetailRow key={`s${j}`} line={al} indent="pl-20" />
       ))}
     </>
   );
