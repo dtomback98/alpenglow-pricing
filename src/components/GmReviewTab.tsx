@@ -404,6 +404,18 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
     if (b) { totals.budget += b.total; totals.budgetRevenue += b.revenue; totals.linked += 1; }
   }
 
+  // Like-for-like comparison totals for the total rows: only trips that have BOTH a
+  // linked budget and recorded actual revenue, so Budgeted and Actual sum over the
+  // same set (the summary cards above keep the portfolio-wide totals).
+  const cmp = { revB: 0, revA: 0, cogsB: 0, cogsA: 0, n: 0 };
+  for (const a of filtered) {
+    const b = budgets.get(a.id);
+    if (!b || a.revenue === null) continue;
+    cmp.revB += b.revenue; cmp.revA += a.revenue;
+    cmp.cogsB += b.total;  cmp.cogsA += a.totalCogs;
+    cmp.n += 1;
+  }
+
   if (loading || configsLoading) {
     return <div className="text-center text-ag-text-muted py-8">Loading GM review data...</div>;
   }
@@ -506,12 +518,14 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
             <tbody>
               {sections.map(({ cat, trips: sectionTrips }) => {
                 const color = CATEGORY_COLORS[cat] || '#3b82f6';
-                const sec = { revenue: 0, budget: 0, budgetRevenue: 0, hasBudget: false, actual: 0, actualLinked: 0 };
+                // Like-for-like: only trips with BOTH a linked budget and recorded actual revenue.
+                const sec = { revB: 0, revA: 0, cogsB: 0, cogsA: 0, n: 0 };
                 for (const a of sectionTrips) {
-                  sec.revenue += a.revenue || 0;
-                  sec.actual += a.totalCogs;
                   const b = budgets.get(a.id);
-                  if (b) { sec.budget += b.total; sec.budgetRevenue += b.revenue; sec.hasBudget = true; sec.actualLinked += a.totalCogs; }
+                  if (!b || a.revenue === null) continue;
+                  sec.revB += b.revenue; sec.revA += a.revenue;
+                  sec.cogsB += b.total;  sec.cogsA += a.totalCogs;
+                  sec.n += 1;
                 }
                 return (
                   <SectionBlock
@@ -538,19 +552,21 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
               {sections.length > 1 && (
                 <tr className="font-bold bg-ag-accent/10">
                   <td className="border-t-2 border-ag-accent"></td>
-                  <td className="border-t-2 border-ag-accent pt-3">Total All Trips</td>
-                  <td className="border-t-2 border-ag-accent"></td>
-                  <td className={`${GRP} border-t-2 border-ag-accent pt-3`}>{totals.linked > 0 ? formatCurrency(totals.budgetRevenue) : '—'}</td>
-                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{formatCurrency(totals.revenue)}</td>
-                  <td className={`${GRP} border-t-2 border-ag-accent pt-3`}>{totals.linked > 0 ? formatCurrency(totals.budget) : '—'}</td>
-                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{formatCurrency(totals.actual)}</td>
-                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>
-                    {totals.linked > 0
-                      ? fmtDelta(totals.budget - filtered.reduce((s, a) => s + (budgets.get(a.id) ? a.totalCogs : 0), 0))
-                      : '—'}
+                  <td className="border-t-2 border-ag-accent pt-3">
+                    Total All Trips
+                    <span
+                      className="text-ag-text-muted font-normal cursor-help"
+                      title="Total rows include only trips that have BOTH a linked budget and recorded actuals, so Budgeted and Actual are summed over the same set (a true like-for-like). Unlinked trips are left out here — the summary cards above hold the portfolio totals for every trip."
+                    >&nbsp;†</span>
                   </td>
-                  <td className={`${GRP} border-t-2 border-ag-accent pt-3`}>{totals.budgetRevenue > 0 ? fmtGm((totals.budgetRevenue - totals.budget) / totals.budgetRevenue) : '—'}</td>
-                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{totals.revenue > 0 ? fmtGm((totals.revenue - totals.actual) / totals.revenue) : '—'}</td>
+                  <td className="border-t-2 border-ag-accent"></td>
+                  <td className={`${GRP} border-t-2 border-ag-accent pt-3`}>{cmp.n > 0 ? formatCurrency(cmp.revB) : '—'}</td>
+                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{cmp.n > 0 ? formatCurrency(cmp.revA) : '—'}</td>
+                  <td className={`${GRP} border-t-2 border-ag-accent pt-3`}>{cmp.n > 0 ? formatCurrency(cmp.cogsB) : '—'}</td>
+                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{cmp.n > 0 ? formatCurrency(cmp.cogsA) : '—'}</td>
+                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{cmp.n > 0 ? fmtDelta(cmp.cogsB - cmp.cogsA) : '—'}</td>
+                  <td className={`${GRP} border-t-2 border-ag-accent pt-3`}>{cmp.revB > 0 ? fmtGm((cmp.revB - cmp.cogsB) / cmp.revB) : '—'}</td>
+                  <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{cmp.revA > 0 ? fmtGm((cmp.revA - cmp.cogsA) / cmp.revA) : '—'}</td>
                   <td className="border-t-2 border-ag-accent"></td>
                 </tr>
               )}
@@ -562,6 +578,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
       {/* Notes */}
       <div className="card text-sm text-ag-text-muted space-y-1">
         <div className="font-medium text-ag-text mb-2">Notes</div>
+        <p>· <span className="text-ag-text">†</span> Total rows (each section and Total All Trips) include only trips that have both a linked budget and recorded actuals, so Budgeted and Actual are summed over the same trips — a true like-for-like comparison. Unlinked trips are excluded from the totals (they still appear as their own rows); the summary cards at the top are portfolio totals across every filtered trip.</p>
         <p>· Actuals are COGS line items from each trip tab&apos;s EXPENSES block on the reporting sheet — admin costs (Insurance, AE Overhead Fee, Gear Replacement) excluded. To match, budget-side insurance is also excluded.</p>
         <p>· QB bucketing verified against the reporting sheet&apos;s own rollup blocks (8 of 9 tie exactly; Aconcagua #3&apos;s sheet block leaves its $11,340 permits unassigned — shown here under Commercial Use so the trip ties to its subtotal).</p>
         <p>· Budget staff meals are shown under Trip Travel/Logistics to match the reporting sheet&apos;s convention for actuals.</p>
@@ -582,7 +599,7 @@ interface SectionBlockProps {
   cat: string;
   color: string;
   trips: ActualTrip[];
-  sec: { revenue: number; budget: number; budgetRevenue: number; hasBudget: boolean; actual: number; actualLinked: number };
+  sec: { revB: number; revA: number; cogsB: number; cogsA: number; n: number };
   budgets: Map<string, BudgetBuckets>;
   linkedTripIds: Map<string, HistoricalTrip>;
   expandedTrips: Set<string>;
@@ -648,13 +665,13 @@ function SectionBlock({
           Total {CATEGORY_LABELS[cat] || cat}
         </td>
         <td className="border-t-2 border-ag-border"></td>
-        <td className={`${GRP} border-t-2 border-ag-border`}>{sec.hasBudget ? formatCurrency(sec.budgetRevenue) : '—'}</td>
-        <td className={`${NUM} border-t-2 border-ag-border`}>{formatCurrency(sec.revenue)}</td>
-        <td className={`${GRP} border-t-2 border-ag-border`}>{sec.hasBudget ? formatCurrency(sec.budget) : '—'}</td>
-        <td className={`${NUM} border-t-2 border-ag-border`}>{formatCurrency(sec.actual)}</td>
-        <td className={`${NUM} border-t-2 border-ag-border`}>{sec.hasBudget ? fmtDelta(sec.budget - sec.actualLinked) : '—'}</td>
-        <td className={`${GRP} border-t-2 border-ag-border`}>{sec.hasBudget && sec.budgetRevenue > 0 ? fmtGm((sec.budgetRevenue - sec.budget) / sec.budgetRevenue) : '—'}</td>
-        <td className={`${NUM} border-t-2 border-ag-border`}>{sec.revenue > 0 ? fmtGm((sec.revenue - sec.actual) / sec.revenue) : '—'}</td>
+        <td className={`${GRP} border-t-2 border-ag-border`}>{sec.n > 0 ? formatCurrency(sec.revB) : '—'}</td>
+        <td className={`${NUM} border-t-2 border-ag-border`}>{sec.n > 0 ? formatCurrency(sec.revA) : '—'}</td>
+        <td className={`${GRP} border-t-2 border-ag-border`}>{sec.n > 0 ? formatCurrency(sec.cogsB) : '—'}</td>
+        <td className={`${NUM} border-t-2 border-ag-border`}>{sec.n > 0 ? formatCurrency(sec.cogsA) : '—'}</td>
+        <td className={`${NUM} border-t-2 border-ag-border`}>{sec.n > 0 ? fmtDelta(sec.cogsB - sec.cogsA) : '—'}</td>
+        <td className={`${GRP} border-t-2 border-ag-border`}>{sec.revB > 0 ? fmtGm((sec.revB - sec.cogsB) / sec.revB) : '—'}</td>
+        <td className={`${NUM} border-t-2 border-ag-border`}>{sec.revA > 0 ? fmtGm((sec.revA - sec.cogsA) / sec.revA) : '—'}</td>
         <td className="border-t-2 border-ag-border"></td>
       </tr>
     </>
