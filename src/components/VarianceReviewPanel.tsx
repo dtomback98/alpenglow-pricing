@@ -35,7 +35,7 @@ const VERDICTS: { key: string; label: string; hint: string }[] = [
 const CLASS_STYLE: { [k: string]: { label: string; cls: string } } = {
   'possible-vendor-issue': { label: 'Possible vendor issue', cls: 'bg-ag-danger/20 text-ag-danger' },
   'unbudgeted-expense': { label: 'Unbudgeted expense', cls: 'bg-ag-accent/20 text-ag-accent' },
-  'likely-mapping-internal': { label: 'Likely mapping (internal)', cls: 'bg-ag-card-lighter text-ag-text-muted' },
+  'likely-mapping-internal': { label: 'Likely mis-labeled (internal)', cls: 'bg-ag-card-lighter text-ag-text-muted' },
   'under-budget': { label: 'Under budget', cls: 'bg-ag-card-lighter text-ag-text-muted' },
   'missing-actual': { label: 'Budgeted, no actual', cls: 'bg-ag-card-lighter text-ag-text-muted' },
   'expected-per-feedback': { label: 'Expected (per feedback)', cls: 'bg-ag-success/15 text-ag-success' },
@@ -196,7 +196,15 @@ export default function VarianceReviewPanel() {
   if (flags.length === 0) return null;
 
   const pending = flags.filter(f => !f.verdict)
-    .sort((a, b) => (CLASS_ORDER.indexOf(a.class) - CLASS_ORDER.indexOf(b.class)) || (Math.abs(b.delta) - Math.abs(a.delta)));
+    .sort((a, b) => {
+      const c = CLASS_ORDER.indexOf(a.class) - CLASS_ORDER.indexOf(b.class);
+      if (c) return c;
+      // keep counterpart flags on the same trip adjacent (they usually explain each other)
+      if (a.class === 'likely-mapping-internal' && a.trip_name !== b.trip_name) {
+        return a.trip_name.localeCompare(b.trip_name);
+      }
+      return Math.abs(b.delta) - Math.abs(a.delta);
+    });
   const graded = flags.filter(f => f.verdict);
 
   const row = (f: VarianceFlag) => (
@@ -226,11 +234,19 @@ export default function VarianceReviewPanel() {
       {saveError && <div className="text-xs text-ag-danger border border-ag-danger rounded p-2">{saveError}</div>}
       {open && (
         <div className="space-y-2">
-          <p className="text-xs text-ag-text-muted">
-            Budget-vs-actuals flags from the variance sweep. Your verdicts feed the learning loop —
-            mapping errors teach the line matcher, expected teaches the budget baseline, vendor issues build a
-            price-of-record per vendor.
-          </p>
+          <div className="text-xs text-ag-text-muted space-y-1">
+            <p>
+              Each row is an expense line where actuals differ from budget by more than 15% and $500.
+              Read the note, pick a verdict (add a short “why” — it makes the system smarter), and it saves instantly:
+            </p>
+            <ul className="list-disc pl-5 space-y-0.5">
+              <li><span className="text-ag-text">Vendor issue</span> — we were charged incorrectly; follow up with the vendor.</li>
+              <li><span className="text-ag-text">Expected</span> — the cost really is different now; the budget is stale, not the vendor wrong.</li>
+              <li><span className="text-ag-text">Mapping error</span> — budget and actual are the same money under different labels; not a real variance.</li>
+              <li><span className="text-ag-text">Noise</span> — not worth flagging; the system will stop raising it.</li>
+            </ul>
+            <p>Verdicts feed the next sweep — graded items stop reappearing, and confirmed vendor issues build a price-of-record per vendor.</p>
+          </div>
           {pending.map(row)}
           {graded.length > 0 && (
             <>
