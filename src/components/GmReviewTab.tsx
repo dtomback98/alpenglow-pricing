@@ -219,7 +219,9 @@ function HeaderRows() {
         <th className="w-6 sticky top-0 z-20" rowSpan={2}></th>
         <th className="sticky top-0 z-20 !py-1.5" rowSpan={2}>Trip</th>
         <th className="text-center whitespace-nowrap sticky top-0 z-20 !py-1.5" rowSpan={2} title="Accounting complete on the reporting sheet">✓</th>
-        <th className={`${NUM} sticky top-0 z-20 !py-1.5`} rowSpan={2}>Revenue</th>
+        <th colSpan={2} className="sticky top-0 z-20 !py-1 h-6 border-l border-ag-border/40">
+          <div className="mx-4 border-b border-ag-text-muted/50 pb-0.5 text-center text-[10px] font-bold tracking-[0.15em] text-ag-text">Revenue</div>
+        </th>
         <th colSpan={3} className="sticky top-0 z-20 !py-1 h-6 border-l border-ag-border/40">
           <div className="mx-4 border-b border-ag-text-muted/50 pb-0.5 text-center text-[10px] font-bold tracking-[0.15em] text-ag-text">COGS</div>
         </th>
@@ -228,6 +230,8 @@ function HeaderRows() {
         </th>
       </tr>
       <tr>
+        <th className={`${GRP} sticky top-6 z-20 !py-1 text-[11px]`} title="The linked budget's own forecast revenue at its saved pax">Budgeted</th>
+        <th className={`${NUM} sticky top-6 z-20 !py-1 text-[11px]`} title="Booked revenue from the reporting sheet">Actuals</th>
         <th className={`${GRP} sticky top-6 z-20 !py-1 text-[11px]`}>Budgeted</th>
         <th className={`${NUM} sticky top-6 z-20 !py-1 text-[11px]`}>Actuals</th>
         <th className={`${NUM} sticky top-6 z-20 !py-1 text-[11px]`} title="Budgeted − Actuals; red = over budget">Delta</th>
@@ -536,6 +540,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
                   <td className="border-t-2 border-ag-accent"></td>
                   <td className="border-t-2 border-ag-accent pt-3">Total All Trips</td>
                   <td className="border-t-2 border-ag-accent"></td>
+                  <td className={`${GRP} border-t-2 border-ag-accent pt-3`}>{totals.linked > 0 ? formatCurrency(totals.budgetRevenue) : '—'}</td>
                   <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{formatCurrency(totals.revenue)}</td>
                   <td className={`${GRP} border-t-2 border-ag-accent pt-3`}>{totals.linked > 0 ? formatCurrency(totals.budget) : '—'}</td>
                   <td className={`${NUM} border-t-2 border-ag-accent pt-3`}>{formatCurrency(totals.actual)}</td>
@@ -600,7 +605,7 @@ function SectionBlock({
   return (
     <>
       <tr>
-        <td colSpan={10} className="pt-5 pb-1 border-b-0">
+        <td colSpan={11} className="pt-5 pb-1 border-b-0">
           <span
             className="inline-block text-xs font-bold uppercase tracking-widest px-2 py-1 rounded"
             style={{ color, backgroundColor: `${color}1a` }}
@@ -643,6 +648,7 @@ function SectionBlock({
           Total {CATEGORY_LABELS[cat] || cat}
         </td>
         <td className="border-t-2 border-ag-border"></td>
+        <td className={`${GRP} border-t-2 border-ag-border`}>{sec.hasBudget ? formatCurrency(sec.budgetRevenue) : '—'}</td>
         <td className={`${NUM} border-t-2 border-ag-border`}>{formatCurrency(sec.revenue)}</td>
         <td className={`${GRP} border-t-2 border-ag-border`}>{sec.hasBudget ? formatCurrency(sec.budget) : '—'}</td>
         <td className={`${NUM} border-t-2 border-ag-border`}>{formatCurrency(sec.actual)}</td>
@@ -704,8 +710,9 @@ function TripRows({
             : <span className="text-ag-text-muted opacity-30">○</span>}
           {acctOverridden && <span className="text-ag-accent text-[9px] align-top ml-0.5">*</span>}
         </td>
+        <td className={GRP}>{b ? formatCurrency(b.revenue) : <span className="text-ag-text-muted italic text-xs whitespace-nowrap">—</span>}</td>
         <td className={NUM}>{a.revenue !== null ? formatCurrency(a.revenue) : '—'}</td>
-        <td className={GRP}>{b ? formatCurrency(b.total) : <span className="text-ag-text-muted italic text-xs whitespace-nowrap">no budget linked</span>}</td>
+        <td className={GRP}>{b ? formatCurrency(b.total) : <span className="text-ag-text-muted italic text-xs whitespace-nowrap">{linked && !linked.tripConfigId ? 'budget missing config' : 'no budget linked'}</span>}</td>
         <td className={NUM}>{formatCurrency(a.totalCogs)}</td>
         <td className={NUM}>{b ? fmtDelta(b.total - a.totalCogs) : '—'}</td>
         <td className={GRP}>{budgGm !== null ? fmtGm(budgGm) : '—'}</td>
@@ -715,7 +722,7 @@ function TripRows({
       {isOpen && (
         <tr className="bg-ag-card-lighter/10">
           <td></td>
-          <td colSpan={9} className="py-2" onClick={(e) => e.stopPropagation()}>
+          <td colSpan={10} className="py-2" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2 text-xs text-ag-text-muted">
               <span>Budget source:</span>
               <select
@@ -731,6 +738,9 @@ function TripRows({
                 ))}
               </select>
               {linked && <span>· computed at {linked.pax} pax</span>}
+              {linked && !linked.tripConfigId && (
+                <span className="text-ag-danger">· ⚠ no pricing config attached — open this budget on the History tab and re-save, or its budget columns stay blank</span>
+              )}
               {b && (
                 <span title="The budget's own forecasted revenue vs the reporting sheet's actual revenue. A gap usually means scope changed after budgeting (e.g. an add-on sold later).">
                   · budgeted revenue {formatCurrency(b.revenue)}{a.revenue !== null ? <> vs actual {formatCurrency(a.revenue)}</> : null}
@@ -794,6 +804,7 @@ function DetailRow({ line, indent }: { line: ActualLine; indent: string }) {
       </td>
       <td></td>
       <td></td>
+      <td></td>
       <td className="border-l border-ag-border/40"></td>
       <td className={`${NUM} italic opacity-80`}>{formatCurrency(line.amount)}</td>
       <td></td>
@@ -829,6 +840,7 @@ function CatRows({ catId, bucketKey, label, actLines, budLines, budTotal, actTot
         </td>
         <td></td>
         <td></td>
+        <td></td>
         <td className={GRP}>{hasBudget && budTotal !== null ? formatCurrency(budTotal) : ''}</td>
         <td className={NUM}>{formatCurrency(actTotal)}</td>
         <td className={NUM}>{hasBudget && budTotal !== null ? fmtDelta(budTotal - actTotal) : ''}</td>
@@ -862,6 +874,7 @@ function CatRows({ catId, bucketKey, label, actLines, budLines, budTotal, actTot
             <span title={l.label}>{l.label}</span>
             <span className="not-italic opacity-60 ml-2" title={UNMATCHED_HINT}>(unmatched)</span>
           </td>
+          <td></td>
           <td></td>
           <td></td>
           <td className={`${GRP} opacity-60`}>—</td>
@@ -909,6 +922,7 @@ function BudgetLineRows({ budLine, acts, actSum, open, onToggle }: {
             <span className="italic opacity-60 ml-2" title="Budgeted, but no invoice matched to this line yet.">· no invoices yet</span>
           )}
         </td>
+        <td></td>
         <td></td>
         <td></td>
         <td className={GRP}>{formatCurrency(budLine.amount)}</td>
