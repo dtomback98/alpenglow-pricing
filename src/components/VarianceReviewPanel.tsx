@@ -50,6 +50,71 @@ const VERDICT_STYLE: { [k: string]: string } = {
 
 const CLASS_ORDER = ['possible-vendor-issue', 'unbudgeted-expense', 'likely-mapping-internal', 'under-budget', 'missing-actual', 'expected-per-feedback'];
 
+// ---------------------------------------------------------------- flag row
+// NOTE: defined at module level (not inside the panel component) so React keeps
+// a stable component identity across parent re-renders — otherwise the note
+// input remounts and drops focus on every keystroke.
+
+function FlagRow({ f, note, onNote, saving, onVerdict, onClear }: {
+  f: VarianceFlag;
+  note: string;
+  onNote: (value: string) => void;
+  saving: boolean;
+  onVerdict: (verdict: string) => void;
+  onClear: () => void;
+}) {
+  const cs = CLASS_STYLE[f.class] || { label: f.class, cls: 'bg-ag-card-lighter text-ag-text-muted' };
+  const fmtPct = f.pct === null ? '—' : `${f.pct >= 0 ? '+' : ''}${(f.pct * 100).toFixed(0)}%`;
+  return (
+    <div className="border border-ag-border/40 rounded-lg p-3 space-y-2">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="font-mono text-xs text-ag-text-muted">{f.flag_code}</span>
+        <span className="font-medium">{f.trip_name}</span>
+        <span className="text-ag-text-muted">·</span>
+        <span className="text-ag-text-muted">{f.bucket}</span>
+        <span className="text-ag-text-muted">/</span>
+        <span>{f.line_label}</span>
+        <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${cs.cls}`}>{cs.label}</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-4 text-sm tabular-nums">
+        <span className="text-ag-text-muted">Budget <span className="text-ag-text">{formatCurrency(f.budget)}</span></span>
+        <span className="text-ag-text-muted">Actual <span className="text-ag-text">{formatCurrency(f.actual)}</span></span>
+        <span className={f.delta > 0 ? 'text-ag-danger' : 'text-ag-success'}>
+          {f.delta > 0 ? '+' : '−'}{formatCurrency(Math.abs(f.delta))} ({fmtPct})
+        </span>
+        {f.offset_context && <span className="text-xs text-ag-text-muted italic">{f.offset_context}</span>}
+      </div>
+      {f.verdict ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className={`text-xs px-2 py-0.5 rounded-full ${VERDICT_STYLE[f.verdict] || ''}`}>
+            {VERDICTS.find(v => v.key === f.verdict)?.label || f.verdict}
+          </span>
+          {f.verdict_note && <span className="text-xs text-ag-text-muted">“{f.verdict_note}”</span>}
+          <button onClick={onClear} disabled={saving}
+            className="text-xs text-ag-text-muted underline ml-auto">un-grade</button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          {VERDICTS.map(v => (
+            <button key={v.key} title={v.hint} disabled={saving}
+              onClick={() => onVerdict(v.key)}
+              className="text-xs px-2.5 py-1 rounded-full border border-ag-border hover:border-ag-accent hover:text-ag-accent transition-colors">
+              {v.label}
+            </button>
+          ))}
+          <input
+            type="text"
+            placeholder="note (why) — optional but valuable"
+            value={note}
+            onChange={e => onNote(e.target.value)}
+            className="flex-1 min-w-[180px] text-xs bg-transparent border border-ag-border/60 rounded px-2 py-1"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- component
 
 export default function VarianceReviewPanel() {
@@ -134,59 +199,17 @@ export default function VarianceReviewPanel() {
     .sort((a, b) => (CLASS_ORDER.indexOf(a.class) - CLASS_ORDER.indexOf(b.class)) || (Math.abs(b.delta) - Math.abs(a.delta)));
   const graded = flags.filter(f => f.verdict);
 
-  const fmtPct = (f: VarianceFlag) => f.pct === null ? '—' : `${f.pct >= 0 ? '+' : ''}${(f.pct * 100).toFixed(0)}%`;
-
-  const FlagRow = ({ f }: { f: VarianceFlag }) => {
-    const cs = CLASS_STYLE[f.class] || { label: f.class, cls: 'bg-ag-card-lighter text-ag-text-muted' };
-    return (
-      <div className="border border-ag-border/40 rounded-lg p-3 space-y-2">
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="font-mono text-xs text-ag-text-muted">{f.flag_code}</span>
-          <span className="font-medium">{f.trip_name}</span>
-          <span className="text-ag-text-muted">·</span>
-          <span className="text-ag-text-muted">{f.bucket}</span>
-          <span className="text-ag-text-muted">/</span>
-          <span>{f.line_label}</span>
-          <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${cs.cls}`}>{cs.label}</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-4 text-sm tabular-nums">
-          <span className="text-ag-text-muted">Budget <span className="text-ag-text">{formatCurrency(f.budget)}</span></span>
-          <span className="text-ag-text-muted">Actual <span className="text-ag-text">{formatCurrency(f.actual)}</span></span>
-          <span className={f.delta > 0 ? 'text-ag-danger' : 'text-ag-success'}>
-            {f.delta > 0 ? '+' : '−'}{formatCurrency(Math.abs(f.delta))} ({fmtPct(f)})
-          </span>
-          {f.offset_context && <span className="text-xs text-ag-text-muted italic">{f.offset_context}</span>}
-        </div>
-        {f.verdict ? (
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className={`text-xs px-2 py-0.5 rounded-full ${VERDICT_STYLE[f.verdict] || ''}`}>
-              {VERDICTS.find(v => v.key === f.verdict)?.label || f.verdict}
-            </span>
-            {f.verdict_note && <span className="text-xs text-ag-text-muted">“{f.verdict_note}”</span>}
-            <button onClick={() => clearVerdict(f)} disabled={saving === f.id}
-              className="text-xs text-ag-text-muted underline ml-auto">un-grade</button>
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            {VERDICTS.map(v => (
-              <button key={v.key} title={v.hint} disabled={saving === f.id}
-                onClick={() => saveVerdict(f, v.key)}
-                className="text-xs px-2.5 py-1 rounded-full border border-ag-border hover:border-ag-accent hover:text-ag-accent transition-colors">
-                {v.label}
-              </button>
-            ))}
-            <input
-              type="text"
-              placeholder="note (why) — optional but valuable"
-              value={notes[f.id] || ''}
-              onChange={e => setNotes(prev => ({ ...prev, [f.id]: e.target.value }))}
-              className="flex-1 min-w-[180px] text-xs bg-transparent border border-ag-border/60 rounded px-2 py-1"
-            />
-          </div>
-        )}
-      </div>
-    );
-  };
+  const row = (f: VarianceFlag) => (
+    <FlagRow
+      key={f.id}
+      f={f}
+      note={notes[f.id] || ''}
+      onNote={value => setNotes(prev => ({ ...prev, [f.id]: value }))}
+      saving={saving === f.id}
+      onVerdict={verdict => saveVerdict(f, verdict)}
+      onClear={() => clearVerdict(f)}
+    />
+  );
 
   return (
     <div className="card space-y-3">
@@ -208,13 +231,13 @@ export default function VarianceReviewPanel() {
             mapping errors teach the line matcher, expected teaches the budget baseline, vendor issues build a
             price-of-record per vendor.
           </p>
-          {pending.map(f => <FlagRow key={f.id} f={f} />)}
+          {pending.map(row)}
           {graded.length > 0 && (
             <>
               <button onClick={() => setShowGraded(!showGraded)} className="text-xs text-ag-text-muted underline">
                 {showGraded ? 'hide' : 'show'} {graded.length} graded
               </button>
-              {showGraded && graded.map(f => <FlagRow key={f.id} f={f} />)}
+              {showGraded && graded.map(row)}
             </>
           )}
         </div>
