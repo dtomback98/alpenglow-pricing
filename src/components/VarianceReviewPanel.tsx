@@ -20,6 +20,7 @@ export interface VarianceFlag {
   pct: number | null;
   class: string;
   offset_context: string | null;
+  paired_with?: string | null;   // flag_code of the counterpart flag (two halves of one suspected mis-label)
   verdict: string | null;
   verdict_note: string | null;
   verdict_at: string | null;
@@ -115,6 +116,81 @@ function FlagRow({ f, note, onNote, saving, onVerdict, onClear }: {
   );
 }
 
+// ---------------------------------------------------------------- pair row
+// Two counterpart flags (paired_with) rendered as ONE card: both lines, the
+// combined budget-vs-actual math, one explanation, one verdict for both.
+
+function PairRow({ a, b, note, onNote, saving, onVerdict, onClear }: {
+  a: VarianceFlag;
+  b: VarianceFlag;
+  note: string;
+  onNote: (value: string) => void;
+  saving: boolean;
+  onVerdict: (verdict: string) => void;
+  onClear: () => void;
+}) {
+  const cs = CLASS_STYLE[a.class] || { label: a.class, cls: 'bg-ag-card-lighter text-ag-text-muted' };
+  const budget = a.budget + b.budget;
+  const actual = a.actual + b.actual;
+  const diff = actual - budget;
+  const diffPct = budget > 0 ? Math.abs(diff) / budget : null;
+  const close = diffPct !== null && diffPct <= 0.1;
+
+  const lineRow = (f: VarianceFlag) => (
+    <div key={f.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm tabular-nums pl-3 border-l-2 border-ag-border/40">
+      <span className="min-w-[200px]">{f.line_label} <span className="text-xs text-ag-text-muted">· {f.bucket}</span></span>
+      <span className="text-ag-text-muted">Budget <span className="text-ag-text">{formatCurrency(f.budget)}</span></span>
+      <span className="text-ag-text-muted">Actual <span className="text-ag-text">{formatCurrency(f.actual)}</span></span>
+      <span className={f.delta > 0 ? 'text-ag-danger' : 'text-ag-success'}>
+        {f.delta > 0 ? '+' : '−'}{formatCurrency(Math.abs(f.delta))}
+      </span>
+    </div>
+  );
+
+  return (
+    <div className="border border-ag-border/40 rounded-lg p-3 space-y-2">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="font-mono text-xs text-ag-text-muted">{a.flag_code} + {b.flag_code}</span>
+        <span className="font-medium">{a.trip_name}</span>
+        <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${cs.cls}`}>{cs.label} — one verdict grades both lines</span>
+      </div>
+      {lineRow(a)}
+      {lineRow(b)}
+      <div className={`text-sm tabular-nums ${close ? 'text-ag-success' : 'text-ag-text-muted'}`}>
+        Combined: budget {formatCurrency(budget)} vs actual {formatCurrency(actual)} — {formatCurrency(Math.abs(diff))} apart{diffPct !== null ? ` (${(diffPct * 100).toFixed(1)}%)` : ''}{close ? ' — the two lines cancel out' : ''}
+      </div>
+      {a.offset_context && <div className="text-xs text-ag-text-muted italic">{a.offset_context}</div>}
+      {a.verdict ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className={`text-xs px-2 py-0.5 rounded-full ${VERDICT_STYLE[a.verdict] || ''}`}>
+            {VERDICTS.find(v => v.key === a.verdict)?.label || a.verdict}
+          </span>
+          {a.verdict_note && <span className="text-xs text-ag-text-muted">“{a.verdict_note}”</span>}
+          <button onClick={onClear} disabled={saving}
+            className="text-xs text-ag-text-muted underline ml-auto">un-grade both</button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          {VERDICTS.map(v => (
+            <button key={v.key} title={v.hint} disabled={saving}
+              onClick={() => onVerdict(v.key)}
+              className="text-xs px-2.5 py-1 rounded-full border border-ag-border hover:border-ag-accent hover:text-ag-accent transition-colors">
+              {v.label}
+            </button>
+          ))}
+          <input
+            type="text"
+            placeholder="note (why) — optional but valuable"
+            value={note}
+            onChange={e => onNote(e.target.value)}
+            className="flex-1 min-w-[180px] text-xs bg-transparent border border-ag-border/60 rounded px-2 py-1"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- component
 
 export default function VarianceReviewPanel() {
@@ -185,6 +261,50 @@ export default function VarianceReviewPanel() {
     }
   };
 
+  // Pair variants: one verdict / un-grade applied to BOTH counterpart flags.
+  const saveVerdictPair = async (a: VarianceFlag, b: VarianceFlag, verdict: string) => {
+    if (!supabase) return;
+    setSaving(a.id);
+    setSaveError(null);
+    const note = notes[a.id] !== undefined ? notes[a.id] : (a.verdict_note || '');
+    const { data, error } = await supabase
+      .from('variance_flags')
+      .update({ verdict, verdict_note: note || null, verdict_at: new Date().toISOString() })
+      .in('id', [a.id, b.id])
+      .select();
+    setSaving(null);
+    if (error) {
+      setSaveError(`Save failed for ${a.flag_code}+${b.flag_code}: ${error.message}`);
+    } else if (!data || data.length !== 2) {
+      setSaveError(`Save failed for ${a.flag_code}+${b.flag_code}: expected 2 rows updated, got ${data ? data.length : 0}.`);
+    } else {
+      setFlags(prev => prev.map(f => {
+        const upd = (data as VarianceFlag[]).find(d => d.id === f.id);
+        return upd || f;
+      }));
+    }
+  };
+
+  const clearVerdictPair = async (a: VarianceFlag, b: VarianceFlag) => {
+    if (!supabase) return;
+    setSaving(a.id);
+    setSaveError(null);
+    const { data, error } = await supabase
+      .from('variance_flags')
+      .update({ verdict: null, verdict_note: null, verdict_at: null })
+      .in('id', [a.id, b.id])
+      .select();
+    setSaving(null);
+    if (error || !data || data.length !== 2) {
+      setSaveError(`Un-grade failed for ${a.flag_code}+${b.flag_code}: ${error ? error.message : 'unexpected row count'}`);
+    } else {
+      setFlags(prev => prev.map(f => {
+        const upd = (data as VarianceFlag[]).find(d => d.id === f.id);
+        return upd || f;
+      }));
+    }
+  };
+
   if (!loaded) return null;
   if (loadError) {
     return (
@@ -207,17 +327,49 @@ export default function VarianceReviewPanel() {
     });
   const graded = flags.filter(f => f.verdict);
 
-  const row = (f: VarianceFlag) => (
-    <FlagRow
-      key={f.id}
-      f={f}
-      note={notes[f.id] || ''}
-      onNote={value => setNotes(prev => ({ ...prev, [f.id]: value }))}
-      saving={saving === f.id}
-      onVerdict={verdict => saveVerdict(f, verdict)}
-      onClear={() => clearVerdict(f)}
-    />
-  );
+  // Render a list of flags, collapsing counterpart pairs (paired_with) into one
+  // PairRow when both halves are in the same list (both pending / both graded).
+  const byCode = new Map(flags.map(f => [f.flag_code, f]));
+  const renderList = (list: VarianceFlag[]) => {
+    const consumed = new Set<string>();
+    const out: JSX.Element[] = [];
+    for (const f of list) {
+      if (consumed.has(f.flag_code)) continue;
+      const partner = f.paired_with ? byCode.get(f.paired_with) : undefined;
+      const partnerInList = partner && list.some(x => x.flag_code === partner.flag_code);
+      if (partner && partnerInList && partner.paired_with === f.flag_code) {
+        consumed.add(f.flag_code);
+        consumed.add(partner.flag_code);
+        const [a, b] = [f, partner].sort((x, y) => x.flag_code.localeCompare(y.flag_code));
+        out.push(
+          <PairRow
+            key={a.id}
+            a={a}
+            b={b}
+            note={notes[a.id] || ''}
+            onNote={value => setNotes(prev => ({ ...prev, [a.id]: value }))}
+            saving={saving === a.id}
+            onVerdict={verdict => saveVerdictPair(a, b, verdict)}
+            onClear={() => clearVerdictPair(a, b)}
+          />
+        );
+      } else {
+        consumed.add(f.flag_code);
+        out.push(
+          <FlagRow
+            key={f.id}
+            f={f}
+            note={notes[f.id] || ''}
+            onNote={value => setNotes(prev => ({ ...prev, [f.id]: value }))}
+            saving={saving === f.id}
+            onVerdict={verdict => saveVerdict(f, verdict)}
+            onClear={() => clearVerdict(f)}
+          />
+        );
+      }
+    }
+    return out;
+  };
 
   return (
     <div className="card space-y-3">
@@ -247,13 +399,13 @@ export default function VarianceReviewPanel() {
             </ul>
             <p>Verdicts feed the next sweep — graded items stop reappearing, and confirmed vendor issues build a price-of-record per vendor.</p>
           </div>
-          {pending.map(row)}
+          {renderList(pending)}
           {graded.length > 0 && (
             <>
               <button onClick={() => setShowGraded(!showGraded)} className="text-xs text-ag-text-muted underline">
                 {showGraded ? 'hide' : 'show'} {graded.length} graded
               </button>
-              {showGraded && graded.map(row)}
+              {showGraded && renderList(graded)}
             </>
           )}
         </div>
