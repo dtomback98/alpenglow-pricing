@@ -7,6 +7,7 @@ import { formatCurrency, calculateForPax, calculateFinancialBreakdown } from '@/
 import { fetchTripConfigurationsByIds } from '@/lib/supabase';
 import { TripConfiguration, HistoricalTrip, PaxCalculation } from '@/lib/types';
 import actualsData from '@/lib/actuals-2026.json';
+import VarianceReviewPanel from './VarianceReviewPanel';
 
 // ---------------------------------------------------------------- types
 
@@ -426,6 +427,9 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
 
   return (
     <div className="space-y-6">
+      {/* Variance review — budget-vs-actuals flags graded here feed the learning loop */}
+      <VarianceReviewPanel />
+
       {/* Filters */}
       <div className="card">
         <div className="flex flex-wrap items-end justify-between gap-4">
