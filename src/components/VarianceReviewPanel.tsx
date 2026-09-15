@@ -40,6 +40,7 @@ const CLASS_STYLE: { [k: string]: { label: string; cls: string } } = {
   'under-budget': { label: 'Under budget', cls: 'bg-ag-card-lighter text-ag-text-muted' },
   'missing-actual': { label: 'Budgeted, no actual', cls: 'bg-ag-card-lighter text-ag-text-muted' },
   'expected-per-feedback': { label: 'Expected (per feedback)', cls: 'bg-ag-success/15 text-ag-success' },
+  'cleared-by-data': { label: 'Cleared by updated numbers', cls: 'bg-ag-success/15 text-ag-success' },
 };
 
 const VERDICT_STYLE: { [k: string]: string } = {
@@ -200,6 +201,7 @@ export default function VarianceReviewPanel() {
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
   const [showGraded, setShowGraded] = useState(false);
+  const [showCleared, setShowCleared] = useState(false);
   const [notes, setNotes] = useState<{ [id: string]: string }>({});
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -315,7 +317,8 @@ export default function VarianceReviewPanel() {
   }
   if (flags.length === 0) return null;
 
-  const pending = flags.filter(f => !f.verdict)
+  const cleared = flags.filter(f => !f.verdict && f.class === 'cleared-by-data');
+  const pending = flags.filter(f => !f.verdict && f.class !== 'cleared-by-data')
     .sort((a, b) => {
       const c = CLASS_ORDER.indexOf(a.class) - CLASS_ORDER.indexOf(b.class);
       if (c) return c;
@@ -381,6 +384,7 @@ export default function VarianceReviewPanel() {
           <span className="text-xs px-2 py-0.5 rounded-full bg-ag-success/15 text-ag-success">all graded</span>
         )}
         <span className="text-xs text-ag-text-muted">{graded.length} graded</span>
+        {cleared.length > 0 && <span className="text-xs text-ag-text-muted">{cleared.length} cleared</span>}
         <span className="ml-auto text-ag-text-muted">{open ? '▾' : '▸'}</span>
       </button>
       {saveError && <div className="text-xs text-ag-danger border border-ag-danger rounded p-2">{saveError}</div>}
@@ -397,6 +401,7 @@ export default function VarianceReviewPanel() {
               <li><span className="text-ag-text">Mapping error</span> — budget and actual are the same money under different labels; not a real variance.</li>
               <li><span className="text-ag-text">Noise</span> — not worth flagging; the system will stop raising it.</li>
             </ul>
+            <p>This check re-runs automatically every time the tab pulls the reporting sheet: new gaps are added, open flags update to the latest numbers, and flags the new numbers resolve move to “cleared”. Graded flags are left alone unless their amounts change.</p>
             <p>Verdicts feed the next sweep — graded items stop reappearing, and confirmed vendor issues build a price-of-record per vendor.</p>
           </div>
           {renderList(pending)}
@@ -406,6 +411,18 @@ export default function VarianceReviewPanel() {
                 {showGraded ? 'hide' : 'show'} {graded.length} graded
               </button>
               {showGraded && renderList(graded)}
+            </>
+          )}
+          {cleared.length > 0 && (
+            <>
+              <button onClick={() => setShowCleared(!showCleared)} className="text-xs text-ag-text-muted underline block">
+                {showCleared ? 'hide' : 'show'} {cleared.length} cleared by updated numbers
+              </button>
+              {showCleared && cleared.map(f => (
+                <div key={f.id} className="text-xs text-ag-text-muted border border-ag-border/30 rounded p-2">
+                  <span className="font-mono">{f.flag_code}</span> · {f.trip_name} · {f.bucket} / {f.line_label} — {f.offset_context}
+                </div>
+              ))}
             </>
           )}
         </div>

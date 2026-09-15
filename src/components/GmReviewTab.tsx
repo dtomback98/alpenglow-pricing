@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useHistoricalData } from '@/hooks/useHistoricalData';
 import { CATEGORY_COLORS, CATEGORY_LABELS, MONTHS, MONTH_ORDER } from '@/lib/constants';
 import { formatCurrency, calculateForPax, calculateFinancialBreakdown } from '@/lib/calculations';
-import { fetchTripConfigurationsByIds } from '@/lib/supabase';
+import { fetchTripConfigurationsByIds, supabase } from '@/lib/supabase';
+import { canonicalLinks, runVarianceSweep, syncVarianceFlags, SweepBudget } from '@/lib/varianceSweep';
 import { TripConfiguration, HistoricalTrip, PaxCalculation } from '@/lib/types';
 import actualsData from '@/lib/actuals-2026.json';
 import VarianceReviewPanel from './VarianceReviewPanel';
@@ -301,6 +302,45 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
 
   useEffect(() => { loadActuals(); }, [loadActuals, refreshKey]);
 
+  // ---- automatic variance sweep: re-runs every time actuals are pulled from the sheet
+  const [sweepStatus, setSweepStatus] = useState<string | null>(null);
+  const [panelKey, setPanelKey] = useState(0);
+  useEffect(() => {
+    if (!actualsSource.live || loading || historyTrips.length === 0 || !supabase) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setSweepStatus('Variance check running…');
+        const links = canonicalLinks(ACTUALS, historyTrips);
+        const ids = Array.from(new Set(Array.from(links.values()).map(t => t.tripConfigId).filter((x): x is string => Boolean(x))));
+        const configs = ids.length ? await fetchTripConfigurationsByIds(ids) : new Map<string, TripConfiguration>();
+        const budgetsById = new Map<string, SweepBudget>();
+        links.forEach((ht, actualId) => {
+          const config = ht.tripConfigId ? configs.get(ht.tripConfigId) : undefined;
+          if (!config) return;
+          budgetsById.set(actualId, computeBudgetBuckets(ht.pax, config, calculateForPax(ht.pax, config)));
+        });
+        const flags = runVarianceSweep(ACTUALS, budgetsById);
+        const result = await syncVarianceFlags(supabase!, flags, new Set(budgetsById.keys()));
+        if (cancelled) return;
+        if (result.error) {
+          setSweepStatus(`⚠ Variance check couldn't save: ${result.error}`);
+        } else {
+          const parts = [
+            result.inserted && `${result.inserted} new`,
+            result.updated && `${result.updated} updated`,
+            result.cleared && `${result.cleared} cleared`,
+          ].filter(Boolean);
+          setSweepStatus(`Variance check re-ran on ${budgetsById.size} budgeted trips · ${parts.length ? parts.join(', ') : 'no changes'}`);
+          if (parts.length) setPanelKey(k => k + 1);
+        }
+      } catch (e) {
+        if (!cancelled) setSweepStatus(`⚠ Variance check failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [ACTUALS, actualsSource.live, historyTrips, loading]);
+
   useEffect(() => {
     if (refreshKey && refreshKey > 0) refresh();
   }, [refreshKey, refresh]);
@@ -470,7 +510,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
   return (
     <div className="space-y-6">
       {/* Variance review — budget-vs-actuals flags graded here feed the learning loop */}
-      <VarianceReviewPanel />
+      <VarianceReviewPanel key={panelKey} />
 
       {/* Where the actuals came from */}
       <div className={`text-xs px-3 py-2 rounded flex flex-wrap items-center gap-3 ${actualsSource.live ? 'text-ag-text-muted' : 'bg-red-50 text-red-700'}`}>
@@ -480,6 +520,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
           <span>⚠ Couldn&apos;t reach the reporting sheet ({actualsSource.error}) — showing the saved snapshot, which may be out of date.</span>
         )}
         <button onClick={loadActuals} className="underline">Refresh</button>
+        {sweepStatus && <span className={sweepStatus.startsWith('⚠') ? 'text-red-700' : ''}>{sweepStatus}</span>}
         {actualsSource.warnings.map(w => <span key={w} className="text-amber-700">⚠ {w}</span>)}
       </div>
 
