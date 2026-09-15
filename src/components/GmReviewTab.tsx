@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useHistoricalData } from '@/hooks/useHistoricalData';
 import { CATEGORY_COLORS, CATEGORY_LABELS, MONTHS, MONTH_ORDER } from '@/lib/constants';
 import { formatCurrency, calculateForPax, calculateFinancialBreakdown } from '@/lib/calculations';
@@ -27,7 +27,27 @@ interface ActualTrip {
   buckets: { [key: string]: ActualBucket };
 }
 
-const ACTUALS: ActualTrip[] = actualsData as unknown as ActualTrip[];
+const BAKED_ACTUALS: ActualTrip[] = actualsData as unknown as ActualTrip[];
+
+// Live feed: Apps Script web app that reads the "2026" reporting sheet on every
+// request (5-min cache). The baked JSON above is only a fallback if it fails.
+const LIVE_ACTUALS_URL = 'https://script.google.com/macros/s/AKfycbwgaEGKp8kArJm6FSMF4J7oJh5ppLg31wA_E86q7xtNkwNi2HheWuygnto42LFFcaM17Q/exec';
+
+/** Keep trip ids stable when a trip is renamed on the sheet (e.g. "Womens ECS" → "Womens ECS (Aug-26)"),
+ *  so saved budget links, ✓ overrides and variance flags stay attached. */
+function stabilizeIds(trips: ActualTrip[]): ActualTrip[] {
+  const known = BAKED_ACTUALS.map(a => a.id);
+  const used = new Set(trips.map(t => t.id).filter(id => known.includes(id)));
+  return trips.map(t => {
+    if (known.includes(t.id)) return t;
+    const match = known.find(k => !used.has(k) && k.length >= 8 && (t.id.startsWith(k) || k.startsWith(t.id)));
+    if (!match) return t;
+    used.add(match);
+    return { ...t, id: match };
+  });
+}
+
+interface ActualsSource { live: boolean; generatedAt: string | null; warnings: string[]; error?: string }
 
 const BUCKET_ORDER: { key: string; label: string }[] = [
   { key: 'tripTravelLogistics', label: 'Trip Travel / Logistics' },
@@ -258,6 +278,28 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
   const [monthFilter, setMonthFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [acctFilter, setAcctFilter] = useState<string>('all');
+  const [ACTUALS, setActuals] = useState<ActualTrip[]>(BAKED_ACTUALS);
+  const [actualsSource, setActualsSource] = useState<ActualsSource>({ live: false, generatedAt: null, warnings: [] });
+  const [actualsLoading, setActualsLoading] = useState(true);
+
+  const loadActuals = useCallback(async () => {
+    setActualsLoading(true);
+    try {
+      const res = await fetch(LIVE_ACTUALS_URL, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data?.trips) || data.trips.length === 0) throw new Error('empty feed');
+      setActuals(stabilizeIds(data.trips as ActualTrip[]));
+      setActualsSource({ live: true, generatedAt: data.generatedAt ?? null, warnings: data.warnings ?? [] });
+    } catch (e) {
+      setActuals(BAKED_ACTUALS);
+      setActualsSource({ live: false, generatedAt: null, warnings: [], error: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setActualsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadActuals(); }, [loadActuals, refreshKey]);
 
   useEffect(() => {
     if (refreshKey && refreshKey > 0) refresh();
@@ -344,7 +386,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
       if (best) { map.set(a.id, best); guessed.add(a.id); }
     }
     return { map, guessed };
-  }, [historyTrips, linkOverrides]);
+  }, [historyTrips, linkOverrides, ACTUALS]);
 
   useEffect(() => {
     const ids = Array.from(new Set(
@@ -417,7 +459,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
     cmp.n += 1;
   }
 
-  if (loading || configsLoading) {
+  if (loading || configsLoading || actualsLoading) {
     return <div className="text-center text-ag-text-muted py-8">Loading GM review data...</div>;
   }
 
@@ -429,6 +471,17 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
     <div className="space-y-6">
       {/* Variance review — budget-vs-actuals flags graded here feed the learning loop */}
       <VarianceReviewPanel />
+
+      {/* Where the actuals came from */}
+      <div className={`text-xs px-3 py-2 rounded flex flex-wrap items-center gap-3 ${actualsSource.live ? 'text-ag-text-muted' : 'bg-red-50 text-red-700'}`}>
+        {actualsSource.live ? (
+          <span>Actuals pulled live from the 2026 reporting sheet{actualsSource.generatedAt ? ` · as of ${new Date(actualsSource.generatedAt).toLocaleString()}` : ''}</span>
+        ) : (
+          <span>⚠ Couldn&apos;t reach the reporting sheet ({actualsSource.error}) — showing the saved snapshot, which may be out of date.</span>
+        )}
+        <button onClick={loadActuals} className="underline">Refresh</button>
+        {actualsSource.warnings.map(w => <span key={w} className="text-amber-700">⚠ {w}</span>)}
+      </div>
 
       {/* Filters */}
       <div className="card">
@@ -591,7 +644,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
         <p>· Trips with partial accounting (no ✓) overstate Actual GM until all costs land. Everest 2026 is excluded (its reporting tab has a different layout with no Actuals column).</p>
         <p>· Invoices are matched to budget lines only on clear label evidence (wages → Staff wages, lodging → Hotels, &quot;Client Jacket&quot; → Jackets / apparel). An ambiguous invoice stays on its own row marked &quot;(unmatched)&quot; rather than being force-fit — it may correspond to costs budgeted under a different line. When a category has no budget detail to pair against, or its whole budget is a single line (e.g. Guide Wages), expanding it just lists the invoices.</p>
         <p>· One-sided rows — budget lines with no invoices yet, and unmatched invoices — have dimmed deltas since they aren&apos;t a like-for-like comparison. Line deltas still add up to the category delta, and categories to the trip.</p>
-        <p>· Expand a trip to change which budgeted trip it compares against (Run-status trips only; auto-matched guesses are flagged; your picks save in this browser). Actuals refresh by regenerating actuals-2026.json from the reporting sheet.</p>
+        <p>· Expand a trip to change which budgeted trip it compares against (Run-status trips only; auto-matched guesses are flagged; your picks save in this browser). Actuals are read live from the reporting sheet each time this tab loads (cached up to 5 minutes; use Refresh above). If the sheet can&apos;t be reached, a saved snapshot is shown with a red warning.</p>
       </div>
     </div>
   );
