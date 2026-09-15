@@ -1,0 +1,15 @@
+{
+  "_readme": "Learned rules for the automatic vendor-variance sweep (src/lib/varianceSweep.ts). Built from graded flags in the Variance Review panel. aliases: {actual_pattern, budget_target, bucket|null, source}. expected_variances / suppressions: {trip_pattern, line_pattern, note, source} (regex, case-insensitive). pinned_links: actual trip id -> historical_trips id prefix. thresholds: flag when |delta| >= pct of budget AND >= abs.",
+  "thresholds": { "pct": 0.15, "abs": 500, "offset_tol": 0.35, "trip_total_ok": 0.07 },
+  "pinned_links": {
+    "kilimanjarojune": "96894443"
+  },
+  "aliases": [],
+  "expected_variances": [
+    { "trip_pattern": "Kletter", "line_pattern": "^Hypoxico$", "note": "Client bought an extra Hypoxico that wasn't budgeted; the extra cost is offset by extra revenue (Drew, R1-03).", "source": "R1-03 expected verdict" }
+  ],
+  "suppressions": [
+    { "trip_pattern": ".", "line_pattern": "^Contingency$", "note": "Contingency is a misc buffer for unexpected expenses; nothing in actuals against it is fine (Drew, R1-16/R1-17, 2026-08-07)", "source": "R1-16, R1-17 expected verdicts" }
+  ],
+  "vendor_price_of_record": []
+}
