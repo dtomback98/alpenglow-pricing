@@ -5,7 +5,8 @@ import { useHistoricalData } from '@/hooks/useHistoricalData';
 import { CATEGORY_COLORS, CATEGORY_LABELS, MONTHS, MONTH_ORDER } from '@/lib/constants';
 import { formatCurrency, calculateForPax, calculateFinancialBreakdown } from '@/lib/calculations';
 import { fetchTripConfigurationsByIds, supabase } from '@/lib/supabase';
-import { canonicalLinks, runVarianceSweep, syncVarianceFlags, SweepBudget } from '@/lib/varianceSweep';
+import { canonicalLinksWithMethod, runVarianceSweep, syncVarianceFlags, SweepBudget } from '@/lib/varianceSweep';
+import { makeSnapshot, writeBudgetSnapshots, fetchPortalWageFlags, PortalWageFlag, PORTAL_VERDICT_HINT, normVerdict, BudgetSnapshot } from '@/lib/portalBridge';
 import { TripConfiguration, HistoricalTrip, PaxCalculation } from '@/lib/types';
 import actualsData from '@/lib/actuals-2026.json';
 import VarianceReviewPanel from './VarianceReviewPanel';
@@ -311,27 +312,37 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
     (async () => {
       try {
         setSweepStatus('Variance check running…');
-        const links = canonicalLinks(ACTUALS, historyTrips);
-        const ids = Array.from(new Set(Array.from(links.values()).map(t => t.tripConfigId).filter((x): x is string => Boolean(x))));
+        const links = canonicalLinksWithMethod(ACTUALS, historyTrips);
+        const ids = Array.from(new Set(Array.from(links.values()).map(l => l.trip.tripConfigId).filter((x): x is string => Boolean(x))));
         const configs = ids.length ? await fetchTripConfigurationsByIds(ids) : new Map<string, TripConfiguration>();
         const budgetsById = new Map<string, SweepBudget>();
-        links.forEach((ht, actualId) => {
+        const snapshots: BudgetSnapshot[] = [];
+        const computedAt = new Date().toISOString();
+        links.forEach(({ trip: ht, method }, actualId) => {
           const config = ht.tripConfigId ? configs.get(ht.tripConfigId) : undefined;
           if (!config) return;
-          budgetsById.set(actualId, computeBudgetBuckets(ht.pax, config, calculateForPax(ht.pax, config)));
+          const bb = computeBudgetBuckets(ht.pax, config, calculateForPax(ht.pax, config));
+          budgetsById.set(actualId, bb);
+          const a = ACTUALS.find(x => x.id === actualId);
+          if (a) snapshots.push(makeSnapshot(a, { method, name: ht.name, pax: ht.pax }, bb.totals, computedAt));
         });
         const flags = runVarianceSweep(ACTUALS, budgetsById);
         const result = await syncVarianceFlags(supabase!, flags, new Set(budgetsById.keys()));
+        // Budget snapshot for the guide invoice portal (gm_trip_budgets) — same budgets the check just used.
+        const snap = await writeBudgetSnapshots(supabase!, snapshots);
         if (cancelled) return;
+        const snapMsg = snap.error
+          ? `⚠ Budget snapshot for the invoice portal failed: ${snap.error}`
+          : `budgets shared with invoice portal: ${snap.byMethod.pinned + snap.byMethod.named} confirmed${snap.byMethod.fuzzy ? `, ${snap.byMethod.fuzzy} auto-matched (portal ignores these)` : ''}`;
         if (result.error) {
-          setSweepStatus(`⚠ Variance check couldn't save: ${result.error}`);
+          setSweepStatus(`⚠ Variance check couldn't save: ${result.error} · ${snapMsg}`);
         } else {
           const parts = [
             result.inserted && `${result.inserted} new`,
             result.updated && `${result.updated} updated`,
             result.cleared && `${result.cleared} cleared`,
           ].filter(Boolean);
-          setSweepStatus(`Variance check re-ran on ${budgetsById.size} budgeted trips · ${parts.length ? parts.join(', ') : 'no changes'}`);
+          setSweepStatus(`${snap.error ? '⚠ ' : ''}Variance check re-ran on ${budgetsById.size} budgeted trips · ${parts.length ? parts.join(', ') : 'no changes'} · ${snapMsg}`);
           if (parts.length) setPanelKey(k => k + 1);
         }
       } catch (e) {
@@ -340,6 +351,25 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
     })();
     return () => { cancelled = true; };
   }, [ACTUALS, actualsSource.live, historyTrips, loading]);
+
+  // ---- guide invoice portal verdicts (portal_wage_flags), shown next to the matching trip
+  const [portalFlags, setPortalFlags] = useState<Map<string, PortalWageFlag[]>>(new Map());
+  const [portalError, setPortalError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!supabase) return;
+    let cancelled = false;
+    fetchPortalWageFlags(supabase).then(({ rows, error }) => {
+      if (cancelled) return;
+      setPortalError(error || null);
+      const byTrip = new Map<string, PortalWageFlag[]>();
+      for (const r of rows) {
+        if (!r.actual_trip_id) continue;
+        byTrip.set(r.actual_trip_id, [...(byTrip.get(r.actual_trip_id) || []), r]);
+      }
+      setPortalFlags(byTrip);
+    });
+    return () => { cancelled = true; };
+  }, [refreshKey, actualsSource.generatedAt]);
 
   useEffect(() => {
     if (refreshKey && refreshKey > 0) refresh();
@@ -521,6 +551,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
         )}
         <button onClick={loadActuals} className="underline">Refresh</button>
         {sweepStatus && <span className={sweepStatus.startsWith('⚠') ? 'text-red-700' : ''}>{sweepStatus}</span>}
+        {portalError && <span className="text-red-700">⚠ Couldn&apos;t read invoice-portal verdicts: {portalError}</span>}
         {actualsSource.warnings.map(w => <span key={w} className="text-amber-700">⚠ {w}</span>)}
       </div>
 
@@ -644,6 +675,7 @@ export default function GmReviewTab({ refreshKey }: { refreshKey?: number }) {
                     onLinkChange={saveOverride}
                     acctOverrides={acctOverrides}
                     onToggleAcct={toggleAcct}
+                    portalFlags={portalFlags}
                   />
                 );
               })}
@@ -710,12 +742,13 @@ interface SectionBlockProps {
   onLinkChange: (actualId: string, historyTripId: string) => void;
   acctOverrides: { [actualId: string]: boolean };
   onToggleAcct: (actualId: string) => void;
+  portalFlags: Map<string, PortalWageFlag[]>;
 }
 
 function SectionBlock({
   cat, color, trips, sec, budgets, linkedTripIds, expandedTrips, expandedCats,
   toggleTrip, toggleCat, historyTrips, guessedIds, linkOverrides, onLinkChange,
-  acctOverrides, onToggleAcct,
+  acctOverrides, onToggleAcct, portalFlags,
 }: SectionBlockProps) {
   return (
     <>
@@ -754,6 +787,7 @@ function SectionBlock({
             onToggleAcct={onToggleAcct}
             budgGm={budgGm}
             actGm={actGm}
+            portalFlags={portalFlags.get(a.id) || []}
           />
         );
       })}
@@ -776,6 +810,34 @@ function SectionBlock({
   );
 }
 
+function PortalVerdicts({ rows }: { rows: PortalWageFlag[] }) {
+  const counts = new Map<string, number>();
+  rows.forEach(r => { const v = normVerdict(r.verdict); counts.set(v, (counts.get(v) || 0) + 1); });
+  const repeatedExpected = (counts.get('expected') || 0) >= 2;
+  return (
+    <div className="mt-2 text-xs border-l-2 border-amber-300 pl-3 space-y-1">
+      <div className="font-semibold text-ag-text-muted">Invoice portal — guide-wage verdicts</div>
+      {repeatedExpected && (
+        <div className="text-amber-800">Marked “Expected” {counts.get('expected')} times — the Guide Wages budget for this trip is probably too low.</div>
+      )}
+      {rows.map(r => {
+        const v = normVerdict(r.verdict);
+        return (
+          <div key={r.id} className="text-ag-text-muted">
+            <span className="font-medium text-ag-text">{r.verdict || 'no verdict'}</span>
+            {r.wages_to_date !== null && r.budget !== null && (
+              <> · invoiced {formatCurrency(r.wages_to_date)} vs budget {formatCurrency(r.budget)}{r.delta !== null ? <> ({formatCurrency(r.delta)} over)</> : null}</>
+            )}
+            {r.verdict_note && <> · “{r.verdict_note}”</>}
+            {(r.verdict_by || r.created_at) && <> · {r.verdict_by || ''}{r.created_at ? ` ${new Date(r.created_at).toLocaleDateString()}` : ''}</>}
+            {PORTAL_VERDICT_HINT[v] && <span className="italic"> — {PORTAL_VERDICT_HINT[v]}</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 interface TripRowsProps {
   actual: ActualTrip;
   budget?: BudgetBuckets;
@@ -792,12 +854,13 @@ interface TripRowsProps {
   onToggleAcct: (actualId: string) => void;
   budgGm: number | null;
   actGm: number | null;
+  portalFlags: PortalWageFlag[];
 }
 
 function TripRows({
   actual: a, budget: b, linked, isOpen, expandedCats,
   toggleTrip, toggleCat, historyTrips, isGuessed, linkOverrides, onLinkChange,
-  acctOverrides, onToggleAcct, budgGm, actGm,
+  acctOverrides, onToggleAcct, budgGm, actGm, portalFlags,
 }: TripRowsProps) {
   const overrideValue = linkOverrides[a.id] !== undefined
     ? linkOverrides[a.id]
@@ -814,6 +877,12 @@ function TripRows({
         <td className="font-medium">
           {a.masterName}
           {a.month && <span className="text-xs text-ag-text-muted ml-2">{a.month} {a.year}</span>}
+          {portalFlags.length > 0 && (
+            <span
+              className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 whitespace-nowrap"
+              title="Guide-wage verdicts from the invoice portal — expand the trip to see them"
+            >portal: {portalFlags.length} wage verdict{portalFlags.length === 1 ? '' : 's'}</span>
+          )}
         </td>
         <td
           className="text-center select-none cursor-pointer hover:bg-ag-card-lighter/50"
@@ -863,6 +932,7 @@ function TripRows({
               )}
               {isGuessed && <span className="text-ag-accent">· auto-matched — confirm or change</span>}
             </div>
+            {portalFlags.length > 0 && <PortalVerdicts rows={portalFlags} />}
           </td>
         </tr>
       )}
