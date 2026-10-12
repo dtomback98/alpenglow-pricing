@@ -2,7 +2,16 @@
   "_readme": "Learned rules for the automatic vendor-variance sweep (src/lib/varianceSweep.ts). Built from graded flags in the Variance Review panel. aliases: {actual_pattern, budget_target, bucket|null, source}. expected_variances / suppressions: {trip_pattern, line_pattern, note, source} (regex, case-insensitive). pinned_links: actual trip id -> historical_trips id prefix. thresholds: flag when |delta| >= pct of budget AND >= abs.",
   "thresholds": { "pct": 0.15, "abs": 500, "offset_tol": 0.35, "trip_total_ok": 0.07 },
   "pinned_links": {
-    "kilimanjarojune": "96894443"
+    "kilimanjarojune": "0c7bb6c3",
+    "privateskibolivia2": "1afaca1f",
+    "privateboliviarabrougher": "5e6e3849",
+    "privateboliviaraolson": "730fd190",
+    "privatecotochimbobrannon": "62ef7d42",
+    "privatedenalistay": "96efeeab",
+    "privatecotopaxikletter": "f601042e",
+    "privatechopiliao": "9cf8a7d7",
+    "privatesantacruztrekstraw": "cc1a2c23",
+    "patagoniabcski": "f83f66d8"
   },
   "aliases": [],
   "expected_variances": [

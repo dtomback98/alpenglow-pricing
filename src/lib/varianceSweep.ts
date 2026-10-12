@@ -123,23 +123,25 @@ function pairLines(bucket: string, budLines: SweepLine[], actLines: SweepLine[],
   return { matched, unmatched };
 }
 
-/** Canonical budget link for each trip (same for every viewer). */
-export function canonicalLinks(trips: { id: string; masterName: string; budgetTripName: string | null }[], history: HistoricalTrip[]) {
+export type LinkMethod = 'pinned' | 'named' | 'fuzzy';
+
+/** Canonical budget link for each trip (same for every viewer), with how it was matched. */
+export function canonicalLinksWithMethod(trips: { id: string; masterName: string; budgetTripName: string | null }[], history: HistoricalTrip[]) {
   const byName = new Map<string, HistoricalTrip>();
   for (const t of history) byName.set(t.name.trim(), t);
   const runOnly = history.filter(t => t.status === 'run');
   const STOP = new Set(['private', 'pvt', 'the', 'and', 'trip', 'open', 'day', 'pax', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'january', 'february', 'march', 'april', 'june', 'july', 'august', 'september', 'october', 'november', 'december']);
   const tokens = (s: string) => new Set(s.toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !STOP.has(w)));
-  const out = new Map<string, HistoricalTrip>();
+  const out = new Map<string, { trip: HistoricalTrip; method: LinkMethod }>();
   for (const a of trips) {
     const pin = VARIANCE_RULES.pinned_links[a.id];
     if (pin) {
       const t = history.find(h => h.id.startsWith(pin));
-      if (t) { out.set(a.id, t); continue; }
+      if (t) { out.set(a.id, { trip: t, method: 'pinned' }); continue; }
     }
     if (a.budgetTripName) {
       const t = byName.get(a.budgetTripName.trim());
-      if (t) { out.set(a.id, t); continue; }
+      if (t) { out.set(a.id, { trip: t, method: 'named' }); continue; }
     }
     const at = tokens(a.masterName);
     let best: HistoricalTrip | null = null;
@@ -149,8 +151,15 @@ export function canonicalLinks(trips: { id: string; masterName: string; budgetTr
       tokens(t.name).forEach(w => { if (at.has(w)) score += 1; });
       if (score > bestScore) { best = t; bestScore = score; }
     }
-    if (best) out.set(a.id, best);
+    if (best) out.set(a.id, { trip: best, method: 'fuzzy' });
   }
+  return out;
+}
+
+/** Canonical budget link for each trip (same for every viewer). */
+export function canonicalLinks(trips: { id: string; masterName: string; budgetTripName: string | null }[], history: HistoricalTrip[]) {
+  const out = new Map<string, HistoricalTrip>();
+  canonicalLinksWithMethod(trips, history).forEach((v, k) => out.set(k, v.trip));
   return out;
 }
 
